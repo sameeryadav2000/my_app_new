@@ -233,7 +233,7 @@ export default function ProductPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ cart: newItem }),
+        body: JSON.stringify({ cartItem: newItem }),
       });
 
       if (!response.ok) {

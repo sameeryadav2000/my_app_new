@@ -58,7 +58,7 @@ const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
               {/* Menu Items */}
               <div className="py-1">
                 <Link
-                  href="/account"
+                  href=""
                   className="flex items-center gap-3 px-4 py-3 md:py-2 text-sm text-[#5B4B49] font-bold hover:bg-gray-50"
                 >
                   <RiAccountCircleFill className="w-5 h-5" />
@@ -66,11 +66,11 @@ const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
                 </Link>
 
                 <Link
-                  href="/orders"
+                  href="/homepage/orders"
                   className="flex items-center gap-3 px-4 py-3 md:py-2 text-sm text-[#5B4B49] font-bold hover:bg-gray-50"
                 >
                   <FiPackage className="w-5 h-5" />
-                  Orders and help
+                  Orders
                 </Link>
 
                 <Link

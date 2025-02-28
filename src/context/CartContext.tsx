@@ -68,20 +68,20 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
               // If no cart in database but local storage has items,
               // push the local storage cart to the database
-              const localCart = localStorage.getItem("cart");
-              if (localCart) {
-                const parsedCart = JSON.parse(localCart);
-                setCartState(parsedCart);
+              // const localCart = localStorage.getItem("cart");
+              // if (localCart) {
+              //   const parsedCart = JSON.parse(localCart);
+              //   setCartState(parsedCart);
 
-                // Push to database
-                await fetch("/api/cart", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ cart: parsedCart }),
-                });
-              }
+              //   // Push to database
+              //   await fetch("/api/cart", {
+              //     method: "POST",
+              //     headers: {
+              //       "Content-Type": "application/json",
+              //     },
+              //     body: JSON.stringify({ cart: parsedCart }),
+              //   });
+              // }
             }
           }
         } catch (error) {
