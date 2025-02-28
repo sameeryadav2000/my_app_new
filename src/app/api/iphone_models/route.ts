@@ -1,6 +1,6 @@
-// route.ts
+// src/app/api/iphone_models/route.ts
 import { NextResponse, NextRequest } from "next/server";
-import { connectToDB } from "../../../../lib/db";
+import prisma from "../../../../lib/prisma";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -8,23 +8,64 @@ export async function GET(request: NextRequest) {
   const condition = searchParams.get("condition");
   const storage = searchParams.get("storage");
 
-  let query = "";
-
   try {
-    const connection = await connectToDB();
-
-    if (condition && storage) {
-      query = `SELECT \`id\`, \`color\`, \`price\` FROM iphone_models WHERE \`iphone_id\` = ${id} AND \`condition\` = '${condition}' AND \`storage\` = '${storage}'`;
-    } else if (condition) {
-      query = `SELECT DISTINCT \`storage\` FROM iphone_models WHERE \`iphone_id\` = ${id} AND \`condition\` = '${condition}'`;
-    } else {
-      query = `SELECT DISTINCT \`condition\` FROM iphone_models WHERE \`iphone_id\` = ${id}`;
+    // Validate id parameter
+    if (!id || isNaN(Number(id))) {
+      return NextResponse.json(
+        { error: "Invalid or missing id parameter" },
+        { status: 400 }
+      );
     }
 
-    const [rows] = await connection.execute(query);
-    await connection.end();
+    const iphoneId = parseInt(id);
 
-    return NextResponse.json({ result: rows });
+    // Get distinct conditions for an iPhone model
+    if (!condition) {
+      const conditions = await prisma.iphoneModels.findMany({
+        where: {
+          iphoneId: iphoneId,
+        },
+        distinct: ["condition"],
+        select: {
+          condition: true,
+        },
+      });
+      return NextResponse.json({ result: conditions });
+    }
+
+    // Get distinct storage options for a specific condition
+    if (condition && !storage) {
+      const storageOptions = await prisma.iphoneModels.findMany({
+        where: {
+          iphoneId: iphoneId,
+          condition: condition,
+        },
+        distinct: ["storage"],
+        select: {
+          storage: true,
+        },
+      });
+      return NextResponse.json({ result: storageOptions });
+    }
+
+    // Get color and price options for specific condition and storage
+    if (condition && storage) {
+      const colorOptions = await prisma.iphoneModels.findMany({
+        where: {
+          iphoneId: iphoneId,
+          condition: condition,
+          storage: storage,
+        },
+        select: {
+          id: true,
+          color: true,
+          price: true,
+        },
+      });
+      return NextResponse.json({ result: colorOptions });
+    }
+
+    return NextResponse.json({ result: [] });
   } catch (error) {
     console.error("Database query error:", error);
     return NextResponse.json(

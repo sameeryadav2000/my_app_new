@@ -13,6 +13,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+
+//TABLES
+
 model Slideshow {
   id    Int    @id @default(autoincrement())
   image String @db.VarChar(255)
@@ -30,18 +34,24 @@ model Iphone {
   price      Float
   image      String  @db.VarChar(255)
   carrier    String  @db.VarChar(50)
+
+   models     IphoneModels[]
 }
 
 model IphoneModels {
-  id        Int     @id @default(autoincrement())
-  title     String  @db.VarChar(255)
-  iphoneId  String  @db.VarChar(50)
-  storage   String  @db.VarChar(50)
-  condition String  @db.VarChar(50)
-  color     String  @db.VarChar(50)
-  carrier   String  @db.VarChar(50)
-  available Boolean @default(true)
+  id        Int       @id @default(autoincrement())
+  title     String    @db.VarChar(255)
+  iphoneId  Int     
+  iphone    Iphone    @relation(fields: [iphoneId], references: [id])
+  storage   String    @db.VarChar(50)
+  condition String    @db.VarChar(50)
+  color     String    @db.VarChar(50)
+  carrier   String    @db.VarChar(50)
+  available Boolean   @default(true)
   price     Float
+  reviews   Review[]  // Add relation to reviews
+  
+  @@index([iphoneId])
 }
 
 
@@ -68,30 +78,51 @@ model ShippingInfo {
 
 model User {
   id            String         @id @default(uuid())
-  externalId    String?       @unique  // Keycloak user ID
-  email         String        @unique
-  emailVerified Boolean       @default(false)
+  externalId    String?        @unique  // Keycloak user ID
+  email         String         @unique
+  emailVerified Boolean        @default(false)
   
   // Profile information
-  firstName     String?       @db.VarChar(50)
-  lastName      String?       @db.VarChar(50)
-  phoneNumber   String?       @db.VarChar(20)
-  avatar        String?       @db.Text     // URL to profile picture
+  firstName     String?        @db.VarChar(50)
+  lastName      String?        @db.VarChar(50)
+  phoneNumber   String?        @db.VarChar(20)
+  avatar        String?        @db.Text     // URL to profile picture
   
   // Account status
-  isActive      Boolean       @default(true)
+  isActive      Boolean        @default(true)
   
   // Timestamps
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   lastLoginAt   DateTime?
 
   // Relations
   shippingInfo  ShippingInfo[]
   cartItems     CartItem[]
+  reviews       Review[]       // Added relation to reviews
 
   @@index([email])
   @@index([externalId])
+}
+
+model Review {
+  id             String        @id @default(uuid())
+  rating         Int           // e.g., 1-5 stars
+  title          String        @db.VarChar(255)
+  comment        String        @db.Text
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  
+  // User relation
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  
+  // Primary relation is to the specific model the user purchased
+  modelId        Int
+  model          IphoneModels  @relation(fields: [modelId], references: [id])
+
+  @@index([userId])
+  @@index([modelId])
 }
 
 

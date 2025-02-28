@@ -12,6 +12,7 @@ import slugify from "slugify";
 import Card from "../../../../components/CardsForPhone";
 import AddToCartButton from "@/app/components/AddToCart";
 import StickyHeader from "@/app/components/StickyHeader";
+import ReviewList from "@/app/components/ReviewList";
 
 export default function ProductPage() {
   const { data: session } = useSession();
@@ -62,28 +63,31 @@ export default function ProductPage() {
     ?.id?.toString();
 
   useEffect(() => {
-    const fetchCards = async () => {
+    const fetchIphoneModels = async () => {
       try {
         const response = await fetch(
           `/api/iphone_models?id=${params.id}&condition=${selectedCondition}&storage=${selectedStorage}`
         );
-        const result = await response.json();
 
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+
+        const result = await response.json();
         if (!selectedCondition) {
-          setConditionOptions(result["result"]);
+          setConditionOptions(result.result);
         } else if (!selectedStorage && selectedCondition) {
-          setStorageOptions(result["result"]);
+          setStorageOptions(result.result);
         } else if (!selectedColor && selectedCondition) {
-          setColorOptions(result["result"]);
+          setColorOptions(result.result);
         }
       } catch (error) {
-        console.error("Error fetching cards:", error);
-        setError("Failed to fetch cards");
+        console.error("Error fetching iPhone models:", error);
+        setError("Failed to fetch product data");
       }
     };
-
-    fetchCards(); // Trigger the fetch when component mounts
-  }, [selectedCondition, selectedStorage]);
+    fetchIphoneModels();
+  }, [params.id, selectedCondition, selectedStorage, selectedColor]);
 
   useEffect(() => {
     if (conditionOptions.length > 0 && selectedCondition === "") {
@@ -574,6 +578,15 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {selectedCombinationId && (
+        <div className="md:w-4/5 w-[90%] mx-auto py-8 mt-8">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
+            <ReviewList modelId={Number(selectedCombinationId)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
