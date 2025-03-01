@@ -14,6 +14,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Get the current path/URL to determine if we're on the orders page
+    const url = new URL(req.url);
+    const isOrdersPage = url.searchParams.get("page") === "orders";
+
+    // Choose the appropriate status based on the page
+    const cartStatus = isOrdersPage ? "PURCHASED" : "IN_CART";
+
     // Find the user based on email
     const user = await prisma.user.findUnique({
       where: {
@@ -22,7 +29,7 @@ export async function GET(req: NextRequest) {
       include: {
         cartItems: {
           where: {
-            status: "IN_CART",
+            status: cartStatus,
           },
         },
       },

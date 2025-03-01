@@ -158,6 +158,12 @@ export default function OrderConfirmationPage() {
 
         setOrderStatus("success");
 
+        setCart({
+          items: [],
+          totalItems: 0,
+          subTotalPrice: 0,
+        });
+
         // Clear cart
         localStorage.removeItem("cart");
       }

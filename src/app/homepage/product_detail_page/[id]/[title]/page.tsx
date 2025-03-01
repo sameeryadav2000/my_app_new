@@ -13,6 +13,7 @@ import Card from "../../../../components/CardsForPhone";
 import AddToCartButton from "@/app/components/AddToCart";
 import StickyHeader from "@/app/components/StickyHeader";
 import ReviewList from "@/app/components/ReviewList";
+import AverageRating from "@/app/components/AverageRating";
 
 export default function ProductPage() {
   const { data: session } = useSession();
@@ -584,6 +585,13 @@ export default function ProductPage() {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
             <ReviewList modelId={Number(selectedCombinationId)} />
+          </div>
+
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold mb-2">
+              {phoneModelName} {selectedStorage} - {selectedColor} - Unlocked
+            </h1>
+            <AverageRating modelId={Number(params.id)} />
           </div>
         </div>
       )}
