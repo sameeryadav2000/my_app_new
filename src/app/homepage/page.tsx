@@ -4,34 +4,29 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Slideshow from "../components/Slideshow";
-import Card from "../components/CardsForHomepage";
-import Spacer from "../components/Spacer";
-import RecentlyViewed from "../components/RecentlyViewed";
+import Slideshow from "@/app/components/Slideshow";
+import CardsForHomepage from "@/app/components/CardForHomepage";
+import Spacer from "@/app/components/Spacer";
+import RecentlyViewed from "@/app/components/RecentlyViewed";
+
+const cardsData = [
+  { title: "iPhone", image: "phone_images/phone.jpg" },
+  { title: "Vivo", image: "phone_images/phone.jpg" },
+  { title: "Xiaomi", image: "phone_images/phone.jpg" },
+  { title: "Huawei", image: "phone_images/phone.jpg" },
+];
 
 export default function Home() {
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  const cardsData = [
-    { title: "iPhone", image: "phone_images/phone.jpg" },
-    { title: "Vivo", image: "phone_images/phone.jpg" },
-    { title: "Xiaomi", image: "phone_images/phone.jpg" },
-    { title: "Huawei", image: "phone_images/phone.jpg" },
-  ];
-
   return (
     <div>
       <div>
         <Slideshow />
       </div>
       <Spacer />
-      <Spacer />
 
       <div>
         <RecentlyViewed />
       </div>
-      <Spacer />
       <Spacer />
 
       <div className="w-[95%] md:w-[70%] mx-auto">
@@ -52,10 +47,10 @@ export default function Home() {
                 >
                   <div
                     className="h-full bg-white rounded-2xl overflow-hidden
-                 transform transition-all duration-300
-                 shadow hover:shadow-lg dark:shadow-gray-800/20"
+             transform transition-all duration-300
+             shadow hover:shadow-lg dark:shadow-gray-800/20"
                   >
-                    <Card
+                    <CardsForHomepage
                       title={card.title}
                       image={card.image}
                       className="flex flex-col h-full"

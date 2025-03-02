@@ -5,9 +5,10 @@ import Link from "next/link";
 import CardsForPhone from "./CardsForPhone";
 import Spacer from "./Spacer";
 
-const RecentlyViewed = () => {
-  const [currentIndex, setCurrentIndex] = useState(1);
+export default function RecentlyViewed() {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const products = [
     {
@@ -54,31 +55,57 @@ const RecentlyViewed = () => {
 
   useEffect(() => {
     const checkScreenSize = () => {
+      setLoading(true);
+
       const isMobileView = window.innerWidth < 768;
       setIsMobile(isMobileView);
-      setCurrentIndex(0); // Reset index on every screen size change
+      setCurrentIndex(0);
+
+      setLoading(false);
     };
 
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
 
-    return () => window.removeEventListener("resize", checkScreenSize);
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkScreenSize, 150);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   const cardsToShow = isMobile ? 2 : 4;
-  const slideBy = 2; // Number of cards to slide
+  const slideBy = 2;
   const maxIndex = Math.ceil((products.length - cardsToShow) / slideBy);
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => Math.min(maxIndex, prev + 1));
+    if (currentIndex < maxIndex) {
+      setCurrentIndex(currentIndex + 1);
+    }
   };
 
+  if (loading) {
+    return (
+      <div className="w-[95%] md:w-[70%] mx-auto bg-[#7D6167] pt-5 pl-5 pr-5 pb-5 rounded-xl">
+        <p className="text-white">Loading slideshow...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-[95%] md:w-[70%] mx-auto bg-[#7D6167] pt-10 pl-10 pr-10 pb-10 rounded-xl">
+    <div className="w-[95%] md:w-[70%] mx-auto bg-[#7D6167] pt-5 pl-5 pr-5 pb-5 rounded-xl">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">Recently viewed</h2>
         <div className="flex gap-2">
@@ -161,11 +188,15 @@ const RecentlyViewed = () => {
                   <CardsForPhone
                     title={product.title}
                     image={product.image}
+                    startingText="Starting at"
+                    price=""
                     className="flex flex-col h-full"
                     imageContainerClassName=""
                     imageClassName="rounded-xl"
                     contentClassName="bg-[#817B69] font-bold text-white w-[95%] mx-auto m-2 h-full rounded-lg"
                     titleClassName="text-sm break-words break-all p-2"
+                    startingTextClassName="text-xs text-gray-900 py-1"
+                    priceClassName=""
                   />
                 </div>
               </Link>
@@ -175,36 +206,4 @@ const RecentlyViewed = () => {
       </div>
     </div>
   );
-};
-
-export default RecentlyViewed;
-
-// <div className="overflow-hidden">
-//         <div
-//           className="flex transition-transform duration-300 ease-in-out gap-6"
-//           style={{
-//             transform: `translateX(-${currentIndex * 25}%)`,
-//             width: `${products.length * (100 / cardsToShow)}%`,
-//           }}
-//         >
-//           {products.map((product, index) => (
-//             <div
-//               key={index}
-//               style={{ width: `${100 / products.length}%` }}
-//               className="border-gray-300"
-//             >
-//               <Link href={`/product/${product.slug}`}>
-//                 <CardsForPhone
-//                   title={product.title}
-//                   image={product.image}
-//                   className="flex flex-col bg-white rounded overflow-hidden"
-//                   imageContainerClassName="flex justify-center"
-//                   imageClassName="w-full md:w-[200px] h-full object-contain"
-//                   contentClassName="w-full md:w-[200px] break-words break-all"
-//                   titleClassName="text-sm font-bold break-words break-all "
-//                 />
-//               </Link>
-//             </div>
-//           ))}
-//         </div>
-//       </div>
+}

@@ -22,7 +22,6 @@ export default function Navbar() {
 
       <nav className="p-4 justify-between flex bg-[#5B4B49] w-[95%] mx-auto rounded-xl items-center">
         <div className="flex">
-          {/* <Menu className="w-6 h-6 text-white" /> */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -69,36 +68,7 @@ export default function Navbar() {
           </h1>
         </div>
 
-        {/* <div className="md:flex md:justify-center md:flex-1 hidden">
-          <ul className="flex space-x-10 font-semibold">
-            <li>
-              <Link
-                href="/"
-                className="text-white hover:text-[#FFC107] hover:border-b-2 hover:border-[#FFC107] transition-all duration-300"
-              >
-                <span>Home</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/homepage"
-                className="text-white hover:text-[#FFC107] hover:border-b-2 hover:border-[#FFC107] transition-all duration-300"
-              >
-                Homepage
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/about"
-                className="text-white hover:text-[#FFC107] hover:border-b-2 hover:border-[#FFC107] transition-all duration-300"
-              >
-                About
-              </Link>
-            </li>
-          </ul>
-        </div> */}
-
-        <div className="flex">
+        {/* <div className="flex">
           <div className="flex items-center justify-center pr-4">
             <LoginLogout />
           </div>
@@ -115,32 +85,8 @@ export default function Navbar() {
               </div>
             </Link>
           </div>
-        </div>
+        </div> */}
       </nav>
-
-      {/* <div
-        className={`md:hidden ${
-          isMenuOpen ? "block" : "hidden"
-        } absolute left-0 right-0 z-10 w-[95%] mx-auto bg-[#DAD3C9] rounded-xl font-bold`}
-      >
-        <ul>
-          <li className="">
-            <Link href="/" className="text-[#5B4B49] block p-3">
-              Home
-            </Link>
-          </li>
-          <li className="">
-            <Link href="/homepage" className="text-[#5B4B49] block p-3">
-              Homepage
-            </Link>
-          </li>
-          <li className="">
-            <Link href="/about" className="text-[#5B4B49] block p-3">
-              About
-            </Link>
-          </li>
-        </ul>
-      </div> */}
 
       <Spacer />
     </div>

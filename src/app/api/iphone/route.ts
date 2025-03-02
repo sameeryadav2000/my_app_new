@@ -2,8 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma";
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
+
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
   const page = Number(searchParams.get("page")) || 1;
   const limit = Number(searchParams.get("limit")) || 10;
 
@@ -20,6 +21,13 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    if (req.signal.aborted) {
+      return NextResponse.json(
+        { message: "Request was aborted during processing" },
+        { status: 499 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: iphones,
@@ -31,10 +39,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching iPhones:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch iPhones",
-      },
+      { message: "Failed to fetch iPhones", error },
       { status: 500 }
     );
   }

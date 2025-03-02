@@ -8,49 +8,90 @@ import Link from "next/link";
 import CardsForPhone from "@/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
+interface IPhone {
+  id: number;
+  bestseller: boolean;
+  title: string;
+  price: number;
+  image: string;
+  carrier: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: IPhone[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  message?: string;
+}
+
 const ITEMS_PER_PAGE = 4;
 
-export default function ProductPage() {
-  const [cardsData, setCardsData] = useState<any[]>([]); // State to hold fetched card data
+export default function ProductListingPage() {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const searchParams = useSearchParams();
+  const currentPage = Number(searchParams.get("page") || 1);
+
+  const [cardsData, setCardsData] = useState<IPhone[]>([]);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [error, setError] = useState<string>("");
+
   const params = useParams();
   const title = params.title as string;
 
-  const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [totalItems, setTotalItems] = useState<number>(0);
-  const [totalPages, setTotalPages] = useState<number>(1);
   const router = useRouter();
-
-  const currentPage = Number(searchParams.get("page") || 1);
 
   // Fetch the cards from the API on component mount
   useEffect(() => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
     const fetchCards = async () => {
       setIsLoading(true);
+
       try {
         const response = await fetch(
-          `/api/iphone?page=${currentPage}&limit=${ITEMS_PER_PAGE}`
+          `/api/iphone?page=${currentPage}&limit=${ITEMS_PER_PAGE}`,
+          { signal }
         );
-        const result = await response.json();
 
-        if (response.ok) {
+        if (!response.ok) {
+          throw new Error(`API responded with status: ${response.status}`);
+        }
+
+        const result: ApiResponse = await response.json();
+
+        if (Array.isArray(result.data) && result.success) {
           setCardsData(result.data || []);
           setTotalItems(result.total || 0);
           setTotalPages(Math.ceil((result.total || 0) / ITEMS_PER_PAGE));
         } else {
-          setError(result.error || "Unknown error");
+          setError("No cards found");
         }
       } catch (error) {
-        console.error("Error fetching cards:", error);
-        setError("Failed to fetch cards");
+        if (error instanceof Error && error.name === "AbortError") {
+          console.log("Fetch aborted");
+          setError("Request was cancelled");
+        } else {
+          console.error("Error fetching cards:", error);
+          setError("Failed to fetch cards");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCards();
-    window.scrollTo(0, 0);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    return () => {
+      abortController.abort();
+    };
   }, [currentPage]);
 
   const handlePageChange = (pageNumber: number) => {
@@ -75,7 +116,7 @@ export default function ProductPage() {
       </button>
     );
 
-    if (totalPages > 7) {
+    if (totalPages > 6) {
       if (currentPage > 3) {
         buttons.push(
           <span key="ellipsis1" className="px-2">
@@ -150,6 +191,14 @@ export default function ProductPage() {
     return buttons;
   };
 
+  if (error) {
+    return (
+      <div className="w-[95%] md:w-[70%] mx-auto bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
+        <p className="text-red-700">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-[95%] md:w-[70%] mx-auto py-8">
       <h1 className="md:text-4xl text-2xl font-bold mb-8">
@@ -163,12 +212,6 @@ export default function ProductPage() {
           <span>Loading models...</span>
         )}
       </div>
-
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md">
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
 
       {/* Cards Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
@@ -228,7 +271,6 @@ export default function ProductPage() {
             Page {currentPage} of {totalPages}
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            {/* Previous Page Button */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
@@ -241,10 +283,8 @@ export default function ProductPage() {
               Previous
             </button>
 
-            {/* Page Numbers */}
             {renderPaginationButtons()}
 
-            {/* Next Page Button */}
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}

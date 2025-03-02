@@ -1,5 +1,3 @@
-import React from "react";
-
 interface CardProps {
   title: string;
   image: string;
@@ -10,15 +8,15 @@ interface CardProps {
   titleClassName?: string;
 }
 
-const Card: React.FC<CardProps> = ({
+export default function CardForHomepage({
   title,
   image,
-  className = '',
-  imageContainerClassName = '',
-  imageClassName = '',
-  contentClassName = '',
-  titleClassName = ''
-}) => {
+  className = "",
+  imageContainerClassName = "",
+  imageClassName = "",
+  contentClassName = "",
+  titleClassName = "",
+}: CardProps) {
   return (
     <div className={`${className}`}>
       <div className={`${imageContainerClassName}`}>
@@ -29,6 +27,4 @@ const Card: React.FC<CardProps> = ({
       </div>
     </div>
   );
-};
-
-export default Card;
+}

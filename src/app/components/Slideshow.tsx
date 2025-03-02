@@ -5,15 +5,18 @@ import { useState, useEffect, useCallback } from "react";
 export default function Slideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [images, setImages] = useState<{ image: string }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Fetch images from the API
   useEffect(() => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
     const fetchImages = async () => {
-      setLoading(true);
+      setIsLoading(true);
       try {
-        const response = await fetch("/api/slideshow");
+        const response = await fetch("/api/slideshow", { signal });
 
         if (!response.ok) {
           throw new Error(`API responded with status: ${response.status}`);
@@ -27,17 +30,25 @@ export default function Slideshow() {
           setError("No images found");
         }
       } catch (error) {
-        console.error("Error fetching slideshow images:", error);
-        setError("Failed to load images");
+        if (error instanceof Error && error.name === "AbortError") {
+          console.log("Fetch aborted");
+          setError("Request was cancelled");
+        } else {
+          console.error("Error fetching slideshow images:", error);
+          setError("Failed to load images");
+        }
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchImages();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
-  // Navigation functions - memoized with useCallback to avoid recreating on every render
   const goToPrevious = useCallback(() => {
     setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
@@ -50,35 +61,36 @@ export default function Slideshow() {
     );
   }, [images.length]);
 
-  // Auto-rotation effect
   useEffect(() => {
-    if (images.length <= 1) return; // Don't auto-rotate if there's only 0 or 1 image
+    if (images.length <= 2 || isPaused) return;
 
-    const interval = setInterval(goToNext, 5000); // Change slide every 5 seconds
+    const interval = setInterval(goToNext, 5000);
 
     return () => clearInterval(interval);
-  }, [images.length, goToNext]);
+  }, [images.length, goToNext, isPaused]);
 
-  // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="w-full h-[200px] sm:h-[500px] bg-gray-200 animate-pulse flex items-center justify-center">
+      <div className="w-[95%] mx-auto rounded-xl h-[200px] sm:h-[500px] bg-gray-200 animate-pulse flex items-center justify-center">
         <p className="text-gray-500">Loading slideshow...</p>
       </div>
     );
   }
 
-  // Error state
   if (error || images.length === 0) {
     return (
-      <div className="w-full h-[200px] sm:h-[500px] bg-gray-100 flex items-center justify-center">
+      <div className="w-[95%] mx-auto h-[200px] sm:h-[500px] bg-gray-100 flex items-center justify-center">
         <p className="text-gray-500">{error || "No images available"}</p>
       </div>
     );
   }
 
   return (
-    <div className="relative w-[95%] mx-auto">
+    <div
+      className="relative w-[95%] mx-auto cursor-pointer"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {/* Main Image */}
       <div className="w-full h-[200px] sm:h-[500px] relative overflow-hidden">
         {images.map((image, index) => (
@@ -120,6 +132,7 @@ export default function Slideshow() {
           />
         </svg>
       </button>
+
       <button
         onClick={goToNext}
         className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors focus:outline-none"
