@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import slugify from "slugify";
 import Link from "next/link";
 import CardsForPhone from "@/app/components/CardsForPhone";
@@ -27,6 +27,15 @@ interface ApiResponse {
   message?: string;
 }
 
+interface CacheItem {
+  data: IPhone[];
+  totalItems: number;
+  totalPages: number;
+  timestamp: number;
+}
+
+const CACHE_EXPIRY = 5 * 60 * 1000;
+
 const ITEMS_PER_PAGE = 4;
 
 export default function ProductListingPage() {
@@ -45,14 +54,34 @@ export default function ProductListingPage() {
 
   const router = useRouter();
 
-  // Fetch the cards from the API on component mount
-  useEffect(() => {
+  const cacheRef = useRef<Record<string, CacheItem>>({});
+
+  // Function to get data either from cache or API
+  const fetchCards = useCallback(() => {
+    setIsLoading(true);
+
+    // Create a cache key based on current page and title
+    const cacheKey = `${title}-page-${currentPage}-limit-${ITEMS_PER_PAGE}`;
+
+    // Check if we have a valid cached response
+    const cachedData = cacheRef.current[cacheKey];
+    const now = Date.now();
+
+    if (cachedData && now - cachedData.timestamp < CACHE_EXPIRY) {
+      // Use cached data if it's fresh
+      setCardsData(cachedData.data);
+      setTotalItems(cachedData.totalItems);
+      setTotalPages(cachedData.totalPages);
+      setIsLoading(false);
+
+      return () => {};
+    }
+
+    // No valid cache, fetch from API
     const abortController = new AbortController();
     const signal = abortController.signal;
 
-    const fetchCards = async () => {
-      setIsLoading(true);
-
+    const fetchData = async () => {
       try {
         const response = await fetch(
           `/api/iphone?page=${currentPage}&limit=${ITEMS_PER_PAGE}`,
@@ -66,16 +95,29 @@ export default function ProductListingPage() {
         const result: ApiResponse = await response.json();
 
         if (Array.isArray(result.data) && result.success) {
-          setCardsData(result.data || []);
-          setTotalItems(result.total || 0);
-          setTotalPages(Math.ceil((result.total || 0) / ITEMS_PER_PAGE));
+          const data = result.data || [];
+          const total = result.total || 0;
+          const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
+
+          // Update state with the fetched data
+          setCardsData(data);
+          setTotalItems(total);
+          setTotalPages(totalPages);
+
+          // Store in cache
+          cacheRef.current[cacheKey] = {
+            data,
+            totalItems: total,
+            totalPages,
+            timestamp: now,
+          };
         } else {
           setError("No cards found");
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           console.log("Fetch aborted");
-          setError("Request was cancelled");
+          // setError("Request was cancelled");
         } else {
           console.error("Error fetching cards:", error);
           setError("Failed to fetch cards");
@@ -85,20 +127,30 @@ export default function ProductListingPage() {
       }
     };
 
-    fetchCards();
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    fetchData();
 
     return () => {
       abortController.abort();
     };
-  }, [currentPage]);
+  }, [currentPage, title]);
+
+  useEffect(() => {
+    const cleanup = fetchCards();
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, [fetchCards]);
 
   const handlePageChange = (pageNumber: number) => {
-    router.push(`/homepage/product_page/${title}?page=${pageNumber}`);
+    router.replace(`/homepage/product_page/${title}?page=${pageNumber}`, {
+      scroll: false,
+    });
   };
 
-  const renderPaginationButtons = () => {
+  const renderPaginationButtons = useMemo(() => {
     const buttons = [];
 
     // Always show first page
@@ -189,7 +241,7 @@ export default function ProductListingPage() {
     }
 
     return buttons;
-  };
+  }, [currentPage, totalPages]);
 
   if (error) {
     return (
@@ -283,7 +335,7 @@ export default function ProductListingPage() {
               Previous
             </button>
 
-            {renderPaginationButtons()}
+            {renderPaginationButtons}
 
             <button
               onClick={() => handlePageChange(currentPage + 1)}

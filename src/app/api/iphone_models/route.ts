@@ -2,29 +2,34 @@
 import { NextResponse, NextRequest } from "next/server";
 import prisma from "../../../../lib/prisma";
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const id = searchParams.get("id");
-  const condition = searchParams.get("condition");
-  const storage = searchParams.get("storage");
-
+export async function GET(req: NextRequest) {
   try {
-    // Validate id parameter
+    const searchParams = req.nextUrl.searchParams;
+
+    const id = searchParams.get("id");
+    const condition = searchParams.get("condition");
+    const storage = searchParams.get("storage");
+
     if (!id || isNaN(Number(id))) {
       return NextResponse.json(
-        { error: "Invalid or missing id parameter" },
+        { message: "Invalid or missing id parameter" },
         { status: 400 }
       );
     }
 
     const iphoneId = parseInt(id);
 
-    // Get distinct conditions for an iPhone model
+    const baseQueryConfig = {
+      where: {
+        iphoneId,
+        ...(condition && { condition }),
+        ...(storage && { storage }),
+      },
+    };
+
     if (!condition) {
       const conditions = await prisma.iphoneModels.findMany({
-        where: {
-          iphoneId: iphoneId,
-        },
+        ...baseQueryConfig,
         distinct: ["condition"],
         select: {
           condition: true,
@@ -33,43 +38,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ result: conditions });
     }
 
-    // Get distinct storage options for a specific condition
     if (condition && !storage) {
       const storageOptions = await prisma.iphoneModels.findMany({
-        where: {
-          iphoneId: iphoneId,
-          condition: condition,
-        },
+        ...baseQueryConfig,
         distinct: ["storage"],
         select: {
           storage: true,
         },
       });
+
       return NextResponse.json({ result: storageOptions });
     }
 
-    // Get color and price options for specific condition and storage
-    if (condition && storage) {
-      const colorOptions = await prisma.iphoneModels.findMany({
-        where: {
-          iphoneId: iphoneId,
-          condition: condition,
-          storage: storage,
-        },
-        select: {
-          id: true,
-          color: true,
-          price: true,
-        },
-      });
-      return NextResponse.json({ result: colorOptions });
-    }
+    // Scenario 3: Get all color and price options for a specific condition and storage
+    const colorOptions = await prisma.iphoneModels.findMany({
+      ...baseQueryConfig,
+      select: {
+        id: true,
+        color: true,
+        price: true,
+      },
+    });
 
-    return NextResponse.json({ result: [] });
+    return NextResponse.json({ result: colorOptions });
   } catch (error) {
-    console.error("Database query error:", error);
+    console.error("Error fetching iPhone models:", error);
     return NextResponse.json(
-      { error: "Failed to fetch data" },
+      { message: "Failed to fetch iPhone models" },
       { status: 500 }
     );
   }

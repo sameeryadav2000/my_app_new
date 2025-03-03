@@ -35,7 +35,7 @@ model Iphone {
   image      String  @db.VarChar(255)
   carrier    String  @db.VarChar(50)
 
-   models     IphoneModels[]
+  models     IphoneModels[]
 }
 
 model IphoneModels {
@@ -49,9 +49,19 @@ model IphoneModels {
   carrier   String    @db.VarChar(50)
   available Boolean   @default(true)
   price     Float
+  images    ModelImage[] // New relation to ModelImage
   reviews   Review[]  // Add relation to reviews
   
   @@index([iphoneId])
+}
+
+model ModelImage {
+  id           Int          @id @default(autoincrement())
+  image        String       @db.VarChar(255)
+  iphoneModelId Int         
+  iphoneModel  IphoneModels @relation(fields: [iphoneModelId], references: [id])
+
+  @@index([iphoneModelId])
 }
 
 

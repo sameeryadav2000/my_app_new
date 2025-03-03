@@ -6,13 +6,6 @@ export async function GET(req: NextRequest) {
   try {
     const slideshowImages = await prisma.slideshow.findMany();
 
-    if (req.signal.aborted) {
-      return NextResponse.json(
-        { message: "Request was aborted during processing" },
-        { status: 499 }
-      );
-    }
-
     return NextResponse.json({ result: slideshowImages });
   } catch (error) {
     console.error("Database query error:", error);

@@ -1,19 +1,19 @@
 // src\app\components\AddToCart.tsx
 
 interface AddToCartButtonProps {
-  onClick: () => void;
+  onClick?: () => void;
   className?: string;
   href?: string;
 }
 
-const AddToCartButton = ({
+export default function AddToCartButton({
   onClick,
   className,
   href,
-}: AddToCartButtonProps) => {
+}: AddToCartButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    onClick();
+    // onClick();
   };
 
   return (
@@ -24,6 +24,4 @@ const AddToCartButton = ({
       Add to Cart
     </button>
   );
-};
-
-export default AddToCartButton;
+}
