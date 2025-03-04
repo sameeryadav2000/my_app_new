@@ -4,6 +4,8 @@ import React from "react";
 import Link from "next/link";
 
 const Footer = () => {
+  console.log(1);
+
   const footerSections = {
     About: [
       { title: "Our Story", href: "/homepage/about/story" },

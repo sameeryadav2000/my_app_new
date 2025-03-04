@@ -1,28 +1,25 @@
 // src/app/api/auth/[...nextauth]/route.ts
-import NextAuth, { AuthOptions, DefaultSession } from "next-auth";
+import NextAuth, { AuthOptions, Session, User, Account } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import { JWT } from "next-auth/jwt";
 import prisma from "../../../../../lib/prisma";
 
-// // Extend the default session type
-// declare module "next-auth" {
-//   interface Session extends DefaultSession {
-//     accessToken?: string;
-//   }
-// }
-
-// Extend the default JWT type
-declare module "next-auth/jwt" {
-  interface JWT {
-    idToken?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    expiresAt?: number;
-    error?: string;
-  }
+export interface ExtendedSession extends Session {
+  accessToken?: string;
+  user?: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+    emailVerified: boolean;
+    phoneNumber: string | null;
+    avatar: string | null;
+    isActive: boolean;
+    name?: string | null;
+    image?: string | null;
+  };
 }
 
-// Define the TokenSet interface for refresh token response
 interface TokenSet {
   id_token?: string;
   access_token: string;
@@ -31,14 +28,27 @@ interface TokenSet {
   error?: string;
 }
 
-function requestRefreshOfAccessToken(token: JWT) {
+interface ExtendedJWT extends JWT {
+  expiresAt?: number;
+  refreshToken?: string;
+}
+
+interface ExtendedUser extends User {
+  emailVerified?: Date | boolean | null;
+}
+
+function requestRefreshOfAccessToken(token: ExtendedJWT) {
+  if (!token.refreshToken) {
+    throw new Error("Refresh token is missing");
+  }
+
   return fetch(`${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`, {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: process.env.KEYCLOAK_CLIENT_ID,
       client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
       grant_type: "refresh_token",
-      refresh_token: token.refreshToken!,
+      refresh_token: token.refreshToken || "",
     }),
     method: "POST",
     cache: "no-store",
@@ -53,49 +63,86 @@ export const authOptions: AuthOptions = {
       issuer: process.env.KEYCLOAK_ISSUER,
     }),
   ],
-  pages: {
-    signIn: "/login_signup",
-    signOut: "/auth/signout",
-  },
+
   callbacks: {
-    async signIn({ user, account }) {
-      if (!account?.providerAccountId) return true; // Check for sub
+    async signIn({
+      user,
+      account,
+    }: {
+      user: ExtendedUser;
+      account: Account | null;
+    }) {
+      if (!account?.providerAccountId) {
+        console.log("No provider account ID found, skipping user creation");
+        return true;
+      }
 
-      const externalId = account.providerAccountId.toString(); // Convert to string explicitly
+      if (!user.email) {
+        console.error("User missing email, cannot create database record");
+        return false;
+      }
 
-      const isEmailVerified =
-        typeof (user as any).emailVerified === "boolean"
-          ? (user as any).emailVerified
-          : false;
+      const externalId = account.providerAccountId.toString();
 
-      //   console.log(user, account);
+      const isEmailVerified: boolean = user.emailVerified
+        ? typeof user.emailVerified === "boolean"
+          ? user.emailVerified
+          : true
+        : false;
+
+      const nameParts = user.name ? user.name.split(" ") : [];
+      const firstName = nameParts[0] || null;
+      const lastName =
+        nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+
+      const existingUser = await prisma.user.findUnique({
+        where: { externalId },
+      });
+      const isCreated = !existingUser;
 
       try {
-        await prisma.user.upsert({
+        const updatedUser = await prisma.user.upsert({
           where: {
-            externalId: externalId, // Now definitely a string
+            externalId,
           },
           create: {
-            externalId: externalId, // Now definitely a string
-            email: user.email!,
-            firstName: user.name?.split(" ")[0] ?? null,
-            lastName: user.name?.split(" ")[1] ?? null,
+            externalId,
+            email: user.email,
+            firstName,
+            lastName,
             emailVerified: isEmailVerified,
             lastLoginAt: new Date(),
           },
           update: {
             lastLoginAt: new Date(),
-            email: user.email!,
+            email: user.email,
+            ...(firstName && { firstName }),
+            ...(lastName && { lastName }),
           },
         });
+
+        console.log(
+          `User ${updatedUser.id} successfully ${
+            isCreated ? "created" : "updated"
+          }`
+        );
         return true;
       } catch (error) {
-        console.error("Error saving user:", error);
+        console.error(
+          "Error saving user:",
+          error instanceof Error ? error.message : error
+        );
         return false;
       }
     },
 
-    async jwt({ token, account }) {
+    async jwt({
+      token,
+      account,
+    }: {
+      token: ExtendedJWT;
+      account: Account | null;
+    }) {
       if (account) {
         token.idToken = account.id_token;
         token.accessToken = account.access_token;
@@ -103,7 +150,11 @@ export const authOptions: AuthOptions = {
         token.expiresAt = account.expires_at;
         return token;
       }
-      if (Date.now() < token.expiresAt! * 1000 - 60 * 1000) {
+
+      if (
+        token.expiresAt !== undefined &&
+        Date.now() < token.expiresAt * 1000 - 60 * 1000
+      ) {
         return token;
       } else {
         try {
@@ -113,7 +164,7 @@ export const authOptions: AuthOptions = {
 
           if (!response.ok) throw tokens;
 
-          const updatedToken: JWT = {
+          const updatedToken: ExtendedJWT = {
             ...token, // Keep the previous token properties
             idToken: tokens.id_token,
             accessToken: tokens.access_token,
@@ -129,56 +180,76 @@ export const authOptions: AuthOptions = {
         }
       }
     },
-    // src/app/api/auth/[...nextauth]/route.ts
 
-    async session({ session, token }) {
-      // Add access token to session
-      session.accessToken = token.accessToken;
+    async session(params) {
+      const { session, token } = params;
+
+      // Create a new session object that matches your ExtendedSession interface
+      const extendedSession: ExtendedSession = {
+        ...session,
+        accessToken: token.accessToken as string | undefined,
+        user: session.user
+          ? {
+              ...session.user,
+              // Initialize with default values that will be overwritten if user exists in DB
+              id: "",
+              firstName: null,
+              lastName: null,
+              email: session.user.email || null,
+              emailVerified: false,
+              phoneNumber: null,
+              avatar: null,
+              isActive: false,
+            }
+          : undefined,
+      };
 
       try {
-        // Fetch the user from our database using email
-        const user = await prisma.user.findUnique({
-          where: {
-            email: session.user?.email!,
-          },
-          select: {
-            // Only select the fields we need
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            emailVerified: true,
-            phoneNumber: true,
-            avatar: true,
-            isActive: true,
-          },
-        });
+        if (extendedSession.user?.email) {
+          const user = await prisma.user.findUnique({
+            where: { email: extendedSession.user.email },
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              emailVerified: true,
+              phoneNumber: true,
+              avatar: true,
+              isActive: true,
+            },
+          });
 
-        if (user) {
-          // Enhance the session user object with our database fields
-          session.user = {
-            ...session.user,
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            emailVerified: user.emailVerified,
-            phoneNumber: user.phoneNumber,
-            avatar: user.avatar,
-            isActive: user.isActive,
-          };
+          if (user) {
+            extendedSession.user = {
+              ...extendedSession.user,
+              id: user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              emailVerified: user.emailVerified,
+              phoneNumber: user.phoneNumber,
+              avatar: user.avatar,
+              isActive: user.isActive,
+            };
+          }
         }
 
-        return session;
+        return extendedSession;
       } catch (error) {
         console.error("Error in session callback:", error);
-        return session; // Return original session if there's an error
+        return extendedSession;
       }
     },
   },
 
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60,
+  },
+
+  pages: {
+    signIn: "/login_signup",
+    signOut: "/auth/signout",
   },
 };
 const handler = NextAuth(authOptions);

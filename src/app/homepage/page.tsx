@@ -19,10 +19,10 @@ const cardsData = [
 export default function Home() {
   return (
     <div>
-      <div>
+      {/* <div>
         <Slideshow />
-      </div>
-      <Spacer />
+      </div> */}
+      {/* <Spacer />
 
       <div>
         <RecentlyViewed />
@@ -69,7 +69,7 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "../components/Navbar";
+import Navbar from "@/app/components/Navbar";
 import AuthProvider from "../components/AuthProvider";
 import SessionGuard from "@/app/components/SessionGuard";
 import { CartProvider } from "@/context/CartContext";
@@ -41,7 +41,7 @@ export default function RootLayout({
               <CartRecovery />
               <Navbar />
               {children}
-              <Footer />
+              {/* <Footer /> */}
             </CartProvider>
           </SessionGuard>
         </AuthProvider>

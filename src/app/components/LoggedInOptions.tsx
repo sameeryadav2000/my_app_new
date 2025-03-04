@@ -7,13 +7,14 @@ import { RiAccountCircleFill, RiLogoutBoxLine } from "react-icons/ri";
 import { FiPackage } from "react-icons/fi";
 import { AiOutlineHeart } from "react-icons/ai";
 import { BiTransfer } from "react-icons/bi";
+import { ExtendedSession } from "@/app/api/auth/[...nextauth]/route";
 
 interface AccountDropdownProps {
-  session: Session;
+  session: ExtendedSession | null;
   onLogout: () => void;
 }
-
 const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
+  debugger;
   const [isOpen, setIsOpen] = useState(false);
   const firstName = session?.user?.firstName;
   const firstLetter = firstName?.charAt(0)?.toUpperCase() || "?";
@@ -51,7 +52,7 @@ const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
               {/* User Info */}
               <div className="px-4 py-2 border-b border-gray-100">
                 <div className="text-sm font-bold text-[#5B4B49] ">
-                  {session.user?.name}
+                  {session?.user?.name}
                 </div>
               </div>
 

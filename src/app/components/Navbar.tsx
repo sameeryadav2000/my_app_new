@@ -7,10 +7,10 @@ import { ShoppingCart, Search, Menu } from "lucide-react";
 import LoginLogout from "../components/LoginLogout";
 import Spacer from "./Spacer";
 import { useCart } from "@/context/CartContext";
+import { useEffect } from "react";
 
 export default function Navbar() {
-  // const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { cart } = useCart();
+  // const { cart } = useCart();
 
   // const toggleMenu = () => {
   //   setIsMenuOpen((prev) => !prev);
@@ -68,12 +68,12 @@ export default function Navbar() {
           </h1>
         </div>
 
-        {/* <div className="flex">
+        <div className="flex">
           <div className="flex items-center justify-center pr-4">
             <LoginLogout />
           </div>
 
-          <div className="flex items-center justify-center cursor-pointer">
+          {/* <div className="flex items-center justify-center cursor-pointer">
             <Link href="/homepage/cart_page">
               <div className="relative transition-colors">
                 <ShoppingCart className="md:w-8 md:h-8 w-6 h-6 text-white hover:text-[#FFC107] transition-all duration-300" />
@@ -84,8 +84,8 @@ export default function Navbar() {
                 )}
               </div>
             </Link>
-          </div>
-        </div> */}
+          </div> */}
+        </div>
       </nav>
 
       <Spacer />
