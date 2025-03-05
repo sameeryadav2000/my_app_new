@@ -1,23 +1,28 @@
 // src/app/api/auth/[...nextauth]/route.ts
-import NextAuth, { AuthOptions, Session, User, Account } from "next-auth";
+import NextAuth, {
+  AuthOptions,
+  User,
+  Account,
+  DefaultSession,
+} from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import { JWT } from "next-auth/jwt";
 import prisma from "../../../../../lib/prisma";
 
-export interface ExtendedSession extends Session {
-  accessToken?: string;
-  user?: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    email: string | null;
-    emailVerified: boolean;
-    phoneNumber: string | null;
-    avatar: string | null;
-    isActive: boolean;
-    name?: string | null;
-    image?: string | null;
-  };
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+    user?: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+      emailVerified: boolean;
+      phoneNumber: string | null;
+      avatar: string | null;
+      isActive: boolean;
+    } & DefaultSession["user"];
+  }
 }
 
 interface TokenSet {
@@ -28,16 +33,19 @@ interface TokenSet {
   error?: string;
 }
 
-interface ExtendedJWT extends JWT {
-  expiresAt?: number;
-  refreshToken?: string;
+declare module "next-auth/jwt" {
+  interface JWT {
+    expiresAt?: number;
+    refreshToken?: string;
+    idToken?: string;
+  }
 }
 
 interface ExtendedUser extends User {
   emailVerified?: Date | boolean | null;
 }
 
-function requestRefreshOfAccessToken(token: ExtendedJWT) {
+function requestRefreshOfAccessToken(token: JWT) {
   if (!token.refreshToken) {
     throw new Error("Refresh token is missing");
   }
@@ -140,7 +148,7 @@ export const authOptions: AuthOptions = {
       token,
       account,
     }: {
-      token: ExtendedJWT;
+      token: JWT;
       account: Account | null;
     }) {
       if (account) {
@@ -164,7 +172,7 @@ export const authOptions: AuthOptions = {
 
           if (!response.ok) throw tokens;
 
-          const updatedToken: ExtendedJWT = {
+          const updatedToken: JWT = {
             ...token, // Keep the previous token properties
             idToken: tokens.id_token,
             accessToken: tokens.access_token,
@@ -184,30 +192,22 @@ export const authOptions: AuthOptions = {
     async session(params) {
       const { session, token } = params;
 
-      // Create a new session object that matches your ExtendedSession interface
-      const extendedSession: ExtendedSession = {
-        ...session,
-        accessToken: token.accessToken as string | undefined,
-        user: session.user
-          ? {
-              ...session.user,
-              // Initialize with default values that will be overwritten if user exists in DB
-              id: "",
-              firstName: null,
-              lastName: null,
-              email: session.user.email || null,
-              emailVerified: false,
-              phoneNumber: null,
-              avatar: null,
-              isActive: false,
-            }
-          : undefined,
-      };
+      session.accessToken = token.accessToken as string | undefined;
+
+      if (session.user) {
+        session.user.id = "";
+        session.user.firstName = null;
+        session.user.lastName = null;
+        session.user.emailVerified = false;
+        session.user.phoneNumber = null;
+        session.user.avatar = null;
+        session.user.isActive = false;
+      }
 
       try {
-        if (extendedSession.user?.email) {
+        if (session.user?.email) {
           const user = await prisma.user.findUnique({
-            where: { email: extendedSession.user.email },
+            where: { email: session.user.email },
             select: {
               id: true,
               firstName: true,
@@ -220,24 +220,21 @@ export const authOptions: AuthOptions = {
             },
           });
 
-          if (user) {
-            extendedSession.user = {
-              ...extendedSession.user,
-              id: user.id,
-              firstName: user.firstName,
-              lastName: user.lastName,
-              emailVerified: user.emailVerified,
-              phoneNumber: user.phoneNumber,
-              avatar: user.avatar,
-              isActive: user.isActive,
-            };
+          if (user && session.user) {
+            session.user.id = user.id;
+            session.user.firstName = user.firstName;
+            session.user.lastName = user.lastName;
+            session.user.emailVerified = user.emailVerified;
+            session.user.phoneNumber = user.phoneNumber;
+            session.user.avatar = user.avatar;
+            session.user.isActive = user.isActive;
           }
         }
 
-        return extendedSession;
+        return session;
       } catch (error) {
         console.error("Error in session callback:", error);
-        return extendedSession;
+        return session;
       }
     },
   },

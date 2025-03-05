@@ -6,26 +6,24 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 
-const CartRecovery = () => {
+export default function CartRecovery() {
   const { data: session } = useSession();
   const { cart, setCart } = useCart();
   const router = useRouter();
 
   useEffect(() => {
-    // Only run this when a user session exists and has just been established
     if (session) {
-      // Check if there's a pending cart item that was saved before login
       const pendingItemJSON = sessionStorage.getItem("pendingCartItem");
-      
+
       if (pendingItemJSON) {
         try {
           const pendingItem = JSON.parse(pendingItemJSON);
-          
+
           // Add quantity property if it doesn't exist
           if (!pendingItem.quantity) {
             pendingItem.quantity = 1;
           }
-          
+
           // Check if this exact item already exists in the cart
           const existingItemIndex = cart.items.findIndex(
             (item) =>
@@ -34,9 +32,9 @@ const CartRecovery = () => {
               item.storage === pendingItem.storage &&
               item.color === pendingItem.color
           );
-          
+
           let updatedCart;
-          
+
           if (existingItemIndex > -1) {
             // If item exists, increment its quantity
             const updatedItems = cart.items.map((item, index) =>
@@ -44,9 +42,13 @@ const CartRecovery = () => {
                 ? { ...item, quantity: item.quantity + 1 }
                 : item
             );
+
             updatedCart = {
               items: updatedItems,
-              totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
+              totalItems: updatedItems.reduce(
+                (sum, item) => sum + item.quantity,
+                0
+              ),
               subTotalPrice: updatedItems.reduce(
                 (sum, item) => sum + item.price * item.quantity,
                 0
@@ -60,25 +62,19 @@ const CartRecovery = () => {
               subTotalPrice: cart.subTotalPrice + pendingItem.price,
             };
           }
-          
-          // Update the cart
+
           setCart(updatedCart);
-          
-          // Clear the pending item
+
           sessionStorage.removeItem("pendingCartItem");
-          
-          // Redirect to cart page
-          router.push("/homepage/cart_page");
+
+          router.push("/homepage");
         } catch (error) {
           console.error("Error recovering cart item:", error);
           sessionStorage.removeItem("pendingCartItem");
         }
       }
     }
-  }, [session, cart, setCart, router]);
+  }, [session]);
 
-  // This component doesn't render anything visible
   return null;
-};
-
-export default CartRecovery;
+}

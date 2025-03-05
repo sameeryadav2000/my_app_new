@@ -41,7 +41,7 @@ export default function RootLayout({
               <CartRecovery />
               <Navbar />
               {children}
-              {/* <Footer /> */}
+              <Footer />
             </CartProvider>
           </SessionGuard>
         </AuthProvider>

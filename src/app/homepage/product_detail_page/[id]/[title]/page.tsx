@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-// import { useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 // import { CartItem, Cart } from "@/types/cart";
 // import { useCart } from "@/context/CartContext";
@@ -147,7 +147,7 @@ export default function ProductPage() {
     }
   }, [conditionOptions, storageOptions, colorOptions]);
 
-  const phoneId = colorOptions
+  const currentPagePhoneId = colorOptions
     .find((option) => option.color === selectedColor)
     ?.id?.toString();
 
@@ -163,7 +163,7 @@ export default function ProductPage() {
       setIsLoadingImage(true);
       try {
         const response = await fetch(
-          `/api/model_image?iphoneModelId=${phoneId}`,
+          `/api/model_image?iphoneModelId=${currentPagePhoneId}`,
           { signal }
         );
 
@@ -240,108 +240,111 @@ export default function ProductPage() {
     colorOptions.find((option) => option.color === selectedColor)?.price || 0
   );
 
-  // const { data: session } = useSession();
-  // const router = useRouter();
   // const { cart, setCart } = useCart(); // Access cart and setCart
 
   // const [selectedColorOther, setSelectedColorother] = useState<string>("Blue");
 
-  // const handleAddToCart = async () => {
-  //   if (!session) {
-  //     // Save the current product details to sessionStorage so we can recover after login
-  //     sessionStorage.setItem(
-  //       "pendingCartItem",
-  //       JSON.stringify({
-  //         id: selectedCombinationId,
-  //         title: phoneModelName,
-  //         condition: selectedCondition,
-  //         storage: selectedStorage,
-  //         color: selectedColor,
-  //         price: priceSelected || 0,
-  //         image: images[0].url,
-  //       })
-  //     );
+  const { data: session } = useSession();
+  const router = useRouter();
 
-  //     // Redirect to login
-  //     router.push("/login_signup");
-  //     return;
-  //   }
 
-  //   // Create a new cart item from the selected options
-  //   const newItem: CartItem = {
-  //     id: selectedCombinationId,
-  //     title: phoneModelName,
-  //     condition: selectedCondition,
-  //     storage: selectedStorage,
-  //     color: selectedColor,
-  //     price: priceSelected || 0,
-  //     quantity: 1,
-  //     image: images[0].url,
-  //   };
+  const handleAddToCart = async () => {
+    if (!session) {
+      const imageToUse =
+        modelImages && modelImages.length > 0 ? modelImages[0].image : "";
 
-  //   // Get existing cart from localStorage
-  //   const existingCartJson = localStorage.getItem("cart");
-  //   const existingCart: Cart = existingCartJson
-  //     ? JSON.parse(existingCartJson)
-  //     : { items: [], totalItems: 0, totalPrice: 0 };
+      sessionStorage.setItem(
+        "pendingCartItem",
+        JSON.stringify({
+          id: currentPagePhoneId,
+          title: phoneModelName,
+          condition: selectedCondition,
+          storage: selectedStorage,
+          color: selectedColor,
+          price: priceSelected || 0,
+          image: imageToUse,
+        })
+      );
 
-  //   // Check if this exact item configuration already exists
-  //   const existingItemIndex = existingCart.items.findIndex(
-  //     (item) =>
-  //       item.id === newItem.id &&
-  //       item.condition === newItem.condition &&
-  //       item.storage === newItem.storage &&
-  //       item.color === newItem.color
-  //   );
+      router.push("/login_signup");
+      return;
+    }
 
-  //   let updatedCart: Cart;
+    //   // Create a new cart item from the selected options
+    //   const newItem: CartItem = {
+    //     id: selectedCombinationId,
+    //     title: phoneModelName,
+    //     condition: selectedCondition,
+    //     storage: selectedStorage,
+    //     color: selectedColor,
+    //     price: priceSelected || 0,
+    //     quantity: 1,
+    //     image: images[0].url,
+    //   };
 
-  //   if (existingItemIndex > -1) {
-  //     // If item exists, increment its quantity
-  //     const updatedItems = existingCart.items.map((item, index) =>
-  //       index === existingItemIndex
-  //         ? { ...item, quantity: item.quantity + 1 }
-  //         : item
-  //     );
-  //     updatedCart = {
-  //       items: updatedItems,
-  //       totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-  //       subTotalPrice: updatedItems.reduce(
-  //         (sum, item) => sum + item.price * item.quantity,
-  //         0
-  //       ),
-  //     };
-  //   } else {
-  //     // If item doesn't exist, add it to cart
-  //     updatedCart = {
-  //       items: [...existingCart.items, newItem],
-  //       totalItems: existingCart.totalItems + 1,
-  //       subTotalPrice: existingCart.subTotalPrice + newItem.price,
-  //     };
-  //   }
-  //   // console.log(updatedCart.subTotalPrice);
-  //   // Save updated cart to localStorage
-  //   localStorage.setItem("cart", JSON.stringify(updatedCart));
-  //   setCart(updatedCart);
+    //   // Get existing cart from localStorage
+    //   const existingCartJson = localStorage.getItem("cart");
+    //   const existingCart: Cart = existingCartJson
+    //     ? JSON.parse(existingCartJson)
+    //     : { items: [], totalItems: 0, totalPrice: 0 };
 
-  //   try {
-  //     const response = await fetch("/api/cart", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ cartItem: newItem }),
-  //     });
+    //   // Check if this exact item configuration already exists
+    //   const existingItemIndex = existingCart.items.findIndex(
+    //     (item) =>
+    //       item.id === newItem.id &&
+    //       item.condition === newItem.condition &&
+    //       item.storage === newItem.storage &&
+    //       item.color === newItem.color
+    //   );
 
-  //     if (!response.ok) {
-  //       console.error("Failed to save cart item to database");
-  //       // You might want to show an error message to the user here
-  //     }
-  //   } catch (error) {
-  //     console.error("Error saving cart item:", error);
-  //     // Handle error appropriately
-  //   }
-  // };
+    //   let updatedCart: Cart;
+
+    //   if (existingItemIndex > -1) {
+    //     // If item exists, increment its quantity
+    //     const updatedItems = existingCart.items.map((item, index) =>
+    //       index === existingItemIndex
+    //         ? { ...item, quantity: item.quantity + 1 }
+    //         : item
+    //     );
+    //     updatedCart = {
+    //       items: updatedItems,
+    //       totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
+    //       subTotalPrice: updatedItems.reduce(
+    //         (sum, item) => sum + item.price * item.quantity,
+    //         0
+    //       ),
+    //     };
+    //   } else {
+    //     // If item doesn't exist, add it to cart
+    //     updatedCart = {
+    //       items: [...existingCart.items, newItem],
+    //       totalItems: existingCart.totalItems + 1,
+    //       subTotalPrice: existingCart.subTotalPrice + newItem.price,
+    //     };
+    //   }
+    //   // console.log(updatedCart.subTotalPrice);
+    //   // Save updated cart to localStorage
+    //   localStorage.setItem("cart", JSON.stringify(updatedCart));
+    //   setCart(updatedCart);
+
+    //   try {
+    //     const response = await fetch("/api/cart", {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //       },
+    //       body: JSON.stringify({ cartItem: newItem }),
+    //     });
+
+    //     if (!response.ok) {
+    //       console.error("Failed to save cart item to database");
+    //       // You might want to show an error message to the user here
+    //     }
+    //   } catch (error) {
+    //     console.error("Error saving cart item:", error);
+    //     // Handle error appropriately
+    //   }
+  };
 
   const colors: Record<string, string> = {
     Black: "bg-black",
@@ -365,11 +368,11 @@ export default function ProductPage() {
       /> */}
 
       {/* Main div */}
-      <div className="w-[95%] md:w-[70%] mx-auto mx-auto py-8 bg-red-500">
+      <div className="w-[95%] md:w-[70%] mx-auto mx-auto">
         {/* Div into two columns */}
-        <div className="flex flex-col md:flex-row gap-8 bg-blue-500 p-9">
+        <div className="flex flex-col md:flex-row gap-8">
           {/* Left side container box */}
-          <div className="w-full md:w-1/2 bg-white rounded-lg shadow-lg">
+          <div className="w-full md:w-1/2 bg-white rounded-lg">
             <div className="md:w-full md:h-screen md:sticky md:top-10">
               <div className="h-auto md:h-full flex flex-col justify-center">
                 <div className="relative h-[300px] md:h-[500px] w-full mb-4 bg-white">
@@ -377,7 +380,7 @@ export default function ProductPage() {
                     <img
                       src={modelImages[currentImageIndex]?.image}
                       alt="Product"
-                      className="absolute inset-0 h-full w-full object-cover rounded-lg"
+                      className="absolute inset-0 h-full w-full object-contain rounded-lg"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-gray-400">
@@ -461,9 +464,8 @@ export default function ProductPage() {
                     <span className="text-2xl font-bold">${priceSelected}</span>
                   </div>
                   <AddToCartButton
-                    href="/homepage/cart_page"
                     className="!w-40"
-                    // onClick={handleAddToCart}
+                    onClick={handleAddToCart}
                   />
                 </div>
               </div>
@@ -631,9 +633,8 @@ export default function ProductPage() {
                 </div>
 
                 <AddToCartButton
-                  href="/homepage/cart_page"
                   className="w-full"
-                  // onClick={handleAddToCart}
+                  onClick={handleAddToCart}
                 />
               </div>
             </div>

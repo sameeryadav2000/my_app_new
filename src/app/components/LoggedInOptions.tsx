@@ -1,27 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Session } from "next-auth";
 import { RiAccountCircleFill, RiLogoutBoxLine } from "react-icons/ri";
 import { FiPackage } from "react-icons/fi";
 import { AiOutlineHeart } from "react-icons/ai";
 import { BiTransfer } from "react-icons/bi";
-import { ExtendedSession } from "@/app/api/auth/[...nextauth]/route";
 
 interface AccountDropdownProps {
-  session: ExtendedSession | null;
+  session: Session | null;
   onLogout: () => void;
 }
-const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
-  debugger;
+
+export default function LoggedInOptions({
+  session,
+  onLogout,
+}: AccountDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const firstName = session?.user?.firstName;
   const firstLetter = firstName?.charAt(0)?.toUpperCase() || "?";
 
+  const toggleDropdown = () => setIsOpen(!isOpen);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isOpen && !(event.target as Element).closest(".dropdown")) {
+      if (
+        isOpen &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -30,11 +40,9 @@ const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const toggleDropdown = () => setIsOpen(!isOpen);
 
   return (
-    <div className="relative dropdown">
-      {/* Account Icon Button */}
+    <div className="relative dropdown" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
         className="flex items-center gap-2 hover:opacity-80 transition-colors"
@@ -107,6 +115,4 @@ const LoggedInOptions = ({ session, onLogout }: AccountDropdownProps) => {
       )}
     </div>
   );
-};
-
-export default LoggedInOptions;
+}

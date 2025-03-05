@@ -3,29 +3,28 @@
 import React from "react";
 import Link from "next/link";
 
-const Footer = () => {
-  console.log(1);
+const footerSections = {
+  About: [
+    { title: "Our Story", href: "/homepage/about/story" },
+    { title: "Contact Us", href: "/homepage/about/contact" },
+    { title: "Blog", href: "/homepage/about/blog" },
+    { title: "Careers", href: "/homepage/about/careers" },
+  ],
+  Help: [
+    { title: "FAQ", href: "/homepage/help/faq" },
+    { title: "Delivery Information", href: "/homepage/help/delivery" },
+    { title: "Returns", href: "/homepage/help/returns" },
+    { title: "Order Status", href: "/homepage/help/order-status" },
+  ],
+  Services: [
+    { title: "iPhone Repair", href: "/homepage/services/iphone-repair" },
+    { title: "Device Trade-In", href: "/homepage/services/trade-in" },
+    { title: "Insurance", href: "/homepage/services/insurance" },
+    { title: "Warranty", href: "/homepage/services/warranty" },
+  ],
+};
 
-  const footerSections = {
-    About: [
-      { title: "Our Story", href: "/homepage/about/story" },
-      { title: "Contact Us", href: "/homepage/about/contact" },
-      { title: "Blog", href: "/homepage/about/blog" },
-      { title: "Careers", href: "/homepage/about/careers" },
-    ],
-    Help: [
-      { title: "FAQ", href: "/homepage/help/faq" },
-      { title: "Delivery Information", href: "/homepage/help/delivery" },
-      { title: "Returns", href: "/homepage/help/returns" },
-      { title: "Order Status", href: "/homepage/help/order-status" },
-    ],
-    Services: [
-      { title: "iPhone Repair", href: "/homepage/services/iphone-repair" },
-      { title: "Device Trade-In", href: "/homepage/services/trade-in" },
-      { title: "Insurance", href: "/homepage/services/insurance" },
-      { title: "Warranty", href: "/homepage/services/warranty" },
-    ],
-  };
+export default function Footer() {
 
   return (
     <footer className="bg-[#5B4B49] py-12 mt-16 mb-10 w-[95%] mx-auto rounded-xl text-white">
@@ -74,6 +73,4 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

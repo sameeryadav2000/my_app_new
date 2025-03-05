@@ -7,6 +7,7 @@ import slugify from "slugify";
 import Link from "next/link";
 import CardsForPhone from "@/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import CacheVisualizer from "@/app/components/CacheVisualizer";
 
 interface IPhone {
   id: number;
@@ -49,12 +50,21 @@ export default function ProductListingPage() {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [error, setError] = useState<string>("");
 
+  // For debugging - so we can force a cache refresh
+  const [cacheVersion, setCacheVersion] = useState<number>(0);
+
   const params = useParams();
   const title = params.title as string;
 
   const router = useRouter();
 
   const cacheRef = useRef<Record<string, CacheItem>>({});
+
+  // Function to clear the cache for debugging
+  const clearCache = useCallback(() => {
+    cacheRef.current = {};
+    setCacheVersion((prev) => prev + 1);
+  }, []);
 
   // Function to get data either from cache or API
   const fetchCards = useCallback(() => {
@@ -68,6 +78,8 @@ export default function ProductListingPage() {
     const now = Date.now();
 
     if (cachedData && now - cachedData.timestamp < CACHE_EXPIRY) {
+      console.log("Using cached data for:", cacheKey);
+
       // Use cached data if it's fresh
       setCardsData(cachedData.data);
       setTotalItems(cachedData.totalItems);
@@ -76,6 +88,8 @@ export default function ProductListingPage() {
 
       return () => {};
     }
+
+    console.log("Fetching fresh data for:", cacheKey);
 
     // No valid cache, fetch from API
     const abortController = new AbortController();
@@ -253,9 +267,19 @@ export default function ProductListingPage() {
 
   return (
     <div className="w-[95%] md:w-[70%] mx-auto py-8">
-      <h1 className="md:text-4xl text-2xl font-bold mb-8">
-        Verified Refurbished {title}
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="md:text-4xl text-2xl font-bold">
+          Verified Refurbished {title}
+        </h1>
+
+        {/* Debug controls */}
+        <button
+          onClick={clearCache}
+          className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          Clear Cache
+        </button>
+      </div>
 
       <div className="text-gray-500 text-sm mb-6">
         {!isLoading ? (
@@ -351,6 +375,9 @@ export default function ProductListingPage() {
           </div>
         </div>
       )}
+
+      {/* Cache Visualizer */}
+      <CacheVisualizer cache={cacheRef.current} cacheExpiry={CACHE_EXPIRY} />
     </div>
   );
 }

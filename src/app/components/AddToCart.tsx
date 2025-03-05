@@ -3,17 +3,16 @@
 interface AddToCartButtonProps {
   onClick?: () => void;
   className?: string;
-  href?: string;
 }
 
 export default function AddToCartButton({
   onClick,
   className,
-  href,
 }: AddToCartButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // onClick();
+    if (onClick) {
+      onClick();
+    }
   };
 
   return (

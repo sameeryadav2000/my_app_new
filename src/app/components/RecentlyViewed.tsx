@@ -13,42 +13,42 @@ export default function RecentlyViewed() {
   const products = [
     {
       title: "iPhone 1 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-14",
     },
     {
       title: "iPhone 2 (2022) - Usdaasds",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-se-2022",
     },
     {
       title: "iPhone 3 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-11",
     },
     {
       title: "iPhone 4 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-13",
     },
     {
       title: "iPhone 5 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-12",
     },
     {
       title: "iPhone 6 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-xr",
     },
     {
       title: "iPhone 7 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-x",
     },
     {
       title: "iPhone 8 - Unlocked",
-      image: "../../../../iphone_images/phone.jpg",
+      image: "../../../../phone_images/phone.jpg",
       slug: "iphone-8",
     },
   ];

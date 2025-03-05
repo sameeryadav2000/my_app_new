@@ -5,10 +5,9 @@ import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
 import { useSearchParams } from "next/navigation";
 
-const LoginPage = () => {
+export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/homepage";
-  console.log(callbackUrl);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -39,6 +38,4 @@ const LoginPage = () => {
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

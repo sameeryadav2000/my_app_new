@@ -17,17 +17,19 @@ const cardsData = [
 ];
 
 export default function Home() {
+
   return (
     <div>
-      {/* <div>
+      <div>
         <Slideshow />
-      </div> */}
-      {/* <Spacer />
+      </div>
+      <Spacer />
 
       <div>
         <RecentlyViewed />
       </div>
       <Spacer />
+
 
       <div className="w-[95%] md:w-[70%] mx-auto">
         <h2 className="text-2xl font-bold">Shop Most Wanted</h2>
@@ -69,7 +71,7 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div> */}
+      </div>
     </div>
   );
 }

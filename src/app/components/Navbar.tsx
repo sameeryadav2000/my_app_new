@@ -10,7 +10,7 @@ import { useCart } from "@/context/CartContext";
 import { useEffect } from "react";
 
 export default function Navbar() {
-  // const { cart } = useCart();
+  const { cart } = useCart();
 
   // const toggleMenu = () => {
   //   setIsMenuOpen((prev) => !prev);
@@ -21,7 +21,7 @@ export default function Navbar() {
       <Spacer />
 
       <nav className="p-4 justify-between flex bg-[#5B4B49] w-[95%] mx-auto rounded-xl items-center">
-        <div className="flex">
+        <div className="flex md:w-8 md:h-8 w-6 h-6 items-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -73,7 +73,7 @@ export default function Navbar() {
             <LoginLogout />
           </div>
 
-          {/* <div className="flex items-center justify-center cursor-pointer">
+          <div className="flex items-center justify-center cursor-pointer">
             <Link href="/homepage/cart_page">
               <div className="relative transition-colors">
                 <ShoppingCart className="md:w-8 md:h-8 w-6 h-6 text-white hover:text-[#FFC107] transition-all duration-300" />
@@ -84,7 +84,7 @@ export default function Navbar() {
                 )}
               </div>
             </Link>
-          </div> */}
+          </div>
         </div>
       </nav>
 

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 export default function defineConfig(): NextConfig {
   return {
-    reactStrictMode: false,
+    reactStrictMode: true,
 
     async redirects() {
       return [
