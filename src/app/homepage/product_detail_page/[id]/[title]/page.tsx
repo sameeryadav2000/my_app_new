@@ -5,8 +5,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
-// import { CartItem, Cart } from "@/types/cart";
-// import { useCart } from "@/context/CartContext";
+import { CartItem, Cart } from "@/context/CartContext";
+import { useCart } from "@/context/CartContext";
 // import Card from "../../../../components/CardsForPhone";
 import AddToCartButton from "@/app/components/AddToCart";
 // import StickyHeader from "@/app/components/StickyHeader";
@@ -147,9 +147,10 @@ export default function ProductPage() {
     }
   }, [conditionOptions, storageOptions, colorOptions]);
 
-  const currentPagePhoneId = colorOptions
-    .find((option) => option.color === selectedColor)
-    ?.id?.toString();
+  const currentPagePhoneId =
+    colorOptions
+      .find((option) => option.color === selectedColor)
+      ?.id?.toString() || "";
 
   useEffect(() => {
     if (!selectedColor) {
@@ -240,110 +241,91 @@ export default function ProductPage() {
     colorOptions.find((option) => option.color === selectedColor)?.price || 0
   );
 
-  // const { cart, setCart } = useCart(); // Access cart and setCart
-
   // const [selectedColorOther, setSelectedColorother] = useState<string>("Blue");
 
   const { data: session } = useSession();
+  const { cart, setCart } = useCart(); // Access cart and setCart
+
   const router = useRouter();
 
-
   const handleAddToCart = async () => {
-    if (!session) {
-      const imageToUse =
-        modelImages && modelImages.length > 0 ? modelImages[0].image : "";
+    const imageToUse =
+      modelImages && modelImages.length > 0 ? modelImages[0].image : "";
 
-      sessionStorage.setItem(
-        "pendingCartItem",
-        JSON.stringify({
-          id: currentPagePhoneId,
-          title: phoneModelName,
-          condition: selectedCondition,
-          storage: selectedStorage,
-          color: selectedColor,
-          price: priceSelected || 0,
-          image: imageToUse,
-        })
+    // Create a new cart item from the selected options
+    const newItem: CartItem = {
+      id: currentPagePhoneId,
+      title: phoneModelName,
+      condition: selectedCondition,
+      storage: selectedStorage,
+      color: selectedColor,
+      price: priceSelected || 0,
+      quantity: 1,
+      image: imageToUse,
+    };
+
+    // Get existing cart from localStorage
+    const existingCartJson = localStorage.getItem("cart");
+    const existingCart: Cart = existingCartJson
+      ? JSON.parse(existingCartJson)
+      : { items: [], totalItems: 0, subTotalPrice: 0 };
+
+    // Check if this exact item configuration already exists
+    const existingItemIndex = existingCart.items.findIndex(
+      (item) =>
+        item.id === newItem.id &&
+        item.condition === newItem.condition &&
+        item.storage === newItem.storage &&
+        item.color === newItem.color
+    );
+
+    let updatedCart: Cart;
+
+    if (existingItemIndex > -1) {
+      // If item exists, increment its quantity
+      const updatedItems = existingCart.items.map((item, index) =>
+        index === existingItemIndex
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       );
-
-      router.push("/login_signup");
-      return;
+      updatedCart = {
+        items: updatedItems,
+        totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
+        subTotalPrice: updatedItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        ),
+      };
+    } else {
+      // If item doesn't exist, add it to cart
+      updatedCart = {
+        items: [...existingCart.items, newItem],
+        totalItems: existingCart.totalItems + 1,
+        subTotalPrice: existingCart.subTotalPrice + newItem.price,
+      };
     }
 
-    //   // Create a new cart item from the selected options
-    //   const newItem: CartItem = {
-    //     id: selectedCombinationId,
-    //     title: phoneModelName,
-    //     condition: selectedCondition,
-    //     storage: selectedStorage,
-    //     color: selectedColor,
-    //     price: priceSelected || 0,
-    //     quantity: 1,
-    //     image: images[0].url,
-    //   };
+    // Save updated cart to localStorage
+    // localStorage.setItem("cart", JSON.stringify(updatedCart));
+    setCart(updatedCart);
 
-    //   // Get existing cart from localStorage
-    //   const existingCartJson = localStorage.getItem("cart");
-    //   const existingCart: Cart = existingCartJson
-    //     ? JSON.parse(existingCartJson)
-    //     : { items: [], totalItems: 0, totalPrice: 0 };
+    // try {
+    //   const response = await fetch("/api/cart", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({ cartItem: newItem }),
+    //   });
 
-    //   // Check if this exact item configuration already exists
-    //   const existingItemIndex = existingCart.items.findIndex(
-    //     (item) =>
-    //       item.id === newItem.id &&
-    //       item.condition === newItem.condition &&
-    //       item.storage === newItem.storage &&
-    //       item.color === newItem.color
-    //   );
-
-    //   let updatedCart: Cart;
-
-    //   if (existingItemIndex > -1) {
-    //     // If item exists, increment its quantity
-    //     const updatedItems = existingCart.items.map((item, index) =>
-    //       index === existingItemIndex
-    //         ? { ...item, quantity: item.quantity + 1 }
-    //         : item
-    //     );
-    //     updatedCart = {
-    //       items: updatedItems,
-    //       totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-    //       subTotalPrice: updatedItems.reduce(
-    //         (sum, item) => sum + item.price * item.quantity,
-    //         0
-    //       ),
-    //     };
-    //   } else {
-    //     // If item doesn't exist, add it to cart
-    //     updatedCart = {
-    //       items: [...existingCart.items, newItem],
-    //       totalItems: existingCart.totalItems + 1,
-    //       subTotalPrice: existingCart.subTotalPrice + newItem.price,
-    //     };
+    //   if (!response.ok) {
+    //     console.error("Failed to save cart item to database");
+    //     // You might want to show an error message to the user here
     //   }
-    //   // console.log(updatedCart.subTotalPrice);
-    //   // Save updated cart to localStorage
-    //   localStorage.setItem("cart", JSON.stringify(updatedCart));
-    //   setCart(updatedCart);
-
-    //   try {
-    //     const response = await fetch("/api/cart", {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //       },
-    //       body: JSON.stringify({ cartItem: newItem }),
-    //     });
-
-    //     if (!response.ok) {
-    //       console.error("Failed to save cart item to database");
-    //       // You might want to show an error message to the user here
-    //     }
-    //   } catch (error) {
-    //     console.error("Error saving cart item:", error);
-    //     // Handle error appropriately
-    //   }
+    // } catch (error) {
+    //   console.error("Error saving cart item:", error);
+    //   // Handle error appropriately
+    // }
   };
 
   const colors: Record<string, string> = {
@@ -632,10 +614,7 @@ export default function ProductPage() {
                   </div>
                 </div>
 
-                <AddToCartButton
-                  className="w-full"
-                  onClick={handleAddToCart}
-                />
+                <AddToCartButton className="w-full" onClick={handleAddToCart} />
               </div>
             </div>
           </div>
