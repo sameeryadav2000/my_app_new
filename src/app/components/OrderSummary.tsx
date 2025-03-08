@@ -3,7 +3,7 @@
 
 import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
-import Link from 'next/link';
+import Link from "next/link";
 
 interface OrderSummaryProps {
   currentPage: "cart_page" | "shipping_page";
@@ -22,7 +22,7 @@ const OrderSummary = ({ currentPage }: OrderSummaryProps) => {
   };
 
   return (
-    <div className="md:w-[30%]">
+    <div className="md:w-[40%]">
       <div className="w-full bg-gray-50 rounded-lg sticky top-4 p-4">
         <div className="border">
           <h2 className="text-xl font-medium mb-6">Summary</h2>

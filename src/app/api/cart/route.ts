@@ -89,7 +89,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get or create user
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -126,7 +125,9 @@ export async function POST(req: NextRequest) {
         await prisma.cartItem.update({
           where: { id: existingItem.id },
           data: {
-            quantity: isFullCart ? item.quantity : existingItem.quantity + 1,
+            quantity: isFullCart
+              ? existingItem.quantity + item.quantity
+              : existingItem.quantity + 1,
             updatedAt: new Date(),
           },
         });
@@ -158,19 +159,36 @@ export async function POST(req: NextRequest) {
     });
 
     const cartTotal = {
-      items: userCart,
+      items: userCart.map((item) => ({
+        id: item.itemId,
+        title: item.title,
+        condition: item.condition,
+        storage: item.storage,
+        color: item.color,
+        price: parseFloat(item.price.toString()),
+        quantity: item.quantity,
+        image: item.image,
+      })),
       totalItems: userCart.reduce((sum, item) => sum + item.quantity, 0),
       subTotalPrice: userCart.reduce(
-        (sum, item) => sum + Number(item.price) * item.quantity,
+        (sum, item) => sum + parseFloat(item.price.toString()) * item.quantity,
         0
       ),
     };
+
+    // const cartTotal = {
+    //   items: userCart,
+    //   totalItems: userCart.reduce((sum, item) => sum + item.quantity, 0),
+    //   subTotalPrice: userCart.reduce(
+    //     (sum, item) => sum + Number(item.price) * item.quantity,
+    //     0
+    //   ),
+    // };
 
     return NextResponse.json({
       success: true,
       cart: cartTotal,
     });
-    
   } catch (error) {
     console.error("Error updating cart:", error);
     return NextResponse.json(
@@ -183,6 +201,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+
+    const searchParams = req.nextUrl.searchParams;
+    const iphoneModelId = searchParams.get("id");
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -197,9 +218,19 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (!iphoneModelId) {
+      return NextResponse.json(
+        { error: "iPhone model ID is required" },
+        { status: 400 }
+      );
+    }
+
     // Delete all existing cart items for this user
     await prisma.cartItem.deleteMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        itemId: iphoneModelId,
+      },
     });
 
     return NextResponse.json({ success: true });

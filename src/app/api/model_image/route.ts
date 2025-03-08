@@ -6,18 +6,26 @@ import prisma from "../../../../lib/prisma";
 export async function GET(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
-    const iphoneModelId = searchParams.get("iphoneModelId");
+    const iphoneId = searchParams.get("iphoneId");
+    const colorId = searchParams.get("colorId");
 
-    if (!iphoneModelId || isNaN(Number(iphoneModelId))) {
+    if (!iphoneId || isNaN(Number(iphoneId))) {
       return NextResponse.json(
         { message: "Invalid or missing iphoneModelId parameter" },
+        { status: 400 }
+      );
+    }
+    if (!colorId || isNaN(Number(colorId))) {
+      return NextResponse.json(
+        { message: "Invalid or missing colorId parameter" },
         { status: 400 }
       );
     }
 
     const modelImages = await prisma.modelImage.findMany({
       where: {
-        iphoneModelId: parseInt(iphoneModelId),
+        iphoneId: parseInt(iphoneId),
+        colorId: parseInt(colorId),
       },
     });
 

@@ -5,7 +5,7 @@ import React, {
   useState,
   useEffect,
   useContext,
-  useRef,
+  useCallback,
 } from "react";
 import { useSession } from "next-auth/react";
 
@@ -30,6 +30,7 @@ interface CartContextType {
   cart: Cart;
   setCart: (cart: Cart) => void;
   isLoading: boolean;
+  syncCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -45,52 +46,153 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     subTotalPrice: 0,
   });
 
-  // This effect runs when the session status changes
-  useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
+  // // This effect runs when the session status changes
+  // useEffect(() => {
+  //   const abortController = new AbortController();
+  //   const signal = abortController.signal;
 
-    const syncCart = async () => {
+  //   const syncCart = async () => {
+  //     setIsLoading(true);
+
+  //     if (status === "loading") {
+  //       return;
+  //     }
+
+  //     try {
+  //       if (session) {
+  //         const firstSync = localStorage.getItem("firstSyncDone");
+  //         if (!firstSync) {
+  //           const localCartJSON = localStorage.getItem("cart");
+
+  //           if (localCartJSON) {
+  //             const localCart = JSON.parse(localCartJSON);
+
+  //             if (localCart?.items?.length) {
+  //               const response = await fetch("/api/cart", {
+  //                 method: "POST",
+  //                 headers: { "Content-Type": "application/json" },
+  //                 body: JSON.stringify({ cart: localCart }),
+  //                 signal,
+  //               });
+
+  //               if (!response.ok) {
+  //                 throw new Error(`Failed to sync cart: ${response.status}`);
+  //               }
+
+  //               const result = await response.json();
+
+  //               if (result.cart) {
+  //                 setCart(result.cart);
+  //                 setIsLoading(false);
+  //                 localStorage.setItem("firstSyncDone", "completed");
+  //                 return;
+  //               }
+  //             }
+  //           }
+  //         }
+  //         const response = await fetch("/api/cart", { signal });
+
+  //         if (!response.ok) {
+  //           throw new Error(`API responded with status: ${response.status}`);
+  //         }
+
+  //         const result = await response.json();
+
+  //         if (result.cart) {
+  //           setCart(result.cart);
+  //         } else {
+  //           setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
+  //         }
+  //       } else {
+  //         // Check if this is a logout (previously had a session, now doesn't)
+  //         const previouslyLoggedIn = localStorage.getItem("firstSyncDone");
+
+  //         if (previouslyLoggedIn) {
+  //           // Clear all cart-related items from localStorage on logout
+  //           localStorage.removeItem("cart");
+  //           localStorage.removeItem("firstSyncDone");
+  //           // Set empty cart
+  //           setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
+  //         } else {
+  //           try {
+  //             const localCartJSON = localStorage.getItem("cart");
+
+  //             if (localCartJSON) {
+  //               const localCart = JSON.parse(localCartJSON);
+  //               setCart(localCart);
+  //             } else {
+  //               setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
+  //             }
+  //           } catch (error) {
+  //             console.error("Error parsing cart from localStorage:", error);
+  //             setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
+  //           }
+  //         }
+  //       }
+  //     } catch (error) {
+  //       if (error instanceof Error && error.name === "AbortError") {
+  //         console.log("Fetch aborted");
+  //       } else {
+  //         console.error("Failed to fetch or sync cart:", error);
+  //       }
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   syncCart();
+
+  //   return () => {
+  //     abortController.abort();
+  //   };
+  // }, [session, status]);
+
+  // Extract syncCart as a memoized function using useCallback
+  const syncCart = useCallback(
+    async (signal?: AbortSignal) => {
       setIsLoading(true);
 
       if (status === "loading") {
+        setIsLoading(false);
         return;
       }
 
       try {
-        if () {
-          const localCartJSON = localStorage.getItem("cart");
+        if (session) {
+          const firstSync = localStorage.getItem("firstSyncDone");
+          if (!firstSync) {
+            const localCartJSON = localStorage.getItem("cart");
 
-          if (localCartJSON) {
-            const localCart = JSON.parse(localCartJSON);
+            if (localCartJSON) {
+              const localCart = JSON.parse(localCartJSON);
 
-            if (localCart?.items?.length) {
-              const response = await fetch("/api/cart", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ cart: localCart }),
-                signal,
-              });
+              if (localCart?.items?.length) {
+                const response = await fetch("/api/cart", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ cart: localCart }),
+                });
 
-              if (!response.ok) {
-                throw new Error(`Failed to sync cart: ${response.status}`);
-              }
+                if (!response.ok) {
+                  throw new Error(`Failed to sync cart: ${response.status}`);
+                }
 
-              const result = await response.json();
+                const result = await response.json();
 
-              if (result.cart) {
-                setCart(result.cart);
-                setIsLoading(false);
-                return;
+                if (result.cart) {
+                  setCart(result.cart);
+                  setIsLoading(false);
+                  localStorage.setItem("firstSyncDone", "completed");
+                  return;
+                }
               }
             }
           }
-        }
+          debugger;
 
-        // Standard cart fetching logic
-        if (session) {
-          // Fetch cart from database when logged in
-          const response = await fetch("/api/cart", { signal });
+          const response = await fetch("/api/cart", {
+            signal: signal,
+          });
 
           if (!response.ok) {
             throw new Error(`API responded with status: ${response.status}`);
@@ -104,19 +206,29 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
           }
         } else {
-          // Get cart from localStorage when not logged in
-          try {
-            const localCartJSON = localStorage.getItem("cart");
+          // Check if this is a logout (previously had a session, now doesn't)
+          const previouslyLoggedIn = localStorage.getItem("firstSyncDone");
 
-            if (localCartJSON) {
-              const localCart = JSON.parse(localCartJSON);
-              setCart(localCart);
-            } else {
+          if (previouslyLoggedIn) {
+            // Clear all cart-related items from localStorage on logout
+            localStorage.removeItem("cart");
+            localStorage.removeItem("firstSyncDone");
+            // Set empty cart
+            setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
+          } else {
+            try {
+              const localCartJSON = localStorage.getItem("cart");
+
+              if (localCartJSON) {
+                const localCart = JSON.parse(localCartJSON);
+                setCart(localCart);
+              } else {
+                setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
+              }
+            } catch (error) {
+              console.error("Error parsing cart from localStorage:", error);
               setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
             }
-          } catch (error) {
-            console.error("Error parsing cart from localStorage:", error);
-            setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
           }
         }
       } catch (error) {
@@ -128,14 +240,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       } finally {
         setIsLoading(false);
       }
-    };
+    },
+    [session, status]
+  );
 
-    syncCart();
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    syncCart(abortController.signal).catch((error: unknown) => {
+      if (error instanceof Error && error.name !== "AbortError") {
+        console.error("Error in initial syncCart:", error);
+      }
+    });
 
     return () => {
       abortController.abort();
     };
-  }, [session, status]);
+  }, [syncCart]);
 
   // Listen for storage events (changes from other tabs)
   useEffect(() => {
@@ -158,7 +279,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Update localStorage when cart changes
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !localStorage.getItem("firstSyncDone")) {
       if (cart.items.length > 0) {
         localStorage.setItem("cart", JSON.stringify(cart));
       } else if (cart.items.length === 0 && localStorage.getItem("cart")) {
@@ -168,7 +289,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   }, [cart, isLoading]);
 
   return (
-    <CartContext.Provider value={{ cart, setCart, isLoading }}>
+    <CartContext.Provider value={{ cart, setCart, isLoading, syncCart }}>
       {children}
     </CartContext.Provider>
   );

@@ -56,9 +56,12 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         color: true,
+        colorId: true,
+        iphoneId: true,
         price: true,
       },
     });
+    
 
     return NextResponse.json({ result: colorOptions });
   } catch (error) {

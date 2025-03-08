@@ -28,42 +28,45 @@ model Phone {
 }
 
 model Iphone {
-  id         Int     @id @default(autoincrement())
-  bestseller Boolean @default(false)
-  title      String  @db.VarChar(255)
+  id         Int           @id @default(autoincrement())
+  bestseller Boolean       @default(false)
+  title      String        @db.VarChar(255)
   price      Float
-  image      String  @db.VarChar(255)
-  carrier    String  @db.VarChar(50)
+  image      String        @db.VarChar(255)
+  carrier    String        @db.VarChar(50)
 
   models     IphoneModels[]
+  images     ModelImage[]   
 }
 
 model IphoneModels {
-  id        Int       @id @default(autoincrement())
-  title     String    @db.VarChar(255)
+  id        Int         @id @default(autoincrement())
+  title     String      @db.VarChar(255)
   iphoneId  Int     
-  iphone    Iphone    @relation(fields: [iphoneId], references: [id])
-  storage   String    @db.VarChar(50)
-  condition String    @db.VarChar(50)
-  color     String    @db.VarChar(50)
-  carrier   String    @db.VarChar(50)
-  available Boolean   @default(true)
+  iphone    Iphone      @relation(fields: [iphoneId], references: [id])
+  storage   String      @db.VarChar(50)
+  condition String      @db.VarChar(50)
+  color     String      @db.VarChar(50)
+  colorId   Int?        
+  carrier   String      @db.VarChar(50)
+  available Boolean     @default(true)
   price     Float
-  images    ModelImage[] // New relation to ModelImage
-  reviews   Review[]  // Add relation to reviews
+  reviews   Review[]
   
   @@index([iphoneId])
+  @@index([colorId])
 }
 
 model ModelImage {
   id           Int          @id @default(autoincrement())
   image        String       @db.VarChar(255)
-  iphoneModelId Int         
-  iphoneModel  IphoneModels @relation(fields: [iphoneModelId], references: [id])
+  colorId      Int?         
+  iphoneId      Int?          // Made nullable to maintain compatibility
+  iphone        Iphone?       @relation(fields: [iphoneId], references: [id])
 
-  @@index([iphoneModelId])
+  @@index([iphoneId])
+  @@index([colorId])
 }
-
 
 model ShippingInfo {
   id        String   @id @default(uuid())

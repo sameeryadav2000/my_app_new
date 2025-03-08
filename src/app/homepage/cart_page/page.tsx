@@ -1,87 +1,85 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
-import { Cart } from "@/types/cart";
 import OrderSummary from "@/app/components/OrderSummary";
 
 export default function CartPage() {
-  const { cart, setCart } = useCart();
-
-  console.log(cart.items);
+  const { cart, setCart, syncCart } = useCart();
 
   const handleRemove = async (id: string) => {
+    const abortController = new AbortController();
+    const signal = abortController.signal;
+
     try {
       // Sync with server first
       const response = await fetch(`/api/cart?id=${id}`, {
         method: "DELETE",
+        signal,
       });
+
       if (!response.ok) {
-        throw new Error("Failed to remove item from server");
+        throw new Error("Failed to remove item from cart");
+      } else {
+        await syncCart();
       }
-
-      // Get cart from localStorage (since you add to it there)
-      const existingCartJson = localStorage.getItem("cart");
-      if (!existingCartJson) return;
-
-      const existingCart: Cart = JSON.parse(existingCartJson);
-      const updatedItems = existingCart.items.filter((item) => item.id !== id);
-      const updatedCart = {
-        items: updatedItems,
-        totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-        subTotalPrice: updatedItems.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        ),
-      };
-
-      // Update localStorage and CartContext
-      localStorage.setItem("cart", JSON.stringify(updatedCart));
-      setCart(updatedCart);
     } catch (error) {
-      console.error("Error removing cart item:", error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.error("Delete aborted");
+      } else {
+        console.error("Error removing cart item:", error);
+      }
     }
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-between w-4/5 mx-auto gap-8">
-      <div className="md:w-[70%] p-5">
+    <div className="flex flex-col md:flex-row justify-between w-[70%] mx-auto gap-8">
+      <div className="md:w-[60%] rounded-xl shadow-lg">
         {cart.items && cart.items.length > 0 ? (
           cart.items.map((item) => (
             <div
               key={item.id}
-              className="flex md:flex-row flex-col gap-4 border-b py-4"
+              className="flex md:flex-row flex-col gap-6 border-b border-gray-200 py-6 transition-all duration-300 hover:bg-white hover:shadow-md rounded-lg px-4"
             >
-              <div className="md:w-1/4 w-2/4">
+              <div className="md:w-1/4 w-full flex justify-center">
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="w-full max-h-[150px] object-contain"
+                  className="w-full max-h-[180px] object-contain rounded-lg transform hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="flex-1">
-                <h2>{item.title}</h2>
-                <p>Condition: {item.condition}</p>
-                <p>Storage: {item.storage}</p>
-                <p>Color: {item.color}</p>
-                <p>Price: ${item.price}</p>
-                <p>
-                  Quantity:
-                  <span className="ml-2 bg-gray-200 px-2 py-1 rounded">
+
+              <div className="flex-1 space-y-2">
+                <h2 className="text-xl font-semibold text-gray-800 tracking-tight hover:text-indigo-600 transition-colors duration-200">
+                  {item.title}
+                </h2>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-800">Condition:</span>{" "}
+                  {item.condition}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-800">Storage:</span>{" "}
+                  {item.storage}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-800">Color:</span>{" "}
+                  {item.color}
+                </p>
+                <p className="text-lg font-bold text-gray-900">${item.price}</p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium text-gray-800">Quantity:</span>
+                  <span className="ml-2 bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-semibold">
                     {item.quantity}
                   </span>
                 </p>
               </div>
 
-              {/* Button to remove item */}
-              <div className="flex justify-between items-start gap-4">
-                {/* Quantity display */}
-                <span className="bg-gray-300 text-center px-10 py-2 rounded">
+              <div className="flex md:flex-col flex-row justify-between items-center gap-4">
+                <span className="bg-gray-200 text-gray-800 text-center px-6 py-2 rounded-full font-medium text-sm w-20">
                   {item.quantity}
                 </span>
 
-                {/* Remove button */}
                 <button
-                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                  className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-full font-medium text-sm shadow-md hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-300"
                   onClick={() => handleRemove(item.id)}
                 >
                   Remove
@@ -90,86 +88,18 @@ export default function CartPage() {
             </div>
           ))
         ) : (
-          <p>Your cart is empty.</p>
+          <div className="text-center py-12">
+            <p className="text-lg font-medium text-gray-700 tracking-wide">
+              Your cart is empty.
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Explore our collection to find something exquisite.
+            </p>
+          </div>
         )}
-        {/* <div className="flex flex-col md:flex-row gap-4 border">
-          <div className="border">
-            <img
-              src="../../../../iphone_images/image.png"
-              alt="placeholder"
-              className="w-full max-h-[200px] object-contain"
-            />
-          </div>
-
-          <div className="pl-10 border flex-1">
-            <p>Text content goes here</p>
-            <p>Text content goes here</p>
-            <p>Text content goes here</p>
-            <p>Text content goes here</p>
-            <p>Text content goes here</p>
-            <p>Text content goes here</p>
-          </div>
-
-          <div className="flex ml-auto gap-5 items-center">
-            <div className="border flex justify-center items-center">
-              <span className="px-4 py-2 bg-gray-500 text-white">Remove</span>
-            </div>
-            <div className="border flex justify-center items-center">
-              <button className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600">
-                Remove
-              </button>
-            </div>
-          </div>
-        </div> */}
       </div>
 
-      <OrderSummary currentPage="cart_page" />
-
-      {/* 
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-6">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            <span>Secure payment</span>
-          </div>
-
-          <p className="text-xs text-gray-600 mb-6">
-            By confirming this order you accept our{" "}
-            <a href="#" className="underline">
-              Terms of Service Agreement
-            </a>{" "}
-            and our{" "}
-            <a href="#" className="underline">
-              Data Protection Policy
-            </a>
-          </p>
-
-          <div className="flex gap-2 flex-wrap mb-6">
-            <div className="h-8 w-12 bg-gray-200 rounded"></div>
-            <div className="h-8 w-12 bg-gray-200 rounded"></div>
-            <div className="h-8 w-12 bg-gray-200 rounded"></div>
-            <div className="h-8 w-12 bg-gray-200 rounded"></div>
-            <div className="h-8 w-12 bg-gray-200 rounded"></div>
-          </div>
-
-          <div className="flex items-center gap-2 p-3 border rounded-lg mb-4">
-            <div className="h-6 w-12 bg-gray-200 rounded"></div>
-            <span className="text-sm">Pay over time</span>
-          </div>
-
-          <p className="text-sm text-gray-500 text-center">
-            Items in the cart aren't reserved
-          </p> */}
+      {/* <OrderSummary currentPage="cart_page" /> */}
     </div>
   );
 }

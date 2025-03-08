@@ -25,6 +25,8 @@ interface ColorOption {
   id: string | number;
   color: string;
   price: number | string;
+  iphoneId: number | string;
+  colorId: number | string;
 }
 
 interface ModelImage {
@@ -150,7 +152,12 @@ export default function ProductPage() {
   const currentPagePhoneId =
     colorOptions
       .find((option) => option.color === selectedColor)
-      ?.id?.toString() || "";
+      ?.iphoneId?.toString() || "";
+
+  const currentPageColorId =
+    colorOptions
+      .find((option) => option.color === selectedColor)
+      ?.colorId?.toString() || "";
 
   useEffect(() => {
     if (!selectedColor) {
@@ -164,7 +171,7 @@ export default function ProductPage() {
       setIsLoadingImage(true);
       try {
         const response = await fetch(
-          `/api/model_image?iphoneModelId=${currentPagePhoneId}`,
+          `/api/model_image?iphoneId=${currentPagePhoneId}&colorId=${currentPageColorId}`,
           { signal }
         );
 
@@ -244,19 +251,26 @@ export default function ProductPage() {
   // const [selectedColorOther, setSelectedColorother] = useState<string>("Blue");
 
   const { data: session } = useSession();
-  const { cart, setCart } = useCart(); // Access cart and setCart
+  const { setCart } = useCart(); // Access cart and setCart
 
   const router = useRouter();
 
+  const phoneId =
+    colorOptions
+      .find((option) => option.color === selectedColor)
+      ?.id?.toString() || "";
+
   const handleAddToCart = async () => {
+    debugger;
     const imageToUse =
       modelImages && modelImages.length > 0 ? modelImages[0].image : "";
 
-    // Create a new cart item from the selected options
+    // // Create a new cart item from the selected options
     const newItem: CartItem = {
-      id: currentPagePhoneId,
+      id: phoneId,
       title: phoneModelName,
-      condition: selectedCondition,
+      condition:
+        selectedCondition.charAt(0).toUpperCase() + selectedCondition.slice(1),
       storage: selectedStorage,
       color: selectedColor,
       price: priceSelected || 0,
@@ -305,27 +319,33 @@ export default function ProductPage() {
       };
     }
 
-    // Save updated cart to localStorage
-    // localStorage.setItem("cart", JSON.stringify(updatedCart));
-    setCart(updatedCart);
+    if (session) {
+      try {
+        const response = await fetch("/api/cart", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ cartItem: newItem }),
+        });
 
-    // try {
-    //   const response = await fetch("/api/cart", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify({ cartItem: newItem }),
-    //   });
+        if (!response.ok) {
+          throw new Error(`Failed to sync cart: ${response.status}`);
+        }
+        debugger;
 
-    //   if (!response.ok) {
-    //     console.error("Failed to save cart item to database");
-    //     // You might want to show an error message to the user here
-    //   }
-    // } catch (error) {
-    //   console.error("Error saving cart item:", error);
-    //   // Handle error appropriately
-    // }
+        const result = await response.json();
+
+        if (result.cart) {
+          setCart(result.cart);
+        }
+      } catch (error) {
+        console.error("Error saving cart item:", error);
+        // Handle error appropriately
+      }
+    } else {
+      setCart(updatedCart);
+    }
   };
 
   const colors: Record<string, string> = {
