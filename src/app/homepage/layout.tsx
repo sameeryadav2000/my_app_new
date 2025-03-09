@@ -8,6 +8,8 @@ import AuthProvider from "../components/AuthProvider";
 import SessionGuard from "@/app/components/SessionGuard";
 import { CartProvider } from "@/context/CartContext";
 import Footer from "@/app/components/Footer";
+import { LoadingProvider } from "@/context/LoadingContext";
+
 // import CartRecovery from "@/app/components/CartRecovery";
 
 const geistSans = Geist({
@@ -38,10 +40,12 @@ export default function RootLayout({
         <AuthProvider>
           <SessionGuard>
             <CartProvider>
-              {/* <CartRecovery /> */}
-              <Navbar />
-              {children}
-              <Footer />
+              <LoadingProvider>
+                {/* <CartRecovery /> */}
+                <Navbar />
+                {children}
+                <Footer />
+              </LoadingProvider>
             </CartProvider>
           </SessionGuard>
         </AuthProvider>

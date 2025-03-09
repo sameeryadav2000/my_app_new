@@ -261,7 +261,6 @@ export default function ProductPage() {
       ?.id?.toString() || "";
 
   const handleAddToCart = async () => {
-    debugger;
     const imageToUse =
       modelImages && modelImages.length > 0 ? modelImages[0].image : "";
 
@@ -332,7 +331,6 @@ export default function ProductPage() {
         if (!response.ok) {
           throw new Error(`Failed to sync cart: ${response.status}`);
         }
-        debugger;
 
         const result = await response.json();
 

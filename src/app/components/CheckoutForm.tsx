@@ -33,10 +33,8 @@ export default function CheckoutForm({
     }
 
     setIsProcessing(true);
-    setPaymentError("");
 
     try {
-      // Confirm the payment
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -66,7 +64,6 @@ export default function CheckoutForm({
         );
         setIsProcessing(false);
       }
-      // If successful, user gets redirected to confirmation page
     } catch (error) {
       console.error("Payment error:", error);
       setPaymentError("An unexpected error occurred. Please try again.");
@@ -77,30 +74,38 @@ export default function CheckoutForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Payment Element */}
+      <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+        <PaymentElement />
+      </div>
 
+      {/* Error Message */}
       {paymentError && (
-        <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+        <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg shadow-sm transition-all duration-300">
           {paymentError}
         </div>
       )}
 
+      {/* Pay Button */}
       <button
         disabled={isProcessing || !stripe || !elements}
-        className={`w-full flex items-center justify-center py-3 px-4 rounded-lg transition-colors ${
+        className={`w-full flex items-center justify-center py-3.5 px-4 rounded-lg font-semibold text-white shadow-md transition-all duration-300 ${
           isProcessing || !stripe || !elements
             ? "bg-gray-400 cursor-not-allowed"
-            : "bg-black text-white hover:bg-gray-800"
+            : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-lg"
         }`}
       >
-        <FaLock className="mr-2 h-4 w-4" />
+        <FaLock className="mr-2 h-5 w-5" />
         {isProcessing ? "Processing..." : `Pay $${totalAmount.toFixed(2)}`}
       </button>
 
-      <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
-        <FaLock className="h-4 w-4" />
-        <span>Your payment information is secure and encrypted</span>
+      {/* Security Note */}
+      <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600 bg-gray-50 py-2 rounded-lg">
+        <FaLock className="h-4 w-4 text-purple-600" />
+        <span className="font-medium">
+          Your payment information is secure and encrypted
+        </span>
       </div>
     </form>
   );

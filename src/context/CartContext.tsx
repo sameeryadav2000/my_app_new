@@ -153,7 +153,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
 
       if (status === "loading") {
-        setIsLoading(false);
+        // setIsLoading(false);
         return;
       }
 
@@ -188,7 +188,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
               }
             }
           }
-          debugger;
 
           const response = await fetch("/api/cart", {
             signal: signal,

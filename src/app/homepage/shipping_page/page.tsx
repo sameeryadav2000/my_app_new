@@ -1,6 +1,7 @@
 // src/app/homepage/shipping_page/page.tsx
 "use client";
 
+import { useLoading } from "@/context/LoadingContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "../../../context/CartContext";
@@ -19,13 +20,14 @@ interface ShippingForm {
 }
 
 export default function ShippingPage() {
-  const router = useRouter();
-  const { cart } = useCart();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showLoading, hideLoading } = useLoading();
   const { data: session, status } = useSession();
-  const [isEditing, setIsEditing] = useState(false); // Toggle between display and edit mode
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
   const [savedShippingInfo, setSavedShippingInfo] =
-    useState<ShippingForm | null>(null); // Store fetched data
+    useState<ShippingForm | null>(null);
 
   const [shippingInfo, setShippingInfo] = useState<ShippingForm>({
     firstName: "",
@@ -38,43 +40,55 @@ export default function ShippingPage() {
     zipCode: "",
   });
 
-  useEffect(() => {
-    if (status === "loading") return; // Wait for session to load
-    if (!session || !session.user) {
-      router.push("/login_signup");
-    }
-  }, [status, session, router]);
-
-  // useEffect(() => {
-  //   if (!cart.items || cart.items.length === 0) {
-  //     router.push("/homepage/cart_page");
-  //   }
-  // }, [cart.items, router]);
-
   // Fetch shipping info
   useEffect(() => {
-    if (status !== "authenticated" || !session?.user?.id) return;
+    const abortController = new AbortController();
+    const signal = abortController.signal;
 
     const fetchShippingInfo = async () => {
+      showLoading();
+
       try {
-        const response = await fetch(`/api/shipping`);
-        const data = await response.json();
-        if (response.ok && data) {
-          setSavedShippingInfo(data);
-          setShippingInfo(data);
-          sessionStorage.setItem("shippingInfo", JSON.stringify(data));
+        // First check if shipping info exists in sessionStorage
+        const storedShippingInfo = sessionStorage.getItem("shippingInfo");
+
+        if (storedShippingInfo) {
+          // If it exists in session storage, parse and use it
+          const parsedInfo = JSON.parse(storedShippingInfo);
+          setSavedShippingInfo(parsedInfo);
+          hideLoading();
+          return; // Exit early since we already have the data
+        }
+
+
+        const response = await fetch("/api/shipping", { signal });
+
+        if (!response.ok) {
+          throw new Error(`API responded with status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.shippingInfo) {
+          setSavedShippingInfo(result.shippingInfo);
+          sessionStorage.setItem(
+            "shippingInfo",
+            JSON.stringify(result.shippingInfo)
+          );
         }
       } catch (error) {
-        console.error("Error fetching shipping info:", error);
+        if (error instanceof Error && error.name === "AbortError") {
+          console.log("Fetch aborted");
+        } else {
+          console.error("Error fetching shipping info:", error);
+        }
+      } finally {
+        hideLoading();
       }
     };
 
     fetchShippingInfo();
-  }, [session, status]);
-
-  const handleBackToCart = () => {
-    router.push("/homepage/cart_page");
-  };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -86,7 +100,7 @@ export default function ShippingPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    showLoading();
 
     try {
       const response = await fetch("/api/shipping", {
@@ -96,25 +110,23 @@ export default function ShippingPage() {
         },
         body: JSON.stringify({
           ...shippingInfo,
-          userId: session?.user?.id,
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Failed to save shipping information");
+        throw new Error(
+          `Failed to save shipping information: ${response.status}`
+        );
       }
+      const result = await response.json();
 
-      // If save is successful, save to session storage as backup
-      sessionStorage.setItem("shippingInfo", JSON.stringify(shippingInfo));
-      setSavedShippingInfo(shippingInfo);
+      setSavedShippingInfo(result.shippingInfo);
+      sessionStorage.setItem('shippingInfo', JSON.stringify(result.shippingInfo));
       setIsEditing(false);
-      // Navigate to payment page
     } catch (error) {
       console.error("Error saving shipping information:", error);
     } finally {
-      setIsSubmitting(false);
+      hideLoading();
     }
   };
 
@@ -122,57 +134,61 @@ export default function ShippingPage() {
     setIsEditing(true);
   };
 
-  // Render nothing until session is resolved
-  if (status === "loading") {
-    return <div>Loading...</div>;
-  }
-
-  if (!session || !session.user) {
-    return null; // Router will handle redirect
-  }
-
   return (
     <div className="flex flex-col md:flex-row justify-between w-4/5 mx-auto gap-8">
       <div className="md:w-[70%] p-5">
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={handleBackToCart}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            ← Back to cart
-          </button>
+        <div className="mb-6">
           <h2 className="text-2xl font-bold">Shipping Information</h2>
         </div>
 
         {savedShippingInfo && !isEditing ? (
-          <div className="bg-gray-100 p-6 rounded-lg space-y-4">
-            <p>
-              <strong>Name:</strong> {savedShippingInfo.firstName}{" "}
-              {savedShippingInfo.lastName}
-            </p>
-            <p>
-              <strong>Email:</strong> {savedShippingInfo.email}
-            </p>
-            <p>
-              <strong>Phone:</strong> {savedShippingInfo.phone}
-            </p>
-            <p>
-              <strong>Address:</strong> {savedShippingInfo.address},{" "}
-              {savedShippingInfo.city}, {savedShippingInfo.state}{" "}
-              {savedShippingInfo.zipCode}
-            </p>
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl mx-auto space-y-5">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
+              <p className="text-gray-800">
+                <strong className="font-semibold text-purple-700">Name:</strong>{" "}
+                {savedShippingInfo.firstName} {savedShippingInfo.lastName}
+              </p>
+            </div>
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
+              <p className="text-gray-800">
+                <strong className="font-semibold text-purple-700">
+                  Email:
+                </strong>{" "}
+                {savedShippingInfo.email}
+              </p>
+            </div>
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
+              <p className="text-gray-800">
+                <strong className="font-semibold text-purple-700">
+                  Phone:
+                </strong>{" "}
+                {savedShippingInfo.phone}
+              </p>
+            </div>
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
+              <p className="text-gray-800">
+                <strong className="font-semibold text-purple-700">
+                  Address:
+                </strong>{" "}
+                {savedShippingInfo.address}, {savedShippingInfo.city},{" "}
+                {savedShippingInfo.state} {savedShippingInfo.zipCode}
+              </p>
+            </div>
             <button
               onClick={handleEdit}
-              className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
+              className="w-full py-3 rounded-lg font-semibold text-white shadow-md bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-lg transition-all duration-300"
             >
               Edit
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSave} className="space-y-6">
+          <form
+            onSubmit={handleSave}
+            className="space-y-8 bg-white p-6 rounded-xl shadow-lg max-w-3xl mx-auto"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   First Name
                 </label>
                 <input
@@ -180,12 +196,12 @@ export default function ShippingPage() {
                   name="firstName"
                   value={shippingInfo.firstName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Last Name
                 </label>
                 <input
@@ -193,15 +209,15 @@ export default function ShippingPage() {
                   name="lastName"
                   value={shippingInfo.lastName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Email
                 </label>
                 <input
@@ -209,12 +225,12 @@ export default function ShippingPage() {
                   name="email"
                   value={shippingInfo.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Phone Number
                 </label>
                 <input
@@ -222,14 +238,14 @@ export default function ShippingPage() {
                   name="phone"
                   value={shippingInfo.phone}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="relative">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Street Address
               </label>
               <input
@@ -237,14 +253,14 @@ export default function ShippingPage() {
                 name="address"
                 value={shippingInfo.address}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   City
                 </label>
                 <input
@@ -252,12 +268,12 @@ export default function ShippingPage() {
                   name="city"
                   value={shippingInfo.city}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   State
                 </label>
                 <input
@@ -265,12 +281,12 @@ export default function ShippingPage() {
                   name="state"
                   value={shippingInfo.state}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="relative">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   ZIP Code
                 </label>
                 <input
@@ -278,30 +294,40 @@ export default function ShippingPage() {
                   name="zipCode"
                   value={shippingInfo.zipCode}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
                   required
                 />
               </div>
             </div>
 
-            <div>
+            <div className="flex flex-col sm:flex-row gap-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full py-3 rounded-lg transition-colors ${
+                className={`w-full py-3.5 rounded-lg font-semibold text-white shadow-md transition-all duration-300 ${
                   isSubmitting
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-black text-white hover:bg-gray-800"
+                    : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-lg"
                 }`}
               >
                 {isSubmitting ? "Saving..." : "Save and Continue to Payment"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="w-full sm:w-1/3 py-3.5 rounded-lg font-semibold text-gray-700 shadow-md bg-gray-100 hover:bg-gray-200 hover:shadow-lg transition-all duration-300"
+              >
+                Cancel
               </button>
             </div>
           </form>
         )}
       </div>
 
-      <OrderSummary currentPage="shipping_page" />
+      <OrderSummary
+        currentPage="shipping_page"
+        shippingInfoComplete={!!savedShippingInfo}
+      />
     </div>
   );
 }

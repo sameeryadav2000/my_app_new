@@ -4,7 +4,7 @@ import { useCart } from "@/context/CartContext";
 import OrderSummary from "@/app/components/OrderSummary";
 
 export default function CartPage() {
-  const { cart, setCart, syncCart } = useCart();
+  const { cart, syncCart } = useCart();
 
   const handleRemove = async (id: string) => {
     const abortController = new AbortController();
@@ -33,7 +33,7 @@ export default function CartPage() {
 
   return (
     <div className="flex flex-col md:flex-row justify-between w-[70%] mx-auto gap-8">
-      <div className="md:w-[60%] rounded-xl shadow-lg">
+      <div className="md:w-[60%] rounded-xl">
         {cart.items && cart.items.length > 0 ? (
           cart.items.map((item) => (
             <div
@@ -99,7 +99,7 @@ export default function CartPage() {
         )}
       </div>
 
-      {/* <OrderSummary currentPage="cart_page" /> */}
+      <OrderSummary currentPage="cart_page" />
     </div>
   );
 }

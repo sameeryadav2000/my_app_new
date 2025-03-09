@@ -176,15 +176,6 @@ export async function POST(req: NextRequest) {
       ),
     };
 
-    // const cartTotal = {
-    //   items: userCart,
-    //   totalItems: userCart.reduce((sum, item) => sum + item.quantity, 0),
-    //   subTotalPrice: userCart.reduce(
-    //     (sum, item) => sum + Number(item.price) * item.quantity,
-    //     0
-    //   ),
-    // };
-
     return NextResponse.json({
       success: true,
       cart: cartTotal,

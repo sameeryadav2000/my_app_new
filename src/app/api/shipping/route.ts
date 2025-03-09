@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     // Get the user's session
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Get the shipping data from request
@@ -35,7 +35,6 @@ export async function POST(request: Request) {
     let savedShipping;
 
     if (existingItem) {
-      // Update quantity if item exists
       savedShipping = await prisma.shippingInfo.update({
         where: { userId: session.user.id },
         data: {
@@ -50,7 +49,6 @@ export async function POST(request: Request) {
         },
       });
     } else {
-      // Create new cart item if it doesn't exist
       savedShipping = await prisma.shippingInfo.create({
         data: {
           firstName: shippingData.firstName,
@@ -66,30 +64,18 @@ export async function POST(request: Request) {
       });
     }
 
-    // Send success response
     return NextResponse.json(
       {
         message: "Shipping information saved",
-        data: savedShipping,
+        shippingInfo: savedShipping,
       },
       { status: 201 }
     );
   } catch (error) {
-    let errorMessage = "Failed to delete item";
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      console.error("Error posting cart item:", error.message);
-    } else {
-      console.error("Error posting cart item:", String(error));
-    }
+    console.error("Error posting cart item:", error);
 
-    // Send error response
     return NextResponse.json(
-      {
-        message: "Failed to save shipping information",
-        error:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      },
+      { message: "Failed to save shipping information" },
       { status: 500 }
     );
   }
@@ -97,12 +83,10 @@ export async function POST(request: Request) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Get the session from the server
     const session = await getServerSession(authOptions);
 
-    // Check if user is authenticated
-    if (!session || !session.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -112,18 +96,14 @@ export async function GET(req: NextRequest) {
       where: { userId },
     });
 
-    if (!shippingInfo) {
-      return NextResponse.json(
-        { message: "No shipping information found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(shippingInfo, { status: 200 });
+    return NextResponse.json({
+      success: true,
+      shippingInfo: shippingInfo || null,
+    });
   } catch (error) {
     console.error("Error fetching shipping info:", error);
     return NextResponse.json(
-      { message: "Internal server error" },
+      { message: "Failed to fetch shipping info" },
       { status: 500 }
     );
   }
