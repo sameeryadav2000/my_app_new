@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
         id: item.itemId,
         title: item.title,
         condition: item.condition,
+        orderId: item.orderId,
         storage: item.storage,
         color: item.color,
         price: parseFloat(item.price.toString()),

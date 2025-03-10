@@ -66,27 +66,35 @@ export async function GET(request: NextRequest) {
 }
 
 // POST a new review
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
-  // Check if user is authenticated
-  if (!session || !session.user) {
+  if (!session?.user?.email) {
     return NextResponse.json(
-      { error: "Authentication required" },
+      {
+        success: false,
+        error: "You must be logged in to submit a review",
+      },
       { status: 401 }
     );
   }
 
   try {
-    const { rating, title, comment, modelId } = await request.json();
+    const body = await req.json();
+    const { productId, rating, title, review: reviewText } = body;
 
-    // Validate input
-    if (!rating || !title || !comment || !modelId) {
+    if (!productId || !rating || !title || !reviewText) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        {
+          success: false,
+          error: "Missing required fields",
+        },
         { status: 400 }
       );
     }
+
+    const parsedModelId =
+      typeof productId === "string" ? parseInt(productId, 10) : productId;
 
     // Get user from database based on email from session
     const user = await prisma.user.findUnique({
@@ -94,25 +102,48 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User not found",
+        },
+        { status: 404 }
+      );
     }
+
+    const existingReview = await prisma.review.findFirst({
+      where: {
+        userId: user.id,
+        modelId: parsedModelId,
+      },
+    });
 
     // Create the review
     const review = await prisma.review.create({
       data: {
         rating,
         title,
-        comment,
+        comment: reviewText,
         userId: user.id,
-        modelId: parseInt(modelId),
+        modelId: parsedModelId,
       },
     });
 
-    return NextResponse.json({ review }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Review submitted successfully",
+        review: review,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating review:", error);
     return NextResponse.json(
-      { error: "Failed to create review" },
+      {
+        success: false,
+        error: "Failed to create review",
+      },
       { status: 500 }
     );
   }
