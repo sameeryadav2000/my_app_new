@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCart } from "@/context/CartContext";
+import { useCart, CartItem } from "@/context/CartContext";
 import Link from "next/link";
 import {
   FaCheckCircle,
@@ -13,25 +13,36 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 import { getStripePromise } from "../../../../lib/stripe_client";
+import { ShippingForm } from "@/app/homepage/shipping_page/page";
 
 interface OrderDetails {
   orderNumber: string;
-  items: any[];
+  items: CartItem[];
   total: number;
-  shippingInfo: any;
+  shippingInfo: ShippingForm;
 }
 
 export default function OrderConfirmationPage() {
-  const { setCart } = useCart();
+  const { cart, setCart, isLoading: isCartLoading } = useCart();
 
   const [orderStatus, setOrderStatus] = useState<
     "success" | "processing" | "error"
   >("processing");
+
   const [orderDetails, setOrderDetails] = useState<OrderDetails>({
     orderNumber: "",
     items: [],
     total: 0,
-    shippingInfo: null,
+    shippingInfo: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+    },
   });
 
   const searchParams = useSearchParams();
@@ -44,7 +55,12 @@ export default function OrderConfirmationPage() {
   );
 
   useEffect(() => {
+    if (isCartLoading) {
+      return;
+    }
+
     // Generate random order number
+    debugger;
     const generateOrderNumber = () => {
       const timestamp = new Date().getTime().toString().slice(-8);
       const random = Math.floor(Math.random() * 1000)
@@ -65,22 +81,21 @@ export default function OrderConfirmationPage() {
           if (paymentIntent?.status === "succeeded") {
             setOrderStatus("success");
 
-            // Get cart data and shipping info
-            const cartData = localStorage.getItem("cart");
             const shippingData = sessionStorage.getItem("shippingInfo");
 
-            if (cartData && shippingData) {
-              const cart = JSON.parse(cartData);
+            if (cart.items.length && shippingData) {
               const shipping = JSON.parse(shippingData);
 
               // Calculate the total amount
-              const subtotal = cart.subTotalPrice || 0;
+              const subtotal = cart.subTotalPrice;
               const tax = subtotal * 0.1; // 10% tax
               const fee = 3.99; // Quality assurance fee
 
+              const orderNumber = generateOrderNumber();
+
               setOrderDetails({
-                orderNumber: generateOrderNumber(),
-                items: cart.items || [],
+                orderNumber: orderNumber,
+                items: cart.items,
                 total: subtotal + tax + fee,
                 shippingInfo: shipping,
               });
@@ -91,14 +106,20 @@ export default function OrderConfirmationPage() {
                   headers: {
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify({}), // Empty object since we don't need to send anything
+                  body: JSON.stringify({
+                    orderNumber: orderNumber,
+                  }),
                 });
+
+                if (!response.ok) {
+                  throw new Error(
+                    `API responded with status: ${response.status}`
+                  );
+                }
 
                 const result = await response.json();
 
-                if (!response.ok) {
-                  console.error("Failed to update cart items:", result.error);
-                } else {
+                if (result.success) {
                   console.log(
                     `${result.updatedItems} items marked as purchased`
                   );
@@ -107,13 +128,12 @@ export default function OrderConfirmationPage() {
                     totalItems: 0,
                     subTotalPrice: 0,
                   });
+                } else {
+                  console.error("API returned success: false", result);
                 }
               } catch (error) {
-                console.error("Error calling update-status API:", error);
+                console.error("Error updating cart items:", error);
               }
-
-              // Clear cart only after confirmed payment
-              localStorage.removeItem("cart");
             }
           } else {
             setOrderStatus("error");
@@ -130,45 +150,9 @@ export default function OrderConfirmationPage() {
 
       verifyPayment();
     } else {
-      // If no payment intent params, check if we have order data in session
-      const cartData = localStorage.getItem("cart");
-      const shippingData = sessionStorage.getItem("shippingInfo");
-
-      if (!cartData || !shippingData) {
-        // No cart and no payment info, redirect to homepage
-        setTimeout(() => {
-          router.push("/homepage");
-        }, 3000);
-      } else {
-        // We have cart data, assume this is coming from a successful checkout
-        const cart = JSON.parse(cartData);
-        const shipping = JSON.parse(shippingData);
-
-        // Calculate the total amount
-        const subtotal = cart.subTotalPrice || 0;
-        const tax = subtotal * 0.1; // 10% tax
-        const fee = 3.99; // Quality assurance fee
-
-        setOrderDetails({
-          orderNumber: generateOrderNumber(),
-          items: cart.items || [],
-          total: subtotal + tax + fee,
-          shippingInfo: shipping,
-        });
-
-        setOrderStatus("success");
-
-        setCart({
-          items: [],
-          totalItems: 0,
-          subTotalPrice: 0,
-        });
-
-        // Clear cart
-        localStorage.removeItem("cart");
-      }
+      router.push("/homepage");
     }
-  }, [paymentIntentId, paymentIntentClientSecret, router]);
+  }, [paymentIntentId, paymentIntentClientSecret, isCartLoading]);
 
   const formatDate = (daysFromNow: number) => {
     const date = new Date();

@@ -252,8 +252,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Generate a unique orderId or use the provided orderNumber
-    const orderId = uuidv4();
+    const requestBody = await req.json();
+    const orderNumber = requestBody.orderNumber;
 
     // Update all cart items for this user with IN_CART status
     const updateResult = await prisma.cartItem.updateMany({
@@ -263,14 +263,14 @@ export async function PATCH(req: NextRequest) {
       },
       data: {
         status: "PURCHASED",
-        orderId: orderId,
+        orderId: orderNumber,
       },
     });
 
     return NextResponse.json({
       success: true,
       updatedItems: updateResult.count,
-      orderId: orderId,
+      orderId: orderNumber,
     });
   } catch (error) {
     console.error("Error updating cart item status:", error);

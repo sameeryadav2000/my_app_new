@@ -9,10 +9,11 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { FaLock } from "react-icons/fa";
+import { ShippingForm } from "@/app/homepage/shipping_page/page";
 
 interface CheckoutFormProps {
   totalAmount: number;
-  shippingInfo: any;
+  shippingInfo: ShippingForm;
 }
 
 export default function CheckoutForm({
@@ -21,9 +22,9 @@ export default function CheckoutForm({
 }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +36,7 @@ export default function CheckoutForm({
     setIsProcessing(true);
 
     try {
+      // The confirmPayment call will redirect on success
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -50,12 +52,12 @@ export default function CheckoutForm({
                 city: shippingInfo.city,
                 state: shippingInfo.state,
                 postal_code: shippingInfo.zipCode,
-                country: "US", // Assuming US but you can make this dynamic
+                country: "US",
               },
             },
           },
         },
-        redirect: "always",
+        redirect: "always", // Changed from "always" to handle both cases
       });
 
       if (error) {
@@ -67,7 +69,6 @@ export default function CheckoutForm({
     } catch (error) {
       console.error("Payment error:", error);
       setPaymentError("An unexpected error occurred. Please try again.");
-      setIsProcessing(false);
     } finally {
       setIsProcessing(false);
     }
@@ -75,19 +76,16 @@ export default function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Payment Element */}
       <div className="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
         <PaymentElement />
       </div>
 
-      {/* Error Message */}
       {paymentError && (
         <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg shadow-sm transition-all duration-300">
           {paymentError}
         </div>
       )}
 
-      {/* Pay Button */}
       <button
         disabled={isProcessing || !stripe || !elements}
         className={`w-full flex items-center justify-center py-3.5 px-4 rounded-lg font-semibold text-white shadow-md transition-all duration-300 ${

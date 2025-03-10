@@ -8,7 +8,7 @@ import { useCart } from "../../../context/CartContext";
 import OrderSummary from "@/app/components/OrderSummary";
 import { useSession } from "next-auth/react";
 
-interface ShippingForm {
+export interface ShippingForm {
   firstName: string;
   lastName: string;
   email: string;

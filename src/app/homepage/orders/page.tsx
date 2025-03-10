@@ -92,6 +92,7 @@ export default function OrdersPage() {
           if (!response.ok) {
             throw new Error("Failed to fetch purchased items");
           }
+          debugger;
 
           const data = await response.json();
 

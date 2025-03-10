@@ -62,11 +62,13 @@ export default function Navbar() {
           </svg>
         </div>
 
-        <div className="flex items-center justify-center flex-1">
-          <h1 className="text-[#FFC107] font-extrabold text-2xl">
-            R E c E L L
-          </h1>
-        </div>
+        <Link href={"/homepage"}>
+          <div className="flex items-center justify-center flex-1">
+            <h1 className="text-[#FFC107] font-extrabold text-2xl">
+              R E c E L L
+            </h1>
+          </div>
+        </Link>
 
         <div className="flex">
           <div className="flex items-center justify-center pr-4">

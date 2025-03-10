@@ -17,6 +17,8 @@ export default function PaymentPage() {
   const [shippingInfo, setShippingInfo] = useState<any>(null);
   const [isInitialCheckDone, setIsInitialCheckDone] = useState(false);
   const { showLoading, hideLoading, isLoading } = useLoading();
+  const [paymentError, setPaymentError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
 
   // Calculate order total
   const tax = 10;
@@ -75,52 +77,59 @@ export default function PaymentPage() {
     };
   }, [isCartLoading]);
 
+  // Extract createPaymentIntent outside of useEffect
+  const createPaymentIntent = async () => {
+    try {
+      showLoading(); // Show loading when retrying
+
+      const abortController = new AbortController();
+      const signal = abortController.signal;
+
+      const response = await fetch("/api/create_payment_intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: totalAmount,
+          metadata: {
+            orderId: `order-${Date.now()}`,
+            customerEmail: shippingInfo?.email || "",
+            items: JSON.stringify(
+              cart.items.map((item) => ({
+                id: item.id,
+                title: item.title,
+                quantity: item.quantity,
+              }))
+            ),
+          },
+        }),
+        signal,
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        console.error("Error:", data.error, data.message || "");
+        setPaymentError(data.message || data.error);
+        return;
+      }
+
+      setPaymentError("");
+      setClientSecret(data.clientSecret);
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("Payment intent request was cancelled");
+        return;
+      }
+      console.error("Error creating payment intent:", error);
+      setPaymentError("Unable to initialize payment. Please try again.");
+    } finally {
+      hideLoading();
+    }
+  };
+
+  // Modified useEffect to use the extracted function
   useEffect(() => {
     if (!isInitialCheckDone || !shippingInfo) return;
-
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-
-    async function createPaymentIntent() {
-      try {
-        const response = await fetch("/api/create_payment_intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: totalAmount,
-            metadata: {
-              orderId: `order-${Date.now()}`,
-              customerEmail: shippingInfo?.email || "",
-              items: JSON.stringify(
-                cart.items.map((item) => ({
-                  id: item.id,
-                  title: item.title,
-                  quantity: item.quantity,
-                }))
-              ),
-            },
-          }),
-          signal,
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-          console.error("Error:", data.error);
-          return;
-        }
-
-        setClientSecret(data.clientSecret);
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          console.log("Payment intent request was cancelled");
-          return;
-        }
-        console.error("Error creating payment intent:", error);
-      } finally {
-        hideLoading();
-      }
-    }
 
     if (totalAmount > 0) {
       createPaymentIntent();
@@ -129,11 +138,9 @@ export default function PaymentPage() {
     }
 
     return () => {
-      abortController.abort();
       hideLoading();
     };
-  }, [isInitialCheckDone, shippingInfo]);
-
+  }, [isInitialCheckDone, shippingInfo, retryCount]);
   return (
     <div className="flex flex-col md:flex-row justify-between w-4/5 mx-auto gap-8">
       {/* Left Section: Payment */}
@@ -143,6 +150,27 @@ export default function PaymentPage() {
             Payment
           </h1>
         </div>
+
+        {/* Display payment error if exists */}
+        {paymentError && (
+          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
+            <div className="flex items-center">
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                ></path>
+              </svg>
+              <span className="font-medium">Payment Error:</span> {paymentError}
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="p-8 text-center">
@@ -161,6 +189,14 @@ export default function PaymentPage() {
         ) : (
           <div className="p-8 text-center text-red-500 font-medium">
             Unable to initialize payment system. Please try again later.
+            {paymentError && (
+              <button
+                onClick={() => setRetryCount((count) => count + 1)}
+                className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Try Again
+              </button>
+            )}
           </div>
         )}
       </div>
