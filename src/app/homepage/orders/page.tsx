@@ -9,11 +9,20 @@ import { CartItem } from "@/context/CartContext";
 import ReviewComponent from "@/app/components/ReviewForm";
 import { ReviewData } from "@/app/components/ReviewForm";
 
+interface ReviewsMap {
+  [key: string]: {
+    hasReviewed: boolean;
+    review?: any;
+  };
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<CartItem[]>([]);
   const [currentProduct, setCurrentProduct] = useState<CartItem>();
   const [showReview, setShowReview] = useState(false);
+  const [productReviews, setProductReviews] = useState<ReviewsMap>({});
+  const [currentReview, setCurrentReview] = useState<any>(null);
+  const [viewingReview, setViewingReview] = useState(false);
 
   useEffect(() => {
     const fetchPurchasedItems = async () => {
@@ -29,7 +38,8 @@ export default function OrdersPage() {
         if (data.cart && data.cart.items) {
           setOrders(data.cart.items);
 
-          fetchReviewsForProducts(data.cart.items);
+          const reviews = await fetchReviewsForProducts(data.cart.items);
+          setProductReviews(reviews);
         }
       } catch (error) {
         console.error("Error fetching purchased items:", error);
@@ -40,30 +50,29 @@ export default function OrdersPage() {
   }, []);
 
   const fetchReviewsForProducts = async (items: CartItem[]) => {
-    const reviewsMap: {[key: string]: boolean} = {};
-    
+    const reviewsMap: ReviewsMap = {};
+
     try {
       // Fetch reviews for each product
       for (const item of items) {
         const response = await fetch(`/api/reviews?productId=${item.id}`);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch reviews for product ${item.id}`);
         }
-        
-        const reviewsData = await response.json();
-        
-        // Check if the user has already reviewed this product
-        // Assuming each review has a userId that we can check against the current user
-        // You might need to adjust this logic based on your actual API response structure
-        const hasReviewed = reviewsData.reviews && reviewsData.reviews.length > 0;
-        reviewsMap[item.id] = hasReviewed;
+
+        const reviewData = await response.json();
+
+        reviewsMap[item.id] = {
+          hasReviewed: reviewData.isReviewed,
+          review: reviewData.isReviewed ? reviewData.reviews : null,
+        };
       }
-      
-      setProductReviews(reviewsMap);
+
+      return reviewsMap;
     } catch (error) {
       console.error("Error fetching reviews:", error);
-    } finally {
+      return {};
     }
   };
 
@@ -80,6 +89,14 @@ export default function OrdersPage() {
     setShowReview(true);
   };
 
+  const handleViewReview = (order: CartItem) => {
+    const review = productReviews[order.id]?.review;
+    if (review) {
+      setCurrentReview(review);
+      setViewingReview(true);
+    }
+  };
+
   const handleSubmitReview = async (reviewData: ReviewData) => {
     try {
       const response = await fetch("/api/reviews", {
@@ -93,10 +110,18 @@ export default function OrdersPage() {
       if (!response.ok) {
         throw new Error("Failed to submit review");
       }
-
-      // Handle successful submission
       const result = await response.json();
       console.log("Review submitted successfully:", result);
+
+      if (currentProduct) {
+        setProductReviews((prev) => ({
+          ...prev,
+          [currentProduct.id]: {
+            hasReviewed: true,
+            review: result.review,
+          },
+        }));
+      }
 
       setShowReview(false);
     } catch (error) {
@@ -158,25 +183,55 @@ export default function OrdersPage() {
                       <p className="font-medium">#{order.orderId}</p>
                     </div>
                   </div>
-                  <button
-                    className="mt-2 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
-                    onClick={() => handleReviewOrder(order)}
-                  >
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+
+                  {/* Conditional button rendering based on review status */}
+                  {productReviews[order.id]?.hasReviewed ? (
+                    <button
+                      className="mt-2 sm:mt-0 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+                      onClick={() => handleViewReview(order)}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                    Write a Review
-                  </button>
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                      View Review
+                    </button>
+                  ) : (
+                    <button
+                      className="mt-2 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+                      onClick={() => handleReviewOrder(order)}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                      Write a Review
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -253,6 +308,79 @@ export default function OrdersPage() {
               onSubmit={handleSubmitReview}
               onCancel={() => setShowReview(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* View Review Modal */}
+      {viewingReview && currentReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div
+            className="w-full max-w-2xl max-h-screen overflow-y-auto animate-slideIn bg-white rounded-xl shadow-xl p-6"
+            style={{
+              animationDuration: "0.3s",
+              transform: "translateY(0)",
+            }}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Your Review</h2>
+              <button
+                onClick={() => setViewingReview(false)}
+                className="text-gray-500 hover:text-gray-800"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+              <div className="flex items-center mb-2">
+                <div className="flex text-yellow-400">
+                  {[...Array(5)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < currentReview.rating
+                          ? "text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="ml-2 text-gray-600">
+                  {new Date(currentReview.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+
+              <h3 className="text-xl font-semibold mb-2">
+                {currentReview.title}
+              </h3>
+              <p className="text-gray-700">{currentReview.comment}</p>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setViewingReview(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

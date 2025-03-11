@@ -60,7 +60,6 @@ export default function OrderConfirmationPage() {
     }
 
     // Generate random order number
-    debugger;
     const generateOrderNumber = () => {
       const timestamp = new Date().getTime().toString().slice(-8);
       const random = Math.floor(Math.random() * 1000)

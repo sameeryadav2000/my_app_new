@@ -1,137 +1,208 @@
-// src/app/components/ReviewList.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import StarRating from "./StarRating";
+import { useEffect, useState } from "react";
+import { Star } from "lucide-react";
 
-interface ReviewProps {
-  id: string;
+interface Review {
+  id: number;
+  userId: number;
+  modelId: number;
   rating: number;
-  title: string;
+  title?: string;
   comment: string;
   createdAt: string;
-  user?: {  // Make user optional
-    firstName: string | null;
-    lastName: string | null;
-    avatar: string | null;
-  };
+  userName?: string; // User name from the included user relation
 }
 
 interface ReviewListProps {
   modelId: number;
 }
 
-const ReviewList = ({ modelId }: ReviewListProps) => {
-  const [reviews, setReviews] = useState<ReviewProps[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function ReviewList({ modelId }: ReviewListProps) {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+  const [averageRating, setAverageRating] = useState<number>(0);
 
   useEffect(() => {
     const fetchReviews = async () => {
+      if (!modelId) return;
+      
+      setIsLoading(true);
       try {
-        setLoading(true);
+        // Using the updated API endpoint with modelId parameter
         const response = await fetch(`/api/reviews?modelId=${modelId}`);
-
+        
         if (!response.ok) {
-          throw new Error("Failed to fetch reviews");
+          throw new Error(`API responded with status: ${response.status}`);
         }
         
         const data = await response.json();
-        console.log("API response data:", data);
         
-        // Handle the reviews data properly
-        if (data.reviews) {
-          // If it's a single review object (not an array)
-          if (!Array.isArray(data.reviews) && typeof data.reviews === 'object') {
-            setReviews([data.reviews]); // Wrap it in an array
-          } 
-          // If it's already an array
-          else if (Array.isArray(data.reviews)) {
-            setReviews(data.reviews);
-          }
-          else {
-            setReviews([]);
+        if (Array.isArray(data.reviews)) {
+          setReviews(data.reviews);
+          
+          // Calculate average rating
+          if (data.reviews.length > 0) {
+            const total = data.reviews.reduce((sum: number, review: Review) => sum + review.rating, 0);
+            setAverageRating(parseFloat((total / data.reviews.length).toFixed(1)));
           }
         } else {
           setReviews([]);
         }
       } catch (error) {
         console.error("Error fetching reviews:", error);
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("An unknown error occurred");
-        }
+        setError("Failed to load reviews");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchReviews();
   }, [modelId]);
 
-  if (loading) {
-    return <div className="py-4">Loading reviews...</div>;
-  }
+  // Function to render stars based on rating
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star
+        key={i}
+        size={16}
+        className={`${
+          i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+        }`}
+      />
+    ));
+  };
 
-  if (error) {
-    return <div className="py-4 text-red-500">{error}</div>;
-  }
+  // Format date to a more readable format
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
 
-  if (!Array.isArray(reviews) || reviews.length === 0) {
+  if (isLoading) {
     return (
-      <div className="py-4">
-        No reviews yet. Be the first to review this product!
+      <div className="flex flex-col items-center justify-center py-8">
+        <div className="w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+        <p className="mt-2 text-gray-600">Loading reviews...</p>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="py-4 text-center text-red-500">
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  // Function to generate rating distribution data
+  const generateRatingDistribution = () => {
+    const distribution = [0, 0, 0, 0, 0]; // 5 stars to 1 star
+    
+    reviews.forEach(review => {
+      const index = 5 - review.rating;
+      if (index >= 0 && index < 5) {
+        distribution[index]++;
+      }
+    });
+    
+    return distribution;
+  };
+  
+  const ratingDistribution = generateRatingDistribution();
+  const maxCount = Math.max(...ratingDistribution, 1);
+
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold">Customer Reviews</h2>
-
-      {reviews.map((review) => (
-        <div key={review.id} className="border-b pb-4 mb-4">
-          <div className="flex items-center mb-2">
-            <div className="mr-2">
-              {review.user?.avatar ? (
-                <img
-                  src={review.user.avatar}
-                  alt="User"
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                  {review.user?.firstName?.charAt(0) || "U"}
+    <div className="space-y-8">
+      {/* Average Rating Section */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-semibold mb-4">Customer Reviews</h3>
+        
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Left: Average score */}
+          <div className="md:w-1/3 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+            <span className="text-4xl font-bold text-indigo-600">{averageRating}</span>
+            <div className="flex mt-2">
+              {renderStars(Math.round(averageRating))}
+            </div>
+            <p className="text-sm text-gray-600 mt-2 text-center">
+              Based on {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+            </p>
+          </div>
+          
+          {/* Right: Rating distribution */}
+          <div className="md:w-2/3">
+            {[5, 4, 3, 2, 1].map((star, idx) => (
+              <div key={star} className="flex items-center mb-2">
+                <div className="w-16 text-sm text-gray-600 flex items-center">
+                  <span>{star}</span>
+                  <Star size={12} className="ml-1 text-yellow-400 fill-yellow-400" />
                 </div>
-              )}
-            </div>
-            <div>
-              <div className="font-medium">
-                {review.user?.firstName || "Anonymous"}{" "}
-                {review.user?.lastName || ""}
+                
+                <div className="flex-1 h-4 mx-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full"
+                    style={{ 
+                      width: `${(ratingDistribution[5-star] / maxCount) * 100}%`,
+                      transition: 'width 0.5s ease'
+                    }}
+                  ></div>
+                </div>
+                
+                <div className="w-10 text-xs text-gray-500 text-right">
+                  {ratingDistribution[5-star]}
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                {new Date(review.createdAt).toLocaleDateString()}
-              </div>
-            </div>
+            ))}
           </div>
-
-          <div className="mb-2">
-            <StarRating
-              value={review.rating}
-              onChange={() => {}}
-              editable={false}
-              size={18}
-            />
-          </div>
-
-          <h3 className="font-bold mb-1">{review.title}</h3>
-          <p className="text-gray-700">{review.comment}</p>
         </div>
-      ))}
+      </div>
+
+      {reviews.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-100 shadow-sm">
+          <div className="mx-auto w-16 h-16 mb-4 text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+              />
+            </svg>
+          </div>
+          <p className="text-gray-600 font-medium">No reviews yet for this product</p>
+          <p className="text-sm mt-2 text-gray-500">Be the first to share your experience!</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {reviews.map((review) => (
+            <div key={review.id} className="p-5 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <div className="flex bg-indigo-50 text-indigo-600 px-2 py-1 rounded">
+                  {renderStars(review.rating)}
+                </div>
+                
+                {review.userName && (
+                  <span className="font-medium">{review.userName}</span>
+                )}
+                
+                <span className="text-xs text-gray-500 ml-auto">
+                  {formatDate(review.createdAt)}
+                </span>
+              </div>
+              
+              {review.title && (
+                <h4 className="font-semibold text-lg mb-2 text-gray-800">{review.title}</h4>
+              )}
+              
+              <p className="text-gray-700 whitespace-pre-line leading-relaxed">{review.comment}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
-
-export default ReviewList;
+}

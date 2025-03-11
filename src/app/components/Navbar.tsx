@@ -12,10 +12,6 @@ import { useEffect } from "react";
 export default function Navbar() {
   const { cart } = useCart();
 
-  // const toggleMenu = () => {
-  //   setIsMenuOpen((prev) => !prev);
-  // };
-
   return (
     <div className="relative">
       <Spacer />

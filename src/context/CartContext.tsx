@@ -13,7 +13,7 @@ export interface CartItem {
   id: string;
   title: string;
   condition: string;
-  orderId: string;
+  orderId?: string;
   storage: string;
   color: string;
   price: number;

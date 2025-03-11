@@ -105,105 +105,105 @@ export default function RecentlyViewed() {
   }
 
   return (
-    <div className="w-[95%] md:w-[70%] mx-auto bg-[#7D6167] pt-5 pl-5 pr-5 pb-5 rounded-xl">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Recently viewed</h2>
-        <div className="flex gap-2">
-          <button
-            className={`p-2 rounded-full transition-colors ${
-              currentIndex === 0
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gray-100 hover:bg-gray-200 text-black"
-            }`}
-            onClick={handlePrevious}
-            disabled={currentIndex === 0}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                d="M15 18l-6-6 6-6"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            className={`p-2 rounded-full transition-colors ${
-              currentIndex >= maxIndex
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-black text-white hover:bg-gray-800"
-            }`}
-            onClick={handleNext}
-            disabled={currentIndex >= maxIndex}
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                d="M9 18l6-6-6-6"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <Spacer />
-
-      {/* Carousel Content */}
-      <div className="overflow-hidden rounded-lg">
-        <div
-          className="flex transition-transform duration-500 ease-out gap-4"
-          style={{
-            transform: `translateX(-${currentIndex * 25}%)`,
-            width: `${products.length * (100 / cardsToShow)}%`,
-          }}
+    <div className="w-[95%] md:w-[70%] mx-auto bg-gradient-to-r from-[#8D717A] to-[#6D5157] pt-6 px-6 pb-6 rounded-2xl shadow-lg">
+  <div className="flex justify-between items-center">
+    <h2 className="text-2xl font-bold text-white tracking-wide">Recently viewed</h2>
+    <div className="flex gap-3">
+      <button
+        className={`p-2 rounded-full transition-all duration-300 ${
+          currentIndex === 0
+            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+            : "bg-white hover:bg-gray-100 text-[#7D6167] shadow-sm hover:shadow"
+        }`}
+        onClick={handlePrevious}
+        disabled={currentIndex === 0}
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          className="w-5 h-5"
         >
-          {products.map((product, index) => (
-            <div
-              key={index}
-              className=""
-              style={{ width: `${100 / products.length}%` }}
-            >
-              <Link href={`/product/${product.slug}`}>
-                <div
-                  className="h-full transition-all duration-300 bg-white rounded-xl 
-                         transform origin-center hover:scale-[1.02] 
-                         shadow-none hover:shadow-xl"
-                >
-                  <CardsForPhone
-                    title={product.title}
-                    image={product.image}
-                    startingText="Starting at"
-                    price=""
-                    className="flex flex-col h-full"
-                    imageContainerClassName=""
-                    imageClassName="rounded-xl"
-                    contentClassName="bg-[#817B69] font-bold text-white w-[95%] mx-auto m-2 h-full rounded-lg"
-                    titleClassName="text-sm break-words break-all p-2"
-                    startingTextClassName="text-xs text-gray-900 py-1"
-                    priceClassName=""
-                  />
-                </div>
-              </Link>
-            </div>
-          ))}
-        </div>
-      </div>
+          <path
+            d="M15 18l-6-6 6-6"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        className={`p-2 rounded-full transition-all duration-300 ${
+          currentIndex >= maxIndex
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-black text-white hover:bg-gray-800 shadow-sm hover:shadow"
+        }`}
+        onClick={handleNext}
+        disabled={currentIndex >= maxIndex}
+      >
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          className="w-5 h-5"
+        >
+          <path
+            d="M9 18l6-6-6-6"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
     </div>
+  </div>
+
+  <Spacer />
+
+  {/* Carousel Content */}
+  <div className="overflow-hidden rounded-xl">
+    <div
+      className="flex transition-transform duration-500 ease-out gap-5"
+      style={{
+        transform: `translateX(-${currentIndex * 25}%)`,
+        width: `${products.length * (100 / cardsToShow)}%`,
+      }}
+    >
+      {products.map((product, index) => (
+        <div
+          key={index}
+          className=""
+          style={{ width: `${100 / products.length}%` }}
+        >
+          <Link href={`/product/${product.slug}`}>
+            <div
+              className="h-full transition-all duration-300 bg-white rounded-xl 
+                     transform origin-center hover:scale-[1.03] 
+                     shadow-md hover:shadow-xl"
+            >
+              <CardsForPhone
+                title={product.title}
+                image={product.image}
+                startingText="Starting at"
+                price=""
+                className="flex flex-col h-full"
+                imageContainerClassName=""
+                imageClassName="rounded-t-xl"
+                contentClassName="bg-gradient-to-r from-[#86846E] to-[#7C7364] font-bold text-white w-[95%] mx-auto m-2 h-full rounded-lg"
+                titleClassName="text-sm break-words break-all p-3"
+                startingTextClassName="text-xs text-gray-100 px-3 pb-3"
+                priceClassName=""
+              />
+            </div>
+          </Link>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
   );
 }

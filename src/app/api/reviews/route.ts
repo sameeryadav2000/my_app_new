@@ -4,65 +4,116 @@ import prisma from "../../../../lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
+  const { searchParams } = new URL(req.url);
 
-  if (!session || !session.user) {
-    return NextResponse.json(
-      { error: "Authentication required" },
-      { status: 401 }
-    );
+  // Get query parameters
+  const productId = searchParams.get("productId");
+  const modelId = searchParams.get("modelId");
+
+  // Case 1: Get all reviews for a model (for product detail page)
+  if (modelId) {
+    try {
+      const reviews = await prisma.review.findMany({
+        where: {
+          modelId: parseInt(modelId),
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      // Format the response to include userName
+      const formattedReviews = reviews.map((review) => ({
+        id: review.id,
+        userId: review.userId,
+        modelId: review.modelId,
+        rating: review.rating,
+        title: review.title || "",
+        comment: review.comment,
+        createdAt: review.createdAt,
+        userName: review.user
+          ? `${review.user.firstName || ""} ${
+              review.user.lastName || ""
+            }`.trim() || "Anonymous User"
+          : "Anonymous User",
+      }));
+
+      return NextResponse.json({ reviews: formattedReviews });
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch reviews" },
+        { status: 500 }
+      );
+    }
   }
 
-  try {
-    const { searchParams } = new URL(request.url);
-    const modelId = searchParams.get("modelId");
-
-    if (!modelId) {
+  // Case 2: Check if user has reviewed a product (for orders page)
+  else if (productId) {
+    // Authentication required for checking user's own review
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: "Model ID is required" },
-        { status: 400 }
+        { error: "Authentication required" },
+        { status: 401 }
       );
     }
 
-    // Get user from database based on email from session
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email as string },
-    });
+    try {
+      // Get user from database based on email from session
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email as string },
+      });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
 
-    // Check if a review exists for this model by this user
-    const review = await prisma.review.findFirst({
-      where: {
-        modelId: parseInt(modelId),
-        userId: user.id,
-      },
-    });
-
-    if (review) {
-      return NextResponse.json({
-        isReviewed: true,
-        reviews: {
-          id: review.id,
-          rating: review.rating,
-          title: review.title,
-          comment: review.comment,
-          createdAt: review.createdAt,
+      // Check if a review exists for this model by this user
+      const review = await prisma.review.findFirst({
+        where: {
+          modelId: parseInt(productId),
+          userId: user.id,
         },
       });
-    } else {
-      return NextResponse.json({ isReviewed: false });
+
+      if (review) {
+        return NextResponse.json({
+          isReviewed: true,
+          reviews: {
+            id: review.id,
+            rating: review.rating,
+            title: review.title,
+            comment: review.comment,
+            createdAt: review.createdAt,
+          },
+        });
+      } else {
+        return NextResponse.json({ isReviewed: false });
+      }
+    } catch (error) {
+      console.error("Error checking review status:", error);
+      return NextResponse.json(
+        { error: "Failed to check review status" },
+        { status: 500 }
+      );
     }
-  } catch (error) {
-    console.error("Error checking review status:", error);
-    return NextResponse.json(
-      { error: "Failed to check review status" },
-      { status: 500 }
-    );
   }
+
+  // No valid parameters provided
+  return NextResponse.json(
+    { error: "Either productId or modelId is required" },
+    { status: 400 }
+  );
 }
 
 // POST a new review

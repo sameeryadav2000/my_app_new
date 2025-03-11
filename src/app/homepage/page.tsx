@@ -2,7 +2,6 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Slideshow from "@/app/components/Slideshow";
 import CardsForHomepage from "@/app/components/CardForHomepage";
@@ -29,7 +28,6 @@ export default function Home() {
         <RecentlyViewed />
       </div>
       <Spacer />
-
 
       <div className="w-[95%] md:w-[70%] mx-auto">
         <h2 className="text-2xl font-bold">Shop Most Wanted</h2>

@@ -15,6 +15,7 @@ export default function Slideshow() {
 
     const fetchImages = async () => {
       setIsLoading(true);
+      console.log("Fetch starting");
       try {
         const response = await fetch("/api/slideshow", { signal });
 
@@ -45,6 +46,7 @@ export default function Slideshow() {
     fetchImages();
 
     return () => {
+      console.log("Slideshow effect cleaning up");
       abortController.abort();
     };
   }, []);

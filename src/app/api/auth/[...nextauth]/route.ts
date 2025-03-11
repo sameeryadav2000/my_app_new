@@ -144,13 +144,7 @@ export const authOptions: AuthOptions = {
       }
     },
 
-    async jwt({
-      token,
-      account,
-    }: {
-      token: JWT;
-      account: Account | null;
-    }) {
+    async jwt({ token, account }: { token: JWT; account: Account | null }) {
       if (account) {
         token.idToken = account.id_token;
         token.accessToken = account.access_token;
@@ -159,11 +153,9 @@ export const authOptions: AuthOptions = {
         return token;
       }
 
-      if (
-        token.expiresAt !== undefined &&
-        Date.now() < token.expiresAt * 1000 - 60 * 1000
-      ) {
+      if (token.expiresAt !== undefined && Date.now() < token.expiresAt * 1000 - 60 * 1000) {
         return token;
+        
       } else {
         try {
           const response = await requestRefreshOfAccessToken(token);
