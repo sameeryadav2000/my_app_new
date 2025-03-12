@@ -16,25 +16,62 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signIn("keycloak", {
+      await signIn("keycloak-google", {
         callbackUrl: callbackUrl,
       });
     } catch (error) {
       console.error("Authentication error:", error);
     }
   };
+  
+
+  const handleDirectLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+  
+    try {
+      console.log("Before signIn:", { email, password, callbackUrl });
+      if (!email || !password) {
+        setError("Please enter both email and password");
+        setIsLoading(false);
+        return;
+      }
+  
+      const result = await signIn("keycloak-direct", {
+        redirect: false,
+        username: email,
+        password: password,
+        callbackUrl: callbackUrl,
+      });
+      console.log("SignIn result:", JSON.stringify(result, null, 2));
+  
+      if (result?.error) {
+        console.log("Login failed with error:", result.error);
+        setError("Invalid email or password");
+        setIsLoading(false);
+      } else {
+        console.log("Login successful, redirecting to:", callbackUrl);
+        window.location.href = callbackUrl;
+      }
+    } catch (error) {
+      console.error("Detailed login error:", error);
+      setError("An error occurred during login: " + error.message);
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateAccount = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
 
-    const keycloakIssuer = process.env.KEYCLOAK_DIRECT_ISSUER || "http://localhost:8080/realms/key_cloak";
-    const clientId = process.env.KEYCLOAK_DIRECT_CLIENT_ID || "keycloak_client";
+    const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_DIRECT_ISSUER;
+    const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_DIRECT_ID;
 
     const loginPageUrl = `${window.location.origin}/login_signup`;
 
     const registrationUrl = `${keycloakIssuer}/protocol/openid-connect/registrations?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-      window.location.origin
-    )}&response_type=code&kc_locale=en&back_to_login=${encodeURIComponent(loginPageUrl)}`;
+      loginPageUrl
+    )}&response_type=code&kc_locale=en`;
 
     window.location.href = registrationUrl;
   };
@@ -49,7 +86,7 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={() => {}}>
+        <form className="mt-8 space-y-6" onSubmit={handleDirectLogin}>
           {error && <div className="p-3 bg-red-50 text-red-500 rounded-lg text-sm">{error}</div>}
 
           <div className="space-y-6">

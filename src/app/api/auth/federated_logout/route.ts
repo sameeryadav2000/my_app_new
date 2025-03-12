@@ -38,7 +38,7 @@ function handleEmptyToken() {
 
 function sendEndSessionEndpointToURL(token: JWT) {
   const endSessionEndPoint = new URL(
-    `${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/logout`
+    `${process.env.KEYCLOAK_GOOGLE_ISSUER}/protocol/openid-connect/logout`
   );
   const params: Record<string, string> = logoutParams(token);
   const endSessionParams = new URLSearchParams(params);

@@ -1,13 +1,9 @@
 // src/app/api/auth/[...nextauth]/route.ts
-import NextAuth, {
-  AuthOptions,
-  User,
-  Account,
-  DefaultSession,
-} from "next-auth";
+import NextAuth, { AuthOptions, User, Account, DefaultSession } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import { JWT } from "next-auth/jwt";
 import prisma from "../../../../../lib/prisma";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 declare module "next-auth" {
   interface Session {
@@ -43,6 +39,11 @@ declare module "next-auth/jwt" {
 
 interface ExtendedUser extends User {
   emailVerified?: Date | boolean | null;
+  idToken?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  providerAccountId?: string;
 }
 
 function requestRefreshOfAccessToken(token: JWT) {
@@ -50,11 +51,11 @@ function requestRefreshOfAccessToken(token: JWT) {
     throw new Error("Refresh token is missing");
   }
 
-  return fetch(`${process.env.KEYCLOAK_ISSUER}/protocol/openid-connect/token`, {
+  return fetch(`${process.env.KEYCLOAK_DIRECT_ISSUER}/protocol/openid-connect/token`, {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.KEYCLOAK_CLIENT_ID,
-      client_secret: process.env.KEYCLOAK_CLIENT_SECRET,
+      client_id: process.env.KEYCLOAK_DIRECT_ID || "",
+      client_secret: process.env.KEYCLOAK_DIRECT_SECRET || "",
       grant_type: "refresh_token",
       refresh_token: token.refreshToken || "",
     }),
@@ -65,21 +66,101 @@ function requestRefreshOfAccessToken(token: JWT) {
 
 export const authOptions: AuthOptions = {
   providers: [
+    // Keycloak provider for Google Sign-In (using Google as identity provider)
     KeycloakProvider({
-      clientId: process.env.KEYCLOAK_CLIENT_ID,
-      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
-      issuer: process.env.KEYCLOAK_ISSUER,
+      id: "keycloak-google",
+      name: "Keycloak (Google)",
+      clientId:
+        process.env.KEYCLOAK_GOOGLE_ID ??
+        (() => {
+          throw new Error("KEYCLOAK_GOOGLE_ID is not set");
+        })(),
+      clientSecret:
+        process.env.KEYCLOAK_GOOGLE_SECRET ??
+        (() => {
+          throw new Error("KEYCLOAK_GOOGLE_SECRET is not set");
+        })(),
+      issuer: process.env.KEYCLOAK_GOOGLE_ISSUER,
+    }),
+
+    // Keycloak provider for direct login (pure Keycloak)
+    CredentialsProvider({
+      id: "keycloak-direct",
+      name: "Keycloak (Direct)",
+      credentials: {
+        username: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const clientId = process.env.KEYCLOAK_DIRECT_ID;
+        const clientSecret = process.env.KEYCLOAK_DIRECT_SECRET;
+
+        if (!clientId || !clientSecret) {
+          throw new Error("Keycloak client ID or secret is not configured");
+        }
+
+        if (!credentials || !credentials.username || !credentials.password) {
+          throw new Error("Missing username or password");
+        }
+
+        // Step 1: Get access token
+        const tokenResponse = await fetch("http://localhost:8080/realms/key_cloak/protocol/openid-connect/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "password",
+            client_id: clientId,
+            client_secret: clientSecret,
+            username: credentials.username,
+            password: credentials.password,
+            scope: "openid profile email",
+          }),
+        });
+
+        console.log("Token request status:", tokenResponse.status);
+        const tokenData = await tokenResponse.json();
+        console.log("Token response:", JSON.stringify(tokenData, null, 2));
+
+        if (!tokenData.access_token) {
+          throw new Error(tokenData.error_description || "Authentication failed");
+        }
+
+        // Step 2: Get user info using the access token
+        const userInfoResponse = await fetch("http://localhost:8080/realms/key_cloak/protocol/openid-connect/userinfo", {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+
+        console.log("User info request status:", userInfoResponse.status);
+        if (!userInfoResponse.ok) {
+          const errorText = await userInfoResponse.text();
+          console.error("User info request failed - Raw response:", errorText);
+          throw new Error(`Failed to fetch user info: ${userInfoResponse.status} - ${errorText}`);
+        }
+
+        const userInfo = await userInfoResponse.json();
+        console.log("User info:", JSON.stringify(userInfo, null, 2));
+
+        if (!userInfo.sub) {
+          throw new Error("Unable to retrieve user ID (sub) from Keycloak userinfo");
+        }
+
+        // Return all data in the user object
+        return {
+          id: userInfo.sub,
+          email: userInfo.email || credentials.username,
+          name: userInfo.name || credentials.username,
+          providerAccountId: userInfo.sub,
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          idToken: tokenData.id_token || tokenData.access_token, // Fallback if id_token is missing
+          expiresAt: Math.floor(Date.now() / 1000) + (tokenData.expires_in || 3600),
+        };
+      },
     }),
   ],
 
   callbacks: {
-    async signIn({
-      user,
-      account,
-    }: {
-      user: ExtendedUser;
-      account: Account | null;
-    }) {
+    async signIn({ user, account }: { user: ExtendedUser; account: Account | null }) {
       if (!account?.providerAccountId) {
         console.log("No provider account ID found, skipping user creation");
         return true;
@@ -92,16 +173,11 @@ export const authOptions: AuthOptions = {
 
       const externalId = account.providerAccountId.toString();
 
-      const isEmailVerified: boolean = user.emailVerified
-        ? typeof user.emailVerified === "boolean"
-          ? user.emailVerified
-          : true
-        : false;
+      const isEmailVerified: boolean = user.emailVerified ? (typeof user.emailVerified === "boolean" ? user.emailVerified : true) : false;
 
       const nameParts = user.name ? user.name.split(" ") : [];
       const firstName = nameParts[0] || null;
-      const lastName =
-        nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
 
       const existingUser = await prisma.user.findUnique({
         where: { externalId },
@@ -129,33 +205,35 @@ export const authOptions: AuthOptions = {
           },
         });
 
-        console.log(
-          `User ${updatedUser.id} successfully ${
-            isCreated ? "created" : "updated"
-          }`
-        );
+        console.log(`User ${updatedUser.id} successfully ${isCreated ? "created" : "updated"}`);
         return true;
       } catch (error) {
-        console.error(
-          "Error saving user:",
-          error instanceof Error ? error.message : error
-        );
+        console.error("Error saving user:", error instanceof Error ? error.message : error);
         return false;
       }
     },
 
-    async jwt({ token, account }: { token: JWT; account: Account | null }) {
-      if (account) {
+    async jwt({ token, user, account }: { token: JWT; user: ExtendedUser; account: Account | null }) {
+      if (account && account.access_token) {
         token.idToken = account.id_token;
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
+        token.provider = account.provider; // Add this line to store the provider
         return token;
       }
 
-      if (token.expiresAt !== undefined && Date.now() < token.expiresAt * 1000 - 60 * 1000) {
+      if (user && user.accessToken && account) {
+        token.idToken = user.idToken;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.expiresAt = user.expiresAt;
+        token.provider = account.provider;
         return token;
-        
+      }
+
+      if (token.expiresAt !== undefined && Date.now() < token.expiresAt) {
+        return token;
       } else {
         try {
           const response = await requestRefreshOfAccessToken(token);
@@ -168,9 +246,7 @@ export const authOptions: AuthOptions = {
             ...token, // Keep the previous token properties
             idToken: tokens.id_token,
             accessToken: tokens.access_token,
-            expiresAt: Math.floor(
-              Date.now() / 1000 + (tokens.expires_in as number)
-            ),
+            expiresAt: Math.floor(Date.now() / 1000 + (tokens.expires_in as number)),
             refreshToken: tokens.refresh_token ?? token.refreshToken,
           };
           return updatedToken;
