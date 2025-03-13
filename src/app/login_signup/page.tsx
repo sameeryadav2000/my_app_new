@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
 import { useSearchParams } from "next/navigation";
+import RegistrationDialog from "@/app/components/RegistrationDialog";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -14,6 +15,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+
   const handleGoogleSignIn = async () => {
     try {
       await signIn("keycloak-google", {
@@ -23,32 +26,36 @@ export default function LoginPage() {
       console.error("Authentication error:", error);
     }
   };
-  
 
-  const handleDirectLogin = async (e) => {
+  const handleDirectLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     setIsLoading(true);
     setError("");
-  
+
     try {
-      console.log("Before signIn:", { email, password, callbackUrl });
       if (!email || !password) {
         setError("Please enter both email and password");
         setIsLoading(false);
         return;
       }
-  
+
       const result = await signIn("keycloak-direct", {
         redirect: false,
         username: email,
         password: password,
         callbackUrl: callbackUrl,
       });
-      console.log("SignIn result:", JSON.stringify(result, null, 2));
-  
+
       if (result?.error) {
         console.log("Login failed with error:", result.error);
-        setError("Invalid email or password");
+
+        if (result.error.includes("Account is not fully set up")) {
+          setError("Please verify your email before logging in. Check your inbox for a verification email.");
+        } else {
+          setError("Invalid email or password");
+        }
+
         setIsLoading(false);
       } else {
         console.log("Login successful, redirecting to:", callbackUrl);
@@ -56,24 +63,21 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Detailed login error:", error);
-      setError("An error occurred during login: " + error.message);
+      if (error instanceof Error) {
+        setError("An error occurred during login: " + error.message);
+      } else {
+        setError("An unexpected error occurred during login");
+      }
       setIsLoading(false);
     }
   };
 
-  const handleCreateAccount = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleCreateAccount = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    setIsRegistrationOpen(true);
+  };
 
-    const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_DIRECT_ISSUER;
-    const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_DIRECT_ID;
-
-    const loginPageUrl = `${window.location.origin}/login_signup`;
-
-    const registrationUrl = `${keycloakIssuer}/protocol/openid-connect/registrations?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-      loginPageUrl
-    )}&response_type=code&kc_locale=en`;
-
-    window.location.href = registrationUrl;
+  const handleRegistrationSuccess = (email: string) => {
+    setEmail(email);
   };
 
   return (
@@ -152,13 +156,12 @@ export default function LoginPage() {
         <div className="mt-2 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{" "}
-            <a
-              href="#"
+            <button
               onClick={handleCreateAccount}
               className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
             >
               Create Account
-            </a>
+            </button>
           </p>
 
           <div className="mt-6 relative">
@@ -179,6 +182,8 @@ export default function LoginPage() {
           </button>
         </div>
       </div>
+
+      <RegistrationDialog isOpen={isRegistrationOpen} onClose={() => setIsRegistrationOpen(false)} onSuccess={handleRegistrationSuccess} />
     </div>
   );
 }

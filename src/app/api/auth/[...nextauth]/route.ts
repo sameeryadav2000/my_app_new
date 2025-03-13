@@ -50,14 +50,39 @@ function requestRefreshOfAccessToken(token: JWT) {
   if (!token.refreshToken) {
     throw new Error("Refresh token is missing");
   }
+  // Check if the provider is defined
+  if (!token.provider) {
+    throw new Error("Provider information missing in token");
+  }
 
-  return fetch(`${process.env.KEYCLOAK_DIRECT_ISSUER}/protocol/openid-connect/token`, {
+  const isGoogle = token.provider === "keycloak-google";
+
+  const issuer = isGoogle ? process.env.KEYCLOAK_GOOGLE_ISSUER : process.env.KEYCLOAK_DIRECT_ISSUER;
+
+  const clientId = isGoogle ? process.env.KEYCLOAK_GOOGLE_ID : process.env.KEYCLOAK_DIRECT_ID;
+
+  const clientSecret = isGoogle ? process.env.KEYCLOAK_GOOGLE_SECRET : process.env.KEYCLOAK_DIRECT_SECRET;
+
+  // Validate required environment variables
+  if (!issuer) {
+    throw new Error(`Missing environment variable: ${isGoogle ? "KEYCLOAK_GOOGLE_ISSUER" : "KEYCLOAK_DIRECT_ISSUER"}`);
+  }
+
+  if (!clientId) {
+    throw new Error(`Missing environment variable: ${isGoogle ? "KEYCLOAK_GOOGLE_ID" : "KEYCLOAK_DIRECT_ID"}`);
+  }
+
+  if (!clientSecret) {
+    throw new Error(`Missing environment variable: ${isGoogle ? "KEYCLOAK_GOOGLE_SECRET" : "KEYCLOAK_DIRECT_SECRET"}`);
+  }
+
+  return fetch(`${issuer}/protocol/openid-connect/token`, {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.KEYCLOAK_DIRECT_ID || "",
-      client_secret: process.env.KEYCLOAK_DIRECT_SECRET || "",
+      client_id: clientId,
+      client_secret: clientSecret,
       grant_type: "refresh_token",
-      refresh_token: token.refreshToken || "",
+      refresh_token: token.refreshToken,
     }),
     method: "POST",
     cache: "no-store",
@@ -219,7 +244,7 @@ export const authOptions: AuthOptions = {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
-        token.provider = account.provider; // Add this line to store the provider
+        token.provider = account.provider;
         return token;
       }
 
@@ -232,7 +257,7 @@ export const authOptions: AuthOptions = {
         return token;
       }
 
-      if (token.expiresAt !== undefined && Date.now() < token.expiresAt) {
+      if (token.expiresAt !== undefined && Date.now() < token.expiresAt * 1000 - 60 * 1000) {
         return token;
       } else {
         try {

@@ -7,7 +7,6 @@ import { ShoppingCart, Search, Menu } from "lucide-react";
 import LoginLogout from "../components/LoginLogout";
 import Spacer from "./Spacer";
 import { useCart } from "@/context/CartContext";
-import { useEffect } from "react";
 
 export default function Navbar() {
   const { cart } = useCart();

@@ -12,11 +12,11 @@ function logoutParams(token: JWT): Record<string, string> {
     throw new Error("ID token is missing from the authentication session");
   }
 
-  const baseUrl = process.env.NEXTAUTH_URL.replace(/\/$/, '');
-  const redirectPath = process.env.LOGOUT_REDIRECT_PATH || '/';
-  const fullRedirectUrl = redirectPath.startsWith('http') 
-    ? redirectPath 
-    : `${baseUrl}${redirectPath.startsWith('/') ? '' : '/'}${redirectPath}`;
+  const baseUrl = process.env.NEXTAUTH_URL.replace(/\/$/, "");
+  const redirectPath = process.env.LOGOUT_REDIRECT_PATH || "/";
+  const fullRedirectUrl = redirectPath.startsWith("http")
+    ? redirectPath
+    : `${baseUrl}${redirectPath.startsWith("/") ? "" : "/"}${redirectPath}`;
 
   return {
     id_token_hint: token.idToken,
@@ -37,9 +37,11 @@ function handleEmptyToken() {
 }
 
 function sendEndSessionEndpointToURL(token: JWT) {
-  const endSessionEndPoint = new URL(
-    `${process.env.KEYCLOAK_GOOGLE_ISSUER}/protocol/openid-connect/logout`
-  );
+  const isGoogle = token.provider === "keycloak-google";
+
+  const issuer = isGoogle ? process.env.KEYCLOAK_GOOGLE_ISSUER : process.env.KEYCLOAK_DIRECT_ISSUER;
+
+  const endSessionEndPoint = new URL(`${issuer}/protocol/openid-connect/logout`);
   const params: Record<string, string> = logoutParams(token);
   const endSessionParams = new URLSearchParams(params);
   const logoutUrl = `${endSessionEndPoint.href}?${endSessionParams}`;
@@ -58,14 +60,10 @@ export async function GET(req: NextRequest) {
     }
 
     return handleEmptyToken();
-    
   } catch (error) {
     console.error("Federated logout error:", error);
 
-    const errorMessage =
-      error instanceof Error
-        ? `Logout failed: ${error.message}`
-        : "Unable to logout from the session";
+    const errorMessage = error instanceof Error ? `Logout failed: ${error.message}` : "Unable to logout from the session";
 
     return NextResponse.json(
       {
