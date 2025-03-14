@@ -10,7 +10,6 @@ import { CartProvider } from "@/context/CartContext";
 import Footer from "@/app/components/Footer";
 import { LoadingProvider } from "@/context/LoadingContext";
 
-// import CartRecovery from "@/app/components/CartRecovery";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,7 +40,6 @@ export default function RootLayout({
           <SessionGuard>
             <CartProvider>
               <LoadingProvider>
-                {/* <CartRecovery /> */}
                 <Navbar />
                 {children}
                 <Footer />

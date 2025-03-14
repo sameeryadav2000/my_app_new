@@ -23,48 +23,67 @@ model Slideshow {
 }
 
 model Phone {
-  id    Int    @id @default(autoincrement())
-  phone String @db.VarChar(255)
+  id                  Int                 @id @default(autoincrement())
+  phone               String              @db.VarChar(255)
+  modelDropdowns      PhoneModel[]
 }
 
-model Iphone {
-  id         Int           @id @default(autoincrement())
-  bestseller Boolean       @default(false)
-  title      String        @db.VarChar(255)
-  price      Float
-  image      String        @db.VarChar(255)
-  carrier    String        @db.VarChar(50)
+model Color {
+  id        Int      @id @default(autoincrement())
+  color     String   @db.VarChar(50)
 
-  models     IphoneModels[]
-  images     ModelImage[]   
+  phoneModelDetails PhoneModelDetails[] @relation("ColorToPhoneModelDetails")
+  modelImages       ModelImage[]        @relation("ColorToModelImage")
 }
 
-model IphoneModels {
+model PhoneModel {
+  id          Int    @id @default(autoincrement())
+  model       String @db.VarChar(255)
+  phoneId     Int    
+  phone       Phone  @relation(fields: [phoneId], references: [id])
+  price       Float
+  bestseller  Boolean @default(false)
+  details     PhoneModelDetails[]
+  images      ModelImage[]
+  
+  @@index([phoneId])
+}
+
+model PhoneModelDetails {
   id        Int         @id @default(autoincrement())
   title     String      @db.VarChar(255)
-  iphoneId  Int     
-  iphone    Iphone      @relation(fields: [iphoneId], references: [id])
+  phoneId   Int     
+  phone     PhoneModel  @relation(fields: [phoneId], references: [id])
   storage   String      @db.VarChar(50)
   condition String      @db.VarChar(50)
-  color     String      @db.VarChar(50)
-  colorId   Int?        
-  carrier   String      @db.VarChar(50)
+
+  colorId   Int?      
+  color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
+
   available Boolean     @default(true)
   price     Float
+
+  createdBy String
+  user      User        @relation(fields: [createdBy], references: [id])
+
   reviews   Review[]
   
-  @@index([iphoneId])
+  @@index([phoneId])
   @@index([colorId])
+  @@index([createdBy])
 }
 
 model ModelImage {
   id           Int          @id @default(autoincrement())
   image        String       @db.VarChar(255)
-  colorId      Int?         
-  iphoneId      Int?          // Made nullable to maintain compatibility
-  iphone        Iphone?       @relation(fields: [iphoneId], references: [id])
 
-  @@index([iphoneId])
+  colorId      Int?    
+  color        Color?       @relation("ColorToModelImage", fields: [colorId], references: [id])
+
+  phoneId      Int?        
+  phone        PhoneModel?  @relation(fields: [phoneId], references: [id])
+
+  @@index([phoneId])
   @@index([colorId])
 }
 
@@ -90,49 +109,50 @@ model ShippingInfo {
 
 
 model User {
-  id            String         @id @default(uuid())
-  externalId    String?        @unique  // Keycloak user ID
-  email         String         @unique
-  emailVerified Boolean        @default(false)
+  id                String         @id @default(uuid())
+  externalId        String?        @unique  // Keycloak user ID
+  email             String         @unique
+  emailVerified     Boolean        @default(false)
   
   // Profile information
-  firstName     String?        @db.VarChar(50)
-  lastName      String?        @db.VarChar(50)
-  phoneNumber   String?        @db.VarChar(20)
-  avatar        String?        @db.Text     // URL to profile picture
+  firstName         String?        @db.VarChar(50)
+  lastName          String?        @db.VarChar(50)
+  phoneNumber       String?        @db.VarChar(20)
+  avatar            String?        @db.Text     // URL to profile picture
   
   // Account status
-  isActive      Boolean        @default(true)
+  isActive          Boolean        @default(true)
+  admin             Boolean        @default(false)
   
   // Timestamps
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  lastLoginAt   DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  lastLoginAt       DateTime?
 
   // Relations
-  shippingInfo  ShippingInfo?
-  cartItems     CartItem[]
-  reviews       Review[]       // Added relation to reviews
+  shippingInfo      ShippingInfo?
+  cartItems         CartItem[]
+  reviews           Review[]       // Added relation to reviews
+
+  phoneModelDetails PhoneModelDetails[] @relation
 
   @@index([email])
   @@index([externalId])
 }
 
 model Review {
-  id             String        @id @default(uuid())
-  rating         Int           // e.g., 1-5 stars
-  title          String        @db.VarChar(255)
-  comment        String        @db.Text
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id             String             @id @default(uuid())
+  rating         Int               
+  title          String             @db.VarChar(255)
+  comment        String             @db.Text
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   
-  // User relation
   userId         String
-  user           User          @relation(fields: [userId], references: [id])
+  user           User               @relation(fields: [userId], references: [id])
   
-  // Primary relation is to the specific model the user purchased
   modelId        Int
-  model          IphoneModels  @relation(fields: [modelId], references: [id])
+  model          PhoneModelDetails  @relation(fields: [modelId], references: [id])
 
   @@index([userId])
   @@index([modelId])
