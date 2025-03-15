@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
 import { useSearchParams } from "next/navigation";
 import RegistrationDialog from "@/app/components/RegistrationDialog";
+import SessionExpiredAlert from "@/app/components/SessionExpiredAlert";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
@@ -91,6 +92,8 @@ export default function LoginPage() {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleDirectLogin}>
+          <SessionExpiredAlert />
+
           {error && <div className="p-3 bg-red-50 text-red-500 rounded-lg text-sm">{error}</div>}
 
           <div className="space-y-6">

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { PhoneModelDetails } from "@/app/dashboard/products/page";
 
 export interface ProductData {
   phoneType: "iPhone" | "Samsung" | "Google" | "OnePlus" | "Huawei" | "Other" | "";
@@ -21,13 +22,14 @@ interface DashboardProductAddProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (productData: ProductData) => void;
+  productToEdit?: PhoneModelDetails | null;
 }
 
-export default function DashboardProductAdd({ isOpen, onClose, onSave }: DashboardProductAddProps) {
+export default function DashboardProductAdd({ isOpen, onClose, onSave, productToEdit }: DashboardProductAddProps) {
   const [phoneModels, setPhoneModels] = useState<{ id: number; name: string }[]>([]);
   const [colors, setColors] = useState<{ id: number; color: string }[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [userError, setUserError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<ProductData>({
@@ -45,6 +47,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
   });
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -88,7 +91,6 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    debugger;
     e.preventDefault();
 
     const selectedColor = formData.color ? JSON.parse(formData.color).color : "";
@@ -113,6 +115,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
       createdBy: "",
     });
     setImagePreviews([]);
+    setExistingImages([]);
     onClose();
   };
 
@@ -191,7 +194,45 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
         createdBy: "",
       }));
     }
-  }, [isOpen, status, session]);
+  }, [session]);
+
+  // Populate form data when editing a product
+  useEffect(() => {
+    if (productToEdit && isOpen) {
+      // Determine phone type from phone model name
+      const getPhoneType = (model: string): "iPhone" | "Samsung" | "Google" | "OnePlus" | "Huawei" | "Other" => {
+        if (model.includes("iPhone")) return "iPhone";
+        if (model.includes("Samsung") || model.includes("Galaxy")) return "Samsung";
+        if (model.includes("Pixel") || model.includes("Google")) return "Google";
+        if (model.includes("OnePlus")) return "OnePlus";
+        if (model.includes("Huawei")) return "Huawei";
+        return "Other";
+      };
+
+      const phoneType = getPhoneType(productToEdit.phone.model);
+
+      // Set form data from the product to edit
+      setFormData({
+        phoneType: phoneType,
+        model: productToEdit.title,
+        modelId: productToEdit.phoneId,
+        colorId: productToEdit.colorId,
+        condition: productToEdit.condition as any,
+        storage: productToEdit.storage as any,
+        color: JSON.stringify({ id: productToEdit.colorId, color: productToEdit.color.color }),
+        price: productToEdit.price.toString(),
+        available: productToEdit.available ? "yes" : "no",
+        images: [],
+        createdBy: productToEdit.createdBy,
+      });
+
+      // If there are existing images, display them
+      if (productToEdit.images && productToEdit.images.length > 0) {
+        const imageUrls = productToEdit.images.map((img) => img.image);
+        setExistingImages(imageUrls);
+      }
+    }
+  }, [productToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -200,8 +241,8 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl mx-6 overflow-hidden transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
         <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 p-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">Add New Product</h2>
-            <p className="text-blue-100 text-sm mt-1">Create a new product listing</p>
+            <h2 className="text-2xl font-bold text-white">{productToEdit ? "Edit Product" : "Add New Product"}</h2>
+            <p className="text-blue-100 text-sm mt-1">{productToEdit ? "Update product information" : "Create a new product listing"}</p>
           </div>
           <button onClick={onClose} className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,7 +282,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
               <label className="block text-sm font-semibold text-gray-800">Model</label>
               <select
                 name="model"
-                value={formData.model}
+                value={formData.model ? JSON.stringify({ id: formData.modelId, name: formData.model }) : ""}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
                 required
@@ -348,7 +389,35 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
           </div>
 
           <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-800">Product Images</label>
+            <div className="flex justify-between items-center">
+              <label className="block text-sm font-semibold text-gray-800">Product Images</label>
+              {existingImages.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  {existingImages.length} existing image{existingImages.length > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+
+            {/* Existing Images */}
+            {existingImages.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Current Images:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {existingImages.map((image, index) => (
+                    <div key={`existing-${index}`} className="relative">
+                      <img
+                        src={image}
+                        alt={`Product ${index}`}
+                        className="w-full h-32 object-cover rounded-lg shadow-sm border border-gray-200"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">{productToEdit ? "Upload new images to replace these." : ""}</p>
+              </div>
+            )}
+
+            {/* Upload new images */}
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center bg-gray-50 hover:bg-gray-100 transition-colors">
               <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload" />
               <label
@@ -363,27 +432,31 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
                     d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
                   />
                 </svg>
-                Upload Images
+                {productToEdit ? "Upload New Images" : "Upload Images"}
               </label>
               <p className="text-sm text-gray-500 mt-2">Supports multiple images (JPG, PNG)</p>
             </div>
 
+            {/* New image previews */}
             {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
-                    <img src={preview} alt={`Preview ${index}`} className="w-full h-32 object-cover rounded-lg shadow-sm" />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">New Images:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={`new-${index}`} className="relative group">
+                      <img src={preview} alt={`Preview ${index}`} className="w-full h-32 object-cover rounded-lg shadow-sm" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -401,7 +474,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave }: Dashboa
               className="px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
               disabled={!!userError || !formData.createdBy}
             >
-              Save Product
+              {productToEdit ? "Update Product" : "Save Product"}
             </button>
           </div>
         </form>

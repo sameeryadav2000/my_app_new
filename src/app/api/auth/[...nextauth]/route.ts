@@ -8,6 +8,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 declare module "next-auth" {
   interface Session {
     accessToken?: string;
+    error?: string;
     user?: {
       id: string;
       firstName: string | null;
@@ -35,6 +36,8 @@ declare module "next-auth/jwt" {
     expiresAt?: number;
     refreshToken?: string;
     idToken?: string;
+    provider?: string;
+    error?: string;
   }
 }
 
@@ -248,6 +251,7 @@ export const authOptions: AuthOptions = {
     },
 
     async jwt({ token, user, account }: { token: JWT; user: ExtendedUser; account: Account | null }) {
+
       if (account && account.access_token) {
         token.idToken = account.id_token;
         token.accessToken = account.access_token;
@@ -273,9 +277,12 @@ export const authOptions: AuthOptions = {
           const response = await requestRefreshOfAccessToken(token);
 
           if (!response.ok) {
-            // If the response is not OK, throw an error immediately
             const errorData = await response.json();
-            throw new Error(errorData.error_description || "Failed to refresh token");
+            console.error("Token refresh failed:", errorData);
+            return {
+              ...token,
+              error: "RefreshAccessTokenError",
+            };
           }
 
           const tokens: TokenSet = await response.json();
@@ -292,7 +299,10 @@ export const authOptions: AuthOptions = {
           return updatedToken;
         } catch (error) {
           console.error("Error refreshing access token", error);
-          return {};
+          return {
+            ...token,
+            error: "RefreshAccessTokenError",
+          };
         }
       }
     },
@@ -301,6 +311,10 @@ export const authOptions: AuthOptions = {
       const { session, token } = params;
 
       session.accessToken = token.accessToken as string | undefined;
+
+      if (token.error) {
+        session.error = token.error;
+      }
 
       if (session.user) {
         session.user.id = "";

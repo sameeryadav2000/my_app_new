@@ -1,9 +1,57 @@
 // app/dash_api/phone_model_details/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { join } from "path";
 import { mkdir } from "fs/promises";
 import prisma from "../../../../lib/prisma"; // Import your database client
+
+export async function GET(request: NextRequest) {
+  try {
+    // Get the current user's session
+    const session = await getServerSession(authOptions);
+
+    // If no session or no user, return unauthorized
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Get the user ID from the session
+    const userId = session.user.id;
+
+    // Query the database for phone model details created by this user
+    const phoneModelDetails = await prisma.phoneModelDetails.findMany({
+      where: {
+        createdBy: userId,
+      },
+      include: {
+        phone: true,
+        color: true,
+      },
+      orderBy: {
+        id: "desc",
+      },
+    });
+
+    const detailsWithImages = await Promise.all(
+      phoneModelDetails.map(async (detail) => {
+        const images = await prisma.modelImage.findMany({
+          where: {
+            phoneId: detail.phoneId,
+            colorId: detail.colorId,
+          },
+        });
+        return { ...detail, images };
+      })
+    );
+
+    return NextResponse.json(detailsWithImages);
+  } catch (error) {
+    console.error("Error fetching phone model details:", error);
+    return NextResponse.json({ error: "Failed to fetch phone model details" }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

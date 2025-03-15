@@ -61,6 +61,7 @@ model PhoneModelDetails {
   color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
 
   available Boolean     @default(true)
+  purchased Boolean     @default(false)
   price     Float
 
   createdBy String
