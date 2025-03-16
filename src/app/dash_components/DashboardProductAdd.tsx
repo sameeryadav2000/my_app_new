@@ -1,11 +1,14 @@
 "use client";
 
+import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/context/NotificationContext";
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { PhoneModelDetails } from "@/app/dashboard/products/page";
 
 export interface ProductData {
-  phoneType: "iPhone" | "Samsung" | "Google" | "OnePlus" | "Huawei" | "Other" | "";
+  id: number | null;
+  phoneType: string;
   model: string;
   modelId: number | null;
   colorId: number | null;
@@ -19,20 +22,24 @@ export interface ProductData {
 }
 
 interface DashboardProductAddProps {
-  isOpen: boolean;
   onClose: () => void;
   onSave: (productData: ProductData) => void;
-  productToEdit?: PhoneModelDetails | null;
+  productToEdit: PhoneModelDetails | null;
 }
 
-export default function DashboardProductAdd({ isOpen, onClose, onSave, productToEdit }: DashboardProductAddProps) {
-  const [phoneModels, setPhoneModels] = useState<{ id: number; name: string }[]>([]);
+export default function DashboardProductAdd({ onClose, onSave, productToEdit }: DashboardProductAddProps) {
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
   const [colors, setColors] = useState<{ id: number; color: string }[]>([]);
+  const [phoneTypes, setPhoneTypes] = useState<{ id: number; phone_type: string }[]>([]);
+
+  const [phoneModels, setPhoneModels] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const { data: session } = useSession();
   const [userError, setUserError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<ProductData>({
+    id: null,
     phoneType: "",
     model: "",
     modelId: null,
@@ -48,6 +55,114 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave, productTo
 
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        showLoading();
+
+        const response = await fetch("/dash_api/colors", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+        const colors = result.data;
+        setColors(colors);
+      } catch (error) {
+        showError("Error", "Failed to load colors. Please check your connection and try again.");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    fetchColors();
+  }, []);
+
+  useEffect(() => {
+    const fetchPhoneTypes = async () => {
+      try {
+        showLoading();
+
+        const response = await fetch("/dash_api/phone_type", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+        const phone_types = result.data;
+        setPhoneTypes(phone_types);
+      } catch (error) {
+        showError("Error", "Failed to load phone types. Please check your connection and try again.");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    fetchPhoneTypes();
+  }, []);
+
+  useEffect(() => {
+    if (formData.phoneType) {
+      const fetchModels = async () => {
+        try {
+          const response = await fetch(`/dash_api/phone?type=${formData.phoneType}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            setPhoneModels([]);
+            throw new Error("Failed to fetch phone details");
+          }
+
+          const data = await response.json();
+          setPhoneModels(data.models);
+        } catch (error) {
+          console.error("Error fetching phone details:", error);
+        }
+      };
+
+      fetchModels();
+    }
+  }, [formData.phoneType]);
+
+  useEffect(() => {
+    if (session) {
+      const userId = (session as any).user?.id || "";
+
+      setFormData((prev) => ({
+        ...prev,
+        createdBy: userId,
+      }));
+      setUserError(userId ? null : "Unable to retrieve user ID. Please log in again.");
+    } else {
+      console.warn("User ID is undefined or not a string in session");
+      setUserError("Unable to retrieve user ID. Please log in again.");
+      setFormData((prev) => ({
+        ...prev,
+        createdBy: "",
+      }));
+    }
+  }, [session]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -102,6 +217,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave, productTo
     });
 
     setFormData({
+      id: null,
       phoneType: "",
       model: "",
       modelId: null,
@@ -116,89 +232,12 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave, productTo
     });
     setImagePreviews([]);
     setExistingImages([]);
-    onClose();
+    // onClose();
   };
-
-  useEffect(() => {
-    if (formData.phoneType) {
-      const fetchData = async () => {
-        try {
-          const response = await fetch(`/dash_api/phone?type=${formData.phoneType}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (!response.ok) {
-            setPhoneModels([]);
-            throw new Error("Failed to fetch phone details");
-          }
-
-          const data = await response.json();
-          setPhoneModels(data.models);
-        } catch (error) {
-          console.error("Error fetching phone details:", error);
-        }
-      };
-
-      fetchData();
-    }
-  }, [formData.phoneType]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setLoading(true);
-      const fetchColors = async () => {
-        try {
-          const response = await fetch("/dash_api/colors", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (!response.ok) {
-            setColors([]);
-            throw new Error("Failed to fetch colors");
-          }
-
-          const data = await response.json();
-          setColors(Array.isArray(data.colors) ? data.colors : []);
-        } catch (error) {
-          console.error("Error fetching colors:", error);
-          setColors([]);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchColors();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (session) {
-      const userId = (session as any).user?.id || "";
-
-      setFormData((prev) => ({
-        ...prev,
-        createdBy: userId,
-      }));
-      setUserError(userId ? null : "Unable to retrieve user ID. Please log in again.");
-    } else {
-      console.warn("User ID is undefined or not a string in session");
-      setUserError("Unable to retrieve user ID. Please log in again.");
-      setFormData((prev) => ({
-        ...prev,
-        createdBy: "",
-      }));
-    }
-  }, [session]);
 
   // Populate form data when editing a product
   useEffect(() => {
-    if (productToEdit && isOpen) {
+    if (productToEdit) {
       // Determine phone type from phone model name
       const getPhoneType = (model: string): "iPhone" | "Samsung" | "Google" | "OnePlus" | "Huawei" | "Other" => {
         if (model.includes("iPhone")) return "iPhone";
@@ -213,6 +252,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave, productTo
 
       // Set form data from the product to edit
       setFormData({
+        id: productToEdit.id,
         phoneType: phoneType,
         model: productToEdit.title,
         modelId: productToEdit.phoneId,
@@ -232,9 +272,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave, productTo
         setExistingImages(imageUrls);
       }
     }
-  }, [productToEdit, isOpen]);
-
-  if (!isOpen) return null;
+  }, [productToEdit]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-gray-900/90 to-gray-800/90 flex items-center justify-center z-50 backdrop-blur-md">
@@ -343,7 +381,7 @@ export default function DashboardProductAdd({ isOpen, onClose, onSave, productTo
                 required
               >
                 <option value="">Select Color</option>
-                {loading ? (
+                {isLoading ? (
                   <option value="" disabled>
                     Loading colors...
                   </option>

@@ -1,15 +1,15 @@
 // E:\my_app_new\src\app\homepage\layout.tsx
 
+import "./globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import Navbar from "@/app/components/Navbar";
 import AuthProvider from "../components/AuthProvider";
 import SessionGuard from "@/app/components/SessionGuard";
 import { CartProvider } from "@/context/CartContext";
 import Footer from "@/app/components/Footer";
 import { LoadingProvider } from "@/context/LoadingContext";
-
+import { NotificationProvider } from "@/context/NotificationContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,16 +33,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
           <SessionGuard>
             <CartProvider>
               <LoadingProvider>
-                <Navbar />
-                {children}
-                <Footer />
+                <NotificationProvider>
+                  <Navbar />
+                  {children}
+                  <Footer />
+                </NotificationProvider>
               </LoadingProvider>
             </CartProvider>
           </SessionGuard>

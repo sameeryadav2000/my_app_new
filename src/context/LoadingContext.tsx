@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import LoadingScreen from "@/app/components/LoadingScreen";
+import LoadingScreen from "./LoadingScreen";
 
 interface LoadingContextType {
   isLoading: boolean;
