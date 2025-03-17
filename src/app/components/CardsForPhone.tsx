@@ -42,9 +42,7 @@ const CardsForPhone: React.FC<CardProps> = ({
 
         <p className={`${startingTextClassName}`}>{startingText}</p>
 
-        <div className={`${priceClassName}`}>
-          {typeof price === "number" ? `$${price.toFixed(2)}` : price}
-        </div>
+        <div className={`${priceClassName}`}>{typeof price === "number" ? `$${price.toFixed(2)}` : price}</div>
       </div>
     </div>
   );

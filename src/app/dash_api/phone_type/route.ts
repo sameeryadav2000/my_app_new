@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: phone_types.map((phone_type) => ({
         id: phone_type.id,
-        color: phone_type.phone,
+        phone_type: phone_type.phone,
       })),
     });
   } catch (error) {

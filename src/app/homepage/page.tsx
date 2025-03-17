@@ -9,14 +9,13 @@ import Spacer from "@/app/components/Spacer";
 import RecentlyViewed from "@/app/components/RecentlyViewed";
 
 const cardsData = [
-  { title: "iPhone", image: "phone_images/phone.jpg" },
-  { title: "Vivo", image: "phone_images/phone.jpg" },
-  { title: "Xiaomi", image: "phone_images/phone.jpg" },
-  { title: "Huawei", image: "phone_images/phone.jpg" },
+  { title: "iPhone", image: "phone_images/yellow/1.jpg" },
+  { title: "Vivo", image: "phone_images/yellow/1.jpg" },
+  { title: "Xiaomi", image: "phone_images/yellow/1.jpg" },
+  { title: "Huawei", image: "phone_images/yellow/1.jpg" },
 ];
 
-export default function Home() {
-
+export default function HomePage() {
   return (
     <div>
       <div>
@@ -24,9 +23,7 @@ export default function Home() {
       </div>
       <Spacer />
 
-      <div>
-        <RecentlyViewed />
-      </div>
+      <div>{/* <RecentlyViewed /> */}</div>
       <Spacer />
 
       <div className="w-[95%] md:w-[70%] mx-auto">
@@ -36,15 +33,8 @@ export default function Home() {
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           {cardsData.length > 0 ? (
             cardsData.map((card, index) => (
-              <div
-                key={index}
-                className="group transition-transform duration-300 hover:translate-y-[-5px]"
-              >
-                <Link
-                  href={`/homepage/product_page/${encodeURIComponent(
-                    card.title
-                  )}`}
-                >
+              <div key={index} className="group transition-transform duration-300 hover:translate-y-[-5px]">
+                <Link href={`/homepage/product_page/${encodeURIComponent(card.title)}`}>
                   <div
                     className="h-full bg-white rounded-2xl overflow-hidden
              transform transition-all duration-300

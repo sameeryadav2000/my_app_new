@@ -2,6 +2,8 @@
 
 "use client";
 
+import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
@@ -21,100 +23,94 @@ interface StorageOption {
   storage: string;
 }
 
-interface ColorOption {
-  id: string | number;
+interface Color {
+  id: number;
   color: string;
-  price: number | string;
-  iphoneId: number | string;
-  colorId: number | string;
 }
 
-interface ModelImage {
+interface ColorOption {
   id: number;
-  image: string;
-  iphoneModelId: number;
+  color: Color;
+  colorId: number;
+  images: [];
+  price: number;
+  phoneId: number;
 }
 
 export default function ProductPage() {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isLoadingImage, setIsLoadingImage] = useState<boolean>(true);
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
+
+  const params = useParams();
+  const phoneModelId = params.id;
+  const phoneModelName = (params.title as string).replace(/-/g, " ");
 
   const [selectedCondition, setSelectedCondition] = useState<string>("");
   const [selectedStorage, setSelectedStorage] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
 
-  const [conditionOptions, setConditionOptions] = useState<ConditionOption[]>(
-    []
-  );
+  const [conditionOptions, setConditionOptions] = useState<ConditionOption[]>([]);
   const [storageOptions, setStorageOptions] = useState<StorageOption[]>([]);
   const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
 
-  const [prevSelectedCondition, setPrevSelectedCondition] =
-    useState<string>("");
+  const [priceSelected, setPriceSelected] = useState<number>(0);
+  const [phoneId, setPhoneId] = useState<string>("");
+  const [modelImages, setModelImages] = useState<string[]>([]);
+
+  const [prevSelectedCondition, setPrevSelectedCondition] = useState<string>("");
   const [prevSelectedStorage, setPrevSelectedStorage] = useState<string>("");
   const [prevSelectedColor, setPrevSelectedColor] = useState<string>("");
 
-  const [error, setError] = useState<string>("");
-
-  const params = useParams();
-  const iphoneTableId = params.id;
-  const phoneModelName = (params.title as string).replace(/-/g, " ");
-
   const isFirstRender = useRef(true);
 
-  const [modelImages, setModelImages] = useState<ModelImage[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const colors: Record<string, string> = {
+    Black: "bg-black",
+    Red: "bg-red-400",
+    Blue: "bg-blue-400",
+    Green: "bg-green-400",
+    Pink: "bg-pink-300",
+  };
 
   useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-
     const fetchIphoneModels = async () => {
-      setIsLoading(true);
+      showLoading();
 
       try {
         const response = await fetch(
-          `/api/iphone_models?id=${iphoneTableId}&condition=${selectedCondition}&storage=${selectedStorage}`,
-          { signal }
+          `/api/phone_model_details?id=${phoneModelId}&condition=${selectedCondition}&storage=${selectedStorage}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
-
-        if (!response.ok) {
-          throw new Error(`API responded with status: ${response.status}`);
-        }
 
         const result = await response.json();
 
-        if (Array.isArray(result.result) && result.result.length > 0) {
-          if (!selectedCondition) {
-            setConditionOptions(result.result);
-          } else if (!selectedStorage && selectedCondition) {
-            setStorageOptions(result.result);
-          } else if (!selectedColor && selectedCondition) {
-            setColorOptions(result.result);
-          }
-        } else {
-          setError("No products found");
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+        if (!selectedCondition) {
+          setConditionOptions(result.data);
+        } else if (!selectedStorage && selectedCondition) {
+          setStorageOptions(result.data);
+        } else if (!selectedColor && selectedCondition) {
+          setColorOptions(result.data);
         }
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          console.log("Fetch aborted");
-          setError("Request was cancelled");
-        } else {
-          console.error("Error fetching products:", error);
-          setError("Failed to load products");
-        }
+        showError("Error", "Failed to load phone model details. Please check your connection and try again.");
       } finally {
-        setIsLoading(false);
+        hideLoading();
       }
     };
 
     fetchIphoneModels();
-
-    return () => {
-      abortController.abort();
-    };
-  }, [iphoneTableId, selectedCondition, selectedStorage]);
+  }, [selectedCondition, selectedStorage]);
 
   useEffect(() => {
     if (isFirstRender.current) {
@@ -123,87 +119,36 @@ export default function ProductPage() {
     }
 
     if (conditionOptions.length > 0 && selectedCondition === "") {
-      if (
-        conditionOptions.some(
-          (option) => option.condition === prevSelectedCondition
-        )
-      ) {
+      if (conditionOptions.some((option) => option.condition === prevSelectedCondition)) {
         setSelectedCondition(prevSelectedCondition);
       } else {
         setSelectedCondition(conditionOptions[0].condition);
       }
     } else if (storageOptions.length > 0 && selectedStorage === "") {
-      if (
-        storageOptions.some((option) => option.storage === prevSelectedStorage)
-      ) {
+      if (storageOptions.some((option) => option.storage === prevSelectedStorage)) {
         setSelectedStorage(prevSelectedStorage);
       } else {
         setSelectedStorage(storageOptions[0].storage);
       }
     } else if (colorOptions.length > 0 && selectedColor === "") {
-      if (colorOptions.some((option) => option.color === prevSelectedColor)) {
+      if (colorOptions.some((option) => option.color.color === prevSelectedColor)) {
         setSelectedColor(prevSelectedColor);
       } else {
-        setSelectedColor(colorOptions[0].color);
+        setSelectedColor(colorOptions[0].color.color);
       }
     }
   }, [conditionOptions, storageOptions, colorOptions]);
 
-  const currentPagePhoneId =
-    colorOptions
-      .find((option) => option.color === selectedColor)
-      ?.iphoneId?.toString() || "";
-
-  const currentPageColorId =
-    colorOptions
-      .find((option) => option.color === selectedColor)
-      ?.colorId?.toString() || "";
-
   useEffect(() => {
-    if (!selectedColor) {
-      return;
-    }
+    if (selectedColor) {
+      const option = colorOptions.find((opt) => opt.color.color === selectedColor);
 
-    const abortController = new AbortController();
-    const signal = abortController.signal;
-
-    const fetchCarousalImages = async () => {
-      setIsLoadingImage(true);
-      try {
-        const response = await fetch(
-          `/api/model_image?iphoneId=${currentPagePhoneId}&colorId=${currentPageColorId}`,
-          { signal }
-        );
-
-        if (!response.ok) {
-          throw new Error(`API responded with status: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (Array.isArray(result.result)) {
-          setModelImages(result.result);
-        } else {
-          setError("No images found");
-        }
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          console.log("Fetch aborted");
-          setError("Request was cancelled");
-        } else {
-          console.error("Error fetching carousal images:", error);
-          setError("Failed to load images");
-        }
-      } finally {
-        setIsLoadingImage(false);
+      if (option) {
+        setPriceSelected(option.price);
+        setPhoneId(option.id.toString());
+        setModelImages(option.images);
       }
-    };
-
-    fetchCarousalImages();
-
-    return () => {
-      abortController.abort();
-    };
+    }
   }, [selectedColor]);
 
   const nextImage = () => {
@@ -213,14 +158,10 @@ export default function ProductPage() {
 
   const prevImage = () => {
     if (modelImages.length === 0) return;
-    setCurrentImageIndex(
-      (prev) => (prev - 1 + modelImages.length) % modelImages.length
-    );
+    setCurrentImageIndex((prev) => (prev - 1 + modelImages.length) % modelImages.length);
   };
 
-  const handleConditionChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleConditionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPrevSelectedStorage(selectedStorage);
     setPrevSelectedColor(selectedColor);
 
@@ -244,32 +185,19 @@ export default function ProductPage() {
     setSelectedColor(event.target.value);
   };
 
-  const priceSelected = Number(
-    colorOptions.find((option) => option.color === selectedColor)?.price || 0
-  );
-
-  // const [selectedColorOther, setSelectedColorother] = useState<string>("Blue");
-
   const { data: session } = useSession();
   const { setCart } = useCart(); // Access cart and setCart
 
   const router = useRouter();
 
-  const phoneId =
-    colorOptions
-      .find((option) => option.color === selectedColor)
-      ?.id?.toString() || "";
-
   const handleAddToCart = async () => {
-    const imageToUse =
-      modelImages && modelImages.length > 0 ? modelImages[0].image : "";
+    const imageToUse = modelImages && modelImages.length > 0 ? modelImages[0].image : "";
 
     // // Create a new cart item from the selected options
     const newItem: CartItem = {
       id: phoneId,
       title: phoneModelName,
-      condition:
-        selectedCondition.charAt(0).toUpperCase() + selectedCondition.slice(1),
+      condition: selectedCondition.charAt(0).toUpperCase() + selectedCondition.slice(1),
       storage: selectedStorage,
       color: selectedColor,
       price: priceSelected || 0,
@@ -279,17 +207,12 @@ export default function ProductPage() {
 
     // Get existing cart from localStorage
     const existingCartJson = localStorage.getItem("cart");
-    const existingCart: Cart = existingCartJson
-      ? JSON.parse(existingCartJson)
-      : { items: [], totalItems: 0, subTotalPrice: 0 };
+    const existingCart: Cart = existingCartJson ? JSON.parse(existingCartJson) : { items: [], totalItems: 0, subTotalPrice: 0 };
 
     // Check if this exact item configuration already exists
     const existingItemIndex = existingCart.items.findIndex(
       (item) =>
-        item.id === newItem.id &&
-        item.condition === newItem.condition &&
-        item.storage === newItem.storage &&
-        item.color === newItem.color
+        item.id === newItem.id && item.condition === newItem.condition && item.storage === newItem.storage && item.color === newItem.color
     );
 
     let updatedCart: Cart;
@@ -297,17 +220,12 @@ export default function ProductPage() {
     if (existingItemIndex > -1) {
       // If item exists, increment its quantity
       const updatedItems = existingCart.items.map((item, index) =>
-        index === existingItemIndex
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
+        index === existingItemIndex ? { ...item, quantity: item.quantity + 1 } : item
       );
       updatedCart = {
         items: updatedItems,
         totalItems: updatedItems.reduce((sum, item) => sum + item.quantity, 0),
-        subTotalPrice: updatedItems.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        ),
+        subTotalPrice: updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
       };
     } else {
       // If item doesn't exist, add it to cart
@@ -346,14 +264,6 @@ export default function ProductPage() {
     }
   };
 
-  const colors: Record<string, string> = {
-    Black: "bg-black",
-    Red: "bg-red-400",
-    Blue: "bg-blue-400",
-    Green: "bg-green-400",
-    Pink: "bg-pink-300",
-  };
-
   return (
     <div>
       {/* <StickyHeader
@@ -378,18 +288,17 @@ export default function ProductPage() {
                 <div className="relative h-[300px] md:h-[500px] w-full mb-4 bg-white">
                   {modelImages.length > 0 ? (
                     <img
-                      src={modelImages[currentImageIndex]?.image}
-                      alt="Product"
+                      src={modelImages[currentImageIndex]}
+                      alt={`${selectedColor} iPhone - View ${currentImageIndex + 1}`}
                       className="absolute inset-0 h-full w-full object-contain rounded-lg"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                      No Images
-                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400">No Images</div>
                   )}
                   <button
                     onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={modelImages.length <= 1}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     aria-label="Previous image"
                   >
                     <svg
@@ -408,7 +317,8 @@ export default function ProductPage() {
 
                   <button
                     onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={modelImages.length <= 1}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     aria-label="Next image"
                   >
                     <svg
@@ -427,22 +337,14 @@ export default function ProductPage() {
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto justify-center">
-                  {modelImages.map((images, index) => (
+                  {modelImages.map((imagePath, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden border-2
-                                ${
-                                  currentImageIndex === index
-                                    ? "border-blue-500"
-                                    : "border-transparent"
-                                }`}
+                  ${currentImageIndex === index ? "border-blue-500" : "border-transparent"}`}
                     >
-                      <img
-                        src={images.image}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={imagePath} alt={`Thumbnail ${index + 1}`} className="h-full w-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -463,10 +365,7 @@ export default function ProductPage() {
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-bold">${priceSelected}</span>
                   </div>
-                  <AddToCartButton
-                    className="!w-40"
-                    onClick={handleAddToCart}
-                  />
+                  <AddToCartButton className="!w-40" onClick={handleAddToCart} />
                 </div>
               </div>
             </div>
@@ -498,13 +397,9 @@ export default function ProductPage() {
                       />
                       <div className="flex flex-col">
                         <span className="capitalize">{option.condition}</span>
-                        {selectedCondition === option.condition &&
-                        selectedColor ? (
+                        {selectedCondition === option.condition && selectedColor ? (
                           <span className="text-gray-600 text-sm mt-1">
-                            $
-                            {colorOptions.find(
-                              (opt) => opt.color === selectedColor
-                            )?.price || "—"}
+                            ${colorOptions.find((opt) => opt.color.color === selectedColor)?.price || "—"}
                           </span>
                         ) : (
                           <span className="inline-block w-14 h-4 mt-1 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded"></span>
@@ -513,9 +408,7 @@ export default function ProductPage() {
                     </label>
                   ))
                 ) : (
-                  <p className="col-span-full text-gray-500">
-                    No condition options available
-                  </p>
+                  <p className="col-span-full text-gray-500">No condition options available</p>
                 )}
               </div>
             </div>
@@ -544,10 +437,7 @@ export default function ProductPage() {
                       </div>
                       {selectedStorage === option.storage && selectedColor ? (
                         <span className="text-gray-600 text-sm mt-1">
-                          $
-                          {colorOptions.find(
-                            (opt) => opt.color === selectedColor
-                          )?.price || "—"}
+                          ${colorOptions.find((opt) => opt.color.color === selectedColor)?.price || "—"}
                         </span>
                       ) : (
                         <span className="inline-block w-14 h-4 mt-1 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded"></span>
@@ -555,9 +445,7 @@ export default function ProductPage() {
                     </label>
                   ))
                 ) : (
-                  <p className="col-span-full text-gray-500">
-                    No storage options available
-                  </p>
+                  <p className="col-span-full text-gray-500">No storage options available</p>
                 )}
               </div>
             </div>
@@ -574,7 +462,7 @@ export default function ProductPage() {
                       className={`flex items-center gap-4 p-2 border rounded-lg cursor-pointer 
                                 transition-all duration-200 ease-in-out
                                 ${
-                                  selectedColor === option.color
+                                  selectedColor === option.color.color
                                     ? "border-blue-500 bg-blue-50"
                                     : "border-gray-200 hover:border-blue-500"
                                 }`}
@@ -583,32 +471,26 @@ export default function ProductPage() {
                         type="radio"
                         name="color"
                         className="h-4 w-4"
-                        value={option.color}
-                        checked={selectedColor === option.color}
+                        value={option.color.color}
+                        checked={selectedColor === option.color.color}
                         onChange={handleColorChange}
                       />
-                      <div
-                        className={`w-4 h-4 rounded-full ${
-                          colors[option.color as keyof typeof colors] || ""
-                        }`}
-                      ></div>
+                      <div className={`w-4 h-4 rounded-full ${colors[option.color.color as keyof typeof colors] || ""}`}></div>
 
                       <div className="flex flex-col">
-                        <span className="text-gray-700">{option.color}</span>
+                        <span className="text-gray-700">{option.color.color}</span>
                         <span className="text-gray-500">${option.price}</span>
                       </div>
                     </label>
                   ))
                 ) : (
-                  <p className="col-span-full text-gray-500">
-                    No condition options available
-                  </p>
+                  <p className="col-span-full text-gray-500">No condition options available</p>
                 )}
               </div>
             </div>
 
             {/* Last Section */}
-            <div className="md:w-full md:h-screen flex flex-col justify-center">
+            {/* <div className="md:w-full md:h-screen flex flex-col justify-center">
               <div className="max-w-2xl">
                 <div className="flex justify-between items-start mb-6">
                   <h1 className="font-bold">Tadaaa</h1>
@@ -620,9 +502,7 @@ export default function ProductPage() {
                   </div>
 
                   <div className="flex gap-2 mb-4">
-                    <span className="px-3 py-1 border capitalize">
-                      {selectedCondition}
-                    </span>
+                    <span className="px-3 py-1 border capitalize">{selectedCondition}</span>
                     <span className="px-3 py-1 border">{selectedStorage}</span>
                     <span className="px-3 py-1 border">{selectedColor}</span>
                   </div>
@@ -634,7 +514,7 @@ export default function ProductPage() {
 
                 <AddToCartButton className="w-full" onClick={handleAddToCart} />
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

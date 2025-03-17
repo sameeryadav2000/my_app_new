@@ -21,7 +21,6 @@ export default function SessionGuard({ children }: { children: ReactNode }) {
 
   // Function to check for extended inactivity
   const checkExtendedInactivity = useCallback(() => {
-
     if (typeof window === "undefined" || !session) return;
 
     const lastActivityStr = localStorage.getItem("lastActivityTimestamp");
@@ -32,8 +31,6 @@ export default function SessionGuard({ children }: { children: ReactNode }) {
 
       // If user has been inactive for longer than the threshold
       if (inactivityDuration >= EXTENDED_INACTIVITY_THRESHOLD) {
-        console.log("Extended inactivity detected. Performing federated logout.");
-
         // Set redirecting state to show loading UI
         setIsRedirecting(true);
 
@@ -53,8 +50,6 @@ export default function SessionGuard({ children }: { children: ReactNode }) {
 
   // Handle refresh token errors
   useEffect(() => {
-    console.log("Current session:", session);
-
     if (session?.error === "RefreshAccessTokenError") {
       setIsRedirecting(true);
 
