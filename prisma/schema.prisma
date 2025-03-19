@@ -60,8 +60,6 @@ model PhoneModelDetails {
   colorId   Int?      
   color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
 
-  available Boolean     @default(true)
-  purchased Boolean     @default(false)
   price     Float
 
   createdBy String
@@ -77,6 +75,8 @@ model PhoneModelDetails {
 model ModelImage {
   id           Int          @id @default(autoincrement())
   image        String       @db.VarChar(255)
+  mainImage    Boolean      @default(false)
+
 
   colorId      Int?    
   color        Color?       @relation("ColorToModelImage", fields: [colorId], references: [id])
@@ -115,17 +115,14 @@ model User {
   email             String         @unique
   emailVerified     Boolean        @default(false)
   
-  // Profile information
   firstName         String?        @db.VarChar(50)
   lastName          String?        @db.VarChar(50)
   phoneNumber       String?        @db.VarChar(20)
-  avatar            String?        @db.Text     // URL to profile picture
+  avatar            String?        @db.Text   
   
-  // Account status
   isActive          Boolean        @default(true)
   admin             Boolean        @default(false)
   
-  // Timestamps
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   lastLoginAt       DateTime?
@@ -133,7 +130,8 @@ model User {
   // Relations
   shippingInfo      ShippingInfo?
   cartItems         CartItem[]
-  reviews           Review[]       // Added relation to reviews
+  purchasedItems    PurchasedItem[]
+  reviews           Review[]       
 
   phoneModelDetails PhoneModelDetails[] @relation
 
@@ -171,19 +169,31 @@ model CartItem {
   price      Decimal    @db.Decimal(10, 2)
   quantity   Int
   image      String     @db.VarChar(255)
-  status     CartStatus @default(IN_CART)
-  orderId    String?    // Optional field to link to an order when purchased
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
   
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([status])
 }
 
-enum CartStatus {
-  IN_CART
-  PURCHASED
-}
+model PurchasedItem {
+  id         String   @id @default(uuid())
+  userId     String   
+  itemId     String   
+  title      String   @db.VarChar(255)
+  condition  String   @db.VarChar(50)
+  storage    String   @db.VarChar(50)
+  color      String   @db.VarChar(50)
+  price      Decimal  @db.Decimal(10, 2)
+  quantity   Int
+  image      String   @db.VarChar(255)
+  orderId    String   
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([orderId])
+}

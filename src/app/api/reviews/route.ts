@@ -4,11 +4,21 @@ import prisma from "../../../../lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
-  const { searchParams } = new URL(req.url);
 
-  // Get query parameters
+  if (!session || !session?.user?.email) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Authentication required",
+      },
+      { status: 401 }
+    );
+  }
+
+  const { searchParams } = new URL(request.url);
+
   const productId = searchParams.get("productId");
   const modelId = searchParams.get("modelId");
 
@@ -42,54 +52,44 @@ export async function GET(req: NextRequest) {
         comment: review.comment,
         createdAt: review.createdAt,
         userName: review.user
-          ? `${review.user.firstName || ""} ${
-              review.user.lastName || ""
-            }`.trim() || "Anonymous User"
+          ? `${review.user.firstName || ""} ${review.user.lastName || ""}`.trim() || "Anonymous User"
           : "Anonymous User",
       }));
 
       return NextResponse.json({ reviews: formattedReviews });
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch reviews" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
     }
-  }
-
-  // Case 2: Check if user has reviewed a product (for orders page)
-  else if (productId) {
-    // Authentication required for checking user's own review
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
+  } else if (productId) {
     try {
-      // Get user from database based on email from session
       const user = await prisma.user.findUnique({
-        where: { email: session.user.email as string },
-      });
-
-      if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-      }
-
-      // Check if a review exists for this model by this user
-      const review = await prisma.review.findFirst({
-        where: {
-          modelId: parseInt(productId),
-          userId: user.id,
+        where: { email: session.user.email },
+        include: {
+          reviews: {
+            where: {
+              modelId: parseInt(productId),
+            },
+          },
         },
       });
 
-      if (review) {
+      if (!user) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "User not found in database",
+          },
+          { status: 404 }
+        );
+      }
+
+      if (user.reviews && user.reviews.length > 0) {
+        const review = user.reviews[0];
         return NextResponse.json({
+          success: true,
           isReviewed: true,
-          reviews: {
+          review: {
             id: review.id,
             rating: review.rating,
             title: review.title,
@@ -98,20 +98,28 @@ export async function GET(req: NextRequest) {
           },
         });
       } else {
-        return NextResponse.json({ isReviewed: false });
+        return NextResponse.json({
+          success: true,
+          isReviewed: false,
+        });
       }
     } catch (error) {
-      console.error("Error checking review status:", error);
+      console.error("Error checking reviews:", error);
       return NextResponse.json(
-        { error: "Failed to check review status" },
+        {
+          success: false,
+          message: "Failed to fetch reviews",
+        },
         { status: 500 }
       );
     }
   }
 
-  // No valid parameters provided
   return NextResponse.json(
-    { error: "Either productId or modelId is required" },
+    {
+      success: false,
+      message: "Either productId or modelId is required",
+    },
     { status: 400 }
   );
 }
@@ -144,8 +152,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const parsedModelId =
-      typeof productId === "string" ? parseInt(productId, 10) : productId;
+    const parsedModelId = typeof productId === "string" ? parseInt(productId, 10) : productId;
 
     // Get user from database based on email from session
     const user = await prisma.user.findUnique({

@@ -2,11 +2,9 @@
 "use client";
 
 import { useLoading } from "@/context/LoadingContext";
-import { useRouter } from "next/navigation";
+import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState } from "react";
-import { useCart } from "../../../context/CartContext";
 import OrderSummary from "@/app/components/OrderSummary";
-import { useSession } from "next-auth/react";
 
 export interface ShippingForm {
   firstName: string;
@@ -21,13 +19,12 @@ export interface ShippingForm {
 
 export default function ShippingPage() {
   const { showLoading, hideLoading } = useLoading();
-  const { data: session, status } = useSession();
+  const { showSuccess, showError, showInfo } = useNotification();
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savedShippingInfo, setSavedShippingInfo] = useState<ShippingForm | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [savedShippingInfo, setSavedShippingInfo] =
-    useState<ShippingForm | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [shippingInfo, setShippingInfo] = useState<ShippingForm>({
     firstName: "",
@@ -40,7 +37,6 @@ export default function ShippingPage() {
     zipCode: "",
   });
 
-  // Fetch shipping info
   useEffect(() => {
     const abortController = new AbortController();
     const signal = abortController.signal;
@@ -49,39 +45,36 @@ export default function ShippingPage() {
       showLoading();
 
       try {
-        // First check if shipping info exists in sessionStorage
         const storedShippingInfo = sessionStorage.getItem("shippingInfo");
 
         if (storedShippingInfo) {
-          // If it exists in session storage, parse and use it
           const parsedInfo = JSON.parse(storedShippingInfo);
           setSavedShippingInfo(parsedInfo);
           hideLoading();
-          return; // Exit early since we already have the data
+          return;
         }
 
-
-        const response = await fetch("/api/shipping", { signal });
-
-        if (!response.ok) {
-          throw new Error(`API responded with status: ${response.status}`);
-        }
+        const response = await fetch("/api/shipping", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal,
+        });
 
         const result = await response.json();
 
-        if (result.success && result.shippingInfo) {
-          setSavedShippingInfo(result.shippingInfo);
-          sessionStorage.setItem(
-            "shippingInfo",
-            JSON.stringify(result.shippingInfo)
-          );
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
         }
+
+        showSuccess("Success", "Shipping Info Saved Successfully");
+
+        setSavedShippingInfo(result.shippingInfo);
+        sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          console.log("Fetch aborted");
-        } else {
-          console.error("Error fetching shipping info:", error);
-        }
+        showError("Error", "Failed to fetch shipping info. Please check your connection and try again.");
       } finally {
         hideLoading();
       }
@@ -100,9 +93,10 @@ export default function ShippingPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    showLoading();
 
     try {
+      showLoading();
+
       const response = await fetch("/api/shipping", {
         method: "POST",
         headers: {
@@ -113,18 +107,19 @@ export default function ShippingPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(
-          `Failed to save shipping information: ${response.status}`
-        );
-      }
       const result = await response.json();
 
+      if (!result.success) {
+        showError("Error", result.message);
+        return;
+      }
+
+      showSuccess("Success", result.message);
       setSavedShippingInfo(result.shippingInfo);
-      sessionStorage.setItem('shippingInfo', JSON.stringify(result.shippingInfo));
+      sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
       setIsEditing(false);
     } catch (error) {
-      console.error("Error saving shipping information:", error);
+      showError("Error", "Error saving shipping information. Please check your connection and try again.");
     } finally {
       hideLoading();
     }
@@ -145,32 +140,22 @@ export default function ShippingPage() {
           <div className="bg-white p-6 rounded-xl shadow-lg max-w-3xl mx-auto space-y-5">
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
               <p className="text-gray-800">
-                <strong className="font-semibold text-purple-700">Name:</strong>{" "}
-                {savedShippingInfo.firstName} {savedShippingInfo.lastName}
+                <strong className="font-semibold text-purple-700">Name:</strong> {savedShippingInfo.firstName} {savedShippingInfo.lastName}
               </p>
             </div>
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
               <p className="text-gray-800">
-                <strong className="font-semibold text-purple-700">
-                  Email:
-                </strong>{" "}
-                {savedShippingInfo.email}
+                <strong className="font-semibold text-purple-700">Email:</strong> {savedShippingInfo.email}
               </p>
             </div>
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
               <p className="text-gray-800">
-                <strong className="font-semibold text-purple-700">
-                  Phone:
-                </strong>{" "}
-                {savedShippingInfo.phone}
+                <strong className="font-semibold text-purple-700">Phone:</strong> {savedShippingInfo.phone}
               </p>
             </div>
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
               <p className="text-gray-800">
-                <strong className="font-semibold text-purple-700">
-                  Address:
-                </strong>{" "}
-                {savedShippingInfo.address}, {savedShippingInfo.city},{" "}
+                <strong className="font-semibold text-purple-700">Address:</strong> {savedShippingInfo.address}, {savedShippingInfo.city},{" "}
                 {savedShippingInfo.state} {savedShippingInfo.zipCode}
               </p>
             </div>
@@ -182,15 +167,10 @@ export default function ShippingPage() {
             </button>
           </div>
         ) : (
-          <form
-            onSubmit={handleSave}
-            className="space-y-8 bg-white p-6 rounded-xl shadow-lg max-w-3xl mx-auto"
-          >
+          <form onSubmit={handleSave} className="space-y-8 bg-white p-6 rounded-xl shadow-lg max-w-3xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  First Name
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">First Name</label>
                 <input
                   type="text"
                   name="firstName"
@@ -201,9 +181,7 @@ export default function ShippingPage() {
                 />
               </div>
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Last Name
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Last Name</label>
                 <input
                   type="text"
                   name="lastName"
@@ -217,9 +195,7 @@ export default function ShippingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Email</label>
                 <input
                   type="email"
                   name="email"
@@ -230,9 +206,7 @@ export default function ShippingPage() {
                 />
               </div>
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Phone Number
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Phone Number</label>
                 <input
                   type="tel"
                   name="phone"
@@ -245,9 +219,7 @@ export default function ShippingPage() {
             </div>
 
             <div className="relative">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Street Address
-              </label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Street Address</label>
               <input
                 type="text"
                 name="address"
@@ -260,9 +232,7 @@ export default function ShippingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  City
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">City</label>
                 <input
                   type="text"
                   name="city"
@@ -273,9 +243,7 @@ export default function ShippingPage() {
                 />
               </div>
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  State
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">State</label>
                 <input
                   type="text"
                   name="state"
@@ -286,9 +254,7 @@ export default function ShippingPage() {
                 />
               </div>
               <div className="relative">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  ZIP Code
-                </label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">ZIP Code</label>
                 <input
                   type="text"
                   name="zipCode"
@@ -312,22 +278,22 @@ export default function ShippingPage() {
               >
                 {isSubmitting ? "Saving..." : "Save and Continue to Payment"}
               </button>
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="w-full sm:w-1/3 py-3.5 rounded-lg font-semibold text-gray-700 shadow-md bg-gray-100 hover:bg-gray-200 hover:shadow-lg transition-all duration-300"
-              >
-                Cancel
-              </button>
+
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="w-full sm:w-1/3 py-3.5 rounded-lg font-semibold text-gray-700 shadow-md bg-gray-100 hover:bg-gray-200 hover:shadow-lg transition-all duration-300"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </form>
         )}
       </div>
 
-      <OrderSummary
-        currentPage="shipping_page"
-        shippingInfoComplete={!!savedShippingInfo}
-      />
+      <OrderSummary currentPage="shipping_page" shippingInfoComplete={!!savedShippingInfo} />
     </div>
   );
 }

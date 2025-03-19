@@ -238,7 +238,7 @@ export async function PUT(request: NextRequest) {
         success: false,
         message: error instanceof Error ? error.message : "Failed to update phone model detail",
       },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }

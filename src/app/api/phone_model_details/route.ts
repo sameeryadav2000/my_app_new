@@ -87,13 +87,17 @@ export async function GET(request: NextRequest) {
             },
             select: {
               image: true,
+              mainImage: true, // Added mainImage field selection
             },
           });
 
           return {
             ...option,
-            // Extract just the image strings from each object in the array
-            images: images.map((img) => img.image),
+            // Include both image and mainImage in the returned objects
+            images: images.map((img) => ({
+              image: img.image,
+              mainImage: img.mainImage,
+            })),
           };
         }
         return {
@@ -102,7 +106,6 @@ export async function GET(request: NextRequest) {
         };
       })
     );
-
     return NextResponse.json({
       success: true,
       data: colorOptionsWithImages,

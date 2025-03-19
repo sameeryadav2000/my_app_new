@@ -114,7 +114,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         };
       case "success":
         return {
-          bg: "bg-green-100",
+          bg: "bg-green-400",
           border: "border-green-500",
           title: "text-green-800",
           icon: "✅",

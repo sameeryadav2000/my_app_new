@@ -36,15 +36,15 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
           <SessionGuard>
-            <CartProvider>
-              <LoadingProvider>
+            <LoadingProvider>
+              <CartProvider>
                 <NotificationProvider>
                   <Navbar />
                   {children}
                   <Footer />
                 </NotificationProvider>
-              </LoadingProvider>
-            </CartProvider>
+              </CartProvider>
+            </LoadingProvider>
           </SessionGuard>
         </AuthProvider>
       </body>

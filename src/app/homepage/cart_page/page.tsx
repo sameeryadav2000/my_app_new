@@ -1,9 +1,13 @@
 "use client";
 
+import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/context/NotificationContext";
 import { useCart } from "@/context/CartContext";
 import OrderSummary from "@/app/components/OrderSummary";
 
 export default function CartPage() {
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
   const { cart, syncCart } = useCart();
 
   const handleRemove = async (id: string) => {
@@ -11,23 +15,27 @@ export default function CartPage() {
     const signal = abortController.signal;
 
     try {
-      // Sync with server first
+      showLoading();
+
       const response = await fetch(`/api/cart?id=${id}`, {
         method: "DELETE",
         signal,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to remove item from cart");
-      } else {
-        await syncCart();
+      const result = await response.json();
+
+      if (!result.success) {
+        showError("Error", result.message);
+        return;
       }
+
+      showSuccess("Success", result.message);
+
+      await syncCart();
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.error("Delete aborted");
-      } else {
-        console.error("Error removing cart item:", error);
-      }
+      showError("Error", "Failed to delete cart item. Please check your connection and try again.");
+    } finally {
+      hideLoading();
     }
   };
 
@@ -53,23 +61,18 @@ export default function CartPage() {
                   {item.title}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-800">Condition:</span>{" "}
-                  {item.condition}
+                  <span className="font-medium text-gray-800">Condition:</span> {item.condition}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-800">Storage:</span>{" "}
-                  {item.storage}
+                  <span className="font-medium text-gray-800">Storage:</span> {item.storage}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-800">Color:</span>{" "}
-                  {item.color}
+                  <span className="font-medium text-gray-800">Color:</span> {item.color}
                 </p>
                 <p className="text-lg font-bold text-gray-900">${item.price}</p>
                 <p className="text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Quantity:</span>
-                  <span className="ml-2 bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-semibold">
-                    {item.quantity}
-                  </span>
+                  <span className="ml-2 bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-semibold">{item.quantity}</span>
                 </p>
               </div>
 
@@ -89,12 +92,8 @@ export default function CartPage() {
           ))
         ) : (
           <div className="text-center py-12">
-            <p className="text-lg font-medium text-gray-700 tracking-wide">
-              Your cart is empty.
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Explore our collection to find something exquisite.
-            </p>
+            <p className="text-lg font-medium text-gray-700 tracking-wide">Your cart is empty.</p>
+            <p className="text-sm text-gray-500 mt-2">Explore our collection to find something exquisite.</p>
           </div>
         )}
       </div>

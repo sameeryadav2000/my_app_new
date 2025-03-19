@@ -4,30 +4,83 @@ import { getServerSession } from "next-auth";
 import prisma from "../../../../lib/prisma";
 import { authOptions } from "../auth/[...nextauth]/route";
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Get the user's session
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    if (!session || !session.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Authentication required",
+        },
+        { status: 401 }
+      );
     }
 
-    // Get the shipping data from request
-    const shippingData = await request.json();
+    const userId = session.user.id;
 
-    // First, ensure the user exists in the database
-    const user = await prisma.user.findUnique({
-      where: {
-        email: session.user.email!,
+    const shippingInfo = await prisma.shippingInfo.findUnique({
+      where: { userId },
+      select: {
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    return NextResponse.json({
+      success: true,
+      shippingInfo: shippingInfo,
+    });
+  } catch (error) {
+    console.error("Error fetching shipping info:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch shipping info",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Authentication required",
+        },
+        { status: 401 }
+      );
     }
 
-    // Check if item already exists in cart
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email || undefined },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User not found in database",
+        },
+        { status: 404 }
+      );
+    }
+
+    const shippingData = await request.json();
+
     const existingItem = await prisma.shippingInfo.findFirst({
       where: { userId: session.user.id },
     });
@@ -66,44 +119,20 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
+        success: true,
         message: "Shipping information saved",
         shippingInfo: savedShipping,
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
-    console.error("Error posting cart item:", error);
+    console.error("Error saving shipping info:", error);
 
     return NextResponse.json(
-      { message: "Failed to save shipping information" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
-
-    // Fetch shipping info from the database (adjust based on your schema)
-    const shippingInfo = await prisma.shippingInfo.findUnique({
-      where: { userId },
-    });
-
-    return NextResponse.json({
-      success: true,
-      shippingInfo: shippingInfo || null,
-    });
-  } catch (error) {
-    console.error("Error fetching shipping info:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch shipping info" },
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to save shipping information",
+      },
       { status: 500 }
     );
   }

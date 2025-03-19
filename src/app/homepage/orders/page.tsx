@@ -1,5 +1,7 @@
 "use client";
 
+import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/context/NotificationContext";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,71 +11,131 @@ import { CartItem } from "@/context/CartContext";
 import ReviewComponent from "@/app/components/ReviewForm";
 import { ReviewData } from "@/app/components/ReviewForm";
 
+interface PurchasedItem {
+  id: string;
+  itemId: string;
+  title: string;
+  condition: string;
+  storage: string;
+  color: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
+interface Order {
+  orderId: string;
+  items: PurchasedItem[];
+  totalItems: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+interface PurchaseHistory {
+  purchases: Order[];
+  totalOrders: number;
+  totalSpent: number;
+}
+
+interface ReviewData {
+  hasReviewed: boolean;
+  review: {
+    id: string;
+    rating: number;
+    title: string;
+    comment: string;
+    createdAt: string;
+  } | null;
+}
+
 interface ReviewsMap {
-  [key: string]: {
-    hasReviewed: boolean;
-    review?: any;
-  };
+  [itemId: string]: ReviewData;
 }
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<CartItem[]>([]);
-  const [currentProduct, setCurrentProduct] = useState<CartItem>();
-  const [showReview, setShowReview] = useState(false);
-  const [productReviews, setProductReviews] = useState<ReviewsMap>({});
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [productReviews, setProductReviews] = useState<Record<string, ReviewData>>({});
+  const [currentProduct, setCurrentProduct] = useState<PurchasedItem>();
+  const [showReview, setShowReview] = useState<boolean>(false);
+
   const [currentReview, setCurrentReview] = useState<any>(null);
   const [viewingReview, setViewingReview] = useState(false);
 
   useEffect(() => {
     const fetchPurchasedItems = async () => {
       try {
-        const response = await fetch("/api/cart?page=orders");
+        showLoading();
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch purchased items");
+        const response = await fetch("/api/purchased", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
         }
 
-        const data = await response.json();
+        if (result.data && result.data.purchases) {
+          setOrders(result.data.purchases);
 
-        if (data.cart && data.cart.items) {
-          setOrders(data.cart.items);
-
-          const reviews = await fetchReviewsForProducts(data.cart.items);
-          setProductReviews(reviews);
+          const reviewsData = await fetchReviewsForProducts(result.data.purchases.flatMap((order: Order) => order.items));
+          setProductReviews(reviewsData);
         }
       } catch (error) {
-        console.error("Error fetching purchased items:", error);
+        showError("Error", "Error fetching orders. Please check your connection and try again.");
+      } finally {
+        hideLoading();
       }
     };
 
     fetchPurchasedItems();
   }, []);
 
-  const fetchReviewsForProducts = async (items: CartItem[]) => {
+  const fetchReviewsForProducts = async (items: PurchasedItem[]) => {
     const reviewsMap: ReviewsMap = {};
 
     try {
-      // Fetch reviews for each product
-      for (const item of items) {
-        const response = await fetch(`/api/reviews?productId=${item.id}`);
+      showLoading();
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch reviews for product ${item.id}`);
+      const uniqueItemIds = new Set(items.map((item) => item.itemId));
+
+      for (const itemId of uniqueItemIds) {
+        const response = await fetch(`/api/reviews?productId=${itemId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showError("Error", result.message);
+          continue;
         }
 
-        const reviewData = await response.json();
-
-        reviewsMap[item.id] = {
-          hasReviewed: reviewData.isReviewed,
-          review: reviewData.isReviewed ? reviewData.reviews : null,
-        };
+        items.forEach((item) => {
+          if (item.itemId === itemId) {
+            reviewsMap[item.id] = {
+              hasReviewed: result.isReviewed,
+              review: result.isReviewed ? result.review : null,
+            };
+          }
+        });
       }
-
-      return reviewsMap;
     } catch (error) {
-      console.error("Error fetching reviews:", error);
-      return {};
+      showError("Error", "Error fetching reviews:. Please check your connection and try again.");
+    } finally {
+      hideLoading();
     }
+
+    return reviewsMap;
   };
 
   // Function to format price
@@ -84,8 +146,9 @@ export default function OrdersPage() {
     }).format(price);
   };
 
-  const handleReviewOrder = (order: CartItem) => {
-    setCurrentProduct(order);
+  const handleReviewOrder = (item: PurchasedItem) => {
+    debugger;
+    setCurrentProduct(item);
     setShowReview(true);
   };
 
@@ -137,12 +200,7 @@ export default function OrdersPage() {
       {orders.length === 0 ? (
         <div className="bg-white rounded-xl shadow p-8 text-center">
           <div className="mb-4">
-            <svg
-              className="mx-auto h-16 w-16 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
+            <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -151,12 +209,8 @@ export default function OrdersPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">
-            No orders yet
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Looks like you haven't placed any orders yet.
-          </p>
+          <h3 className="text-xl font-medium text-gray-900 mb-2">No orders yet</h3>
+          <p className="text-gray-500 mb-6">Looks like you haven't placed any orders yet.</p>
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
             Browse Products
           </button>
@@ -164,127 +218,113 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-8">
           {orders.map((order) => (
-            <div
-              key={order.id}
-              className="bg-white rounded-xl shadow overflow-hidden transition-all hover:shadow-lg"
-            >
+            <div key={order.orderId} className="bg-white rounded-xl shadow overflow-hidden transition-all hover:shadow-lg">
               <div className="border-b border-gray-200 bg-gray-50 p-4 sm:px-6">
                 <div className="flex flex-wrap items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div>
                       <p className="text-sm text-gray-500">ORDER PLACED</p>
-                      <p className="font-medium">
-                        {new Date().toLocaleDateString()}
-                      </p>
+                      <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="h-6 border-l border-gray-300"></div>
                     <div>
                       <p className="text-sm text-gray-500">ORDER ID</p>
                       <p className="font-medium">#{order.orderId}</p>
                     </div>
+                    <div className="h-6 border-l border-gray-300"></div>
+                    <div>
+                      <p className="text-sm text-gray-500">TOTAL</p>
+                      <p className="font-medium">{formatPrice(order.totalPrice)}</p>
+                    </div>
                   </div>
 
-                  {/* Conditional button rendering based on review status */}
-                  {productReviews[order.id]?.hasReviewed ? (
-                    <button
-                      className="mt-2 sm:mt-0 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
-                      onClick={() => handleViewReview(order)}
-                    >
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      View Review
-                    </button>
-                  ) : (
-                    <button
-                      className="mt-2 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
-                      onClick={() => handleReviewOrder(order)}
-                    >
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                      Write a Review
-                    </button>
-                  )}
+                  <div className="flex items-center">
+                    <span className="mr-2 bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                      {order.totalItems} {order.totalItems === 1 ? "item" : "items"}
+                    </span>
+                    <button className="text-blue-600 hover:text-blue-800 font-medium">Track Package</button>
+                  </div>
                 </div>
               </div>
 
               <div className="p-6">
-                <div className="flex flex-col md:flex-row">
-                  <div className="md:w-24 flex-shrink-0 bg-gray-100 rounded-lg p-2 mb-4 md:mb-0">
-                    <img
-                      src={order.image}
-                      alt={order.title}
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
-
-                  <div className="md:ml-6 flex-grow">
-                    <h2 className="text-xl font-medium text-gray-900 mb-2">
-                      {order.title}
-                    </h2>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Condition</p>
-                        <p className="font-medium">{order.condition}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Storage</p>
-                        <p className="font-medium">{order.storage}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Color</p>
-                        <p className="font-medium">{order.color}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Quantity</p>
-                        <p className="font-medium">{order.quantity}</p>
-                      </div>
+                {/* Multiple items per order */}
+                {order.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col md:flex-row mb-6 pb-6 border-b border-gray-200 last:mb-0 last:pb-0 last:border-0"
+                  >
+                    <div className="md:w-24 flex-shrink-0 bg-gray-100 rounded-lg p-2 mb-4 md:mb-0">
+                      <img src={item.image} alt={item.title} className="w-full h-auto object-contain" />
                     </div>
 
-                    <div className="flex justify-between items-end">
-                      <div className="text-gray-900 font-bold text-xl">
-                        {formatPrice(order.price * order.quantity)}
+                    <div className="md:ml-6 flex-grow">
+                      <h2 className="text-xl font-medium text-gray-900 mb-2">{item.title}</h2>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Condition</p>
+                          <p className="font-medium">{item.condition}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Storage</p>
+                          <p className="font-medium">{item.storage}GB</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Color</p>
+                          <p className="font-medium">{item.color}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Quantity</p>
+                          <p className="font-medium">{item.quantity}</p>
+                        </div>
                       </div>
 
-                      <div className="flex space-x-2">
-                        <button className="text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg px-4 py-2 transition-colors">
-                          Track Order
-                        </button>
-                        <button className="text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg px-4 py-2 transition-colors">
-                          Buy Again
-                        </button>
+                      <div className="flex justify-between items-end">
+                        <div className="text-gray-900 font-bold text-xl">{formatPrice(item.price * item.quantity)}</div>
+
+                        <div className="flex space-x-2">
+                          {/* Keep review buttons functionality as is but connect to individual items */}
+                          {productReviews[item.id]?.hasReviewed ? (
+                            <button
+                              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+                              onClick={() => handleViewReview(item)}
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                              View Review
+                            </button>
+                          ) : (
+                            <button
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+                              onClick={() => handleReviewOrder(item)}
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                              Write a Review
+                            </button>
+                          )}
+                          <button className="text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg px-4 py-2 transition-colors">
+                            Buy Again
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           ))}
@@ -302,7 +342,7 @@ export default function OrdersPage() {
             }}
           >
             <ReviewComponent
-              productId={currentProduct.id}
+              productId={currentProduct.itemId}
               productTitle={currentProduct.title}
               productImage={currentProduct.image}
               onSubmit={handleSubmitReview}
@@ -312,8 +352,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* View Review Modal */}
-      {viewingReview && currentReview && (
+      {viewingReview && currentProduct && currentReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div
             className="w-full max-w-2xl max-h-screen overflow-y-auto animate-slideIn bg-white rounded-xl shadow-xl p-6"
@@ -324,24 +363,23 @@ export default function OrdersPage() {
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">Your Review</h2>
-              <button
-                onClick={() => setViewingReview(false)}
-                className="text-gray-500 hover:text-gray-800"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+              <button onClick={() => setViewingReview(false)} className="text-gray-500 hover:text-gray-800">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
+            </div>
+
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded p-1 mr-4">
+                <img src={currentProduct.image} alt={currentProduct.title} className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <p className="font-medium text-lg">{currentProduct.title}</p>
+                <p className="text-sm text-gray-500">
+                  {currentProduct.color} · {currentProduct.storage}GB · {currentProduct.condition}
+                </p>
+              </div>
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
@@ -350,11 +388,7 @@ export default function OrdersPage() {
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`w-5 h-5 ${
-                        i < currentReview.rating
-                          ? "text-yellow-400"
-                          : "text-gray-300"
-                      }`}
+                      className={`w-5 h-5 ${i < currentReview.rating ? "text-yellow-400" : "text-gray-300"}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -362,22 +396,15 @@ export default function OrdersPage() {
                     </svg>
                   ))}
                 </div>
-                <span className="ml-2 text-gray-600">
-                  {new Date(currentReview.createdAt).toLocaleDateString()}
-                </span>
+                <span className="ml-2 text-gray-600">{new Date(currentReview.createdAt).toLocaleDateString()}</span>
               </div>
 
-              <h3 className="text-xl font-semibold mb-2">
-                {currentReview.title}
-              </h3>
+              <h3 className="text-xl font-semibold mb-2">{currentReview.title}</h3>
               <p className="text-gray-700">{currentReview.comment}</p>
             </div>
 
             <div className="flex justify-end">
-              <button
-                onClick={() => setViewingReview(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
+              <button onClick={() => setViewingReview(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Close
               </button>
             </div>

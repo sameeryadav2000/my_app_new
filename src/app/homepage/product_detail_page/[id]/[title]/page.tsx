@@ -11,9 +11,8 @@ import { CartItem, Cart } from "@/context/CartContext";
 import { useCart } from "@/context/CartContext";
 // import Card from "../../../../components/CardsForPhone";
 import AddToCartButton from "@/app/components/AddToCart";
-// import StickyHeader from "@/app/components/StickyHeader";
+import StickyHeader from "@/app/components/StickyHeader";
 import ReviewList from "@/app/components/ReviewList";
-// import AverageRating from "@/app/components/AverageRating";
 
 interface ConditionOption {
   condition: string;
@@ -32,7 +31,10 @@ interface ColorOption {
   id: number;
   color: Color;
   colorId: number;
-  images: [];
+  images: {
+    image: string;
+    mainImage: boolean;
+  }[];
   price: number;
   phoneId: number;
 }
@@ -55,7 +57,7 @@ export default function ProductPage() {
 
   const [priceSelected, setPriceSelected] = useState<number>(0);
   const [phoneId, setPhoneId] = useState<string>("");
-  const [modelImages, setModelImages] = useState<string[]>([]);
+  const [modelImages, setModelImages] = useState<{ image: string; mainImage: boolean }[]>([]);
 
   const [prevSelectedCondition, setPrevSelectedCondition] = useState<string>("");
   const [prevSelectedStorage, setPrevSelectedStorage] = useState<string>("");
@@ -66,11 +68,11 @@ export default function ProductPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
   const colors: Record<string, string> = {
-    Black: "bg-black",
-    Red: "bg-red-400",
-    Blue: "bg-blue-400",
-    Green: "bg-green-400",
-    Pink: "bg-pink-300",
+    black: "bg-black",
+    red: "bg-red-400",
+    blue: "bg-blue-400",
+    green: "bg-green-400",
+    pink: "bg-pink-300",
   };
 
   useEffect(() => {
@@ -186,30 +188,27 @@ export default function ProductPage() {
   };
 
   const { data: session } = useSession();
-  const { setCart } = useCart(); // Access cart and setCart
+  const { setCart, syncCart } = useCart();
 
-  const router = useRouter();
+  const imageToUse = modelImages.find((img) => img.mainImage)?.image;
+
+  // const router = useRouter();
 
   const handleAddToCart = async () => {
-    const imageToUse = modelImages && modelImages.length > 0 ? modelImages[0].image : "";
-
-    // // Create a new cart item from the selected options
     const newItem: CartItem = {
       id: phoneId,
       title: phoneModelName,
       condition: selectedCondition.charAt(0).toUpperCase() + selectedCondition.slice(1),
       storage: selectedStorage,
       color: selectedColor,
-      price: priceSelected || 0,
+      price: priceSelected,
       quantity: 1,
-      image: imageToUse,
+      image: imageToUse || "",
     };
 
-    // Get existing cart from localStorage
     const existingCartJson = localStorage.getItem("cart");
     const existingCart: Cart = existingCartJson ? JSON.parse(existingCartJson) : { items: [], totalItems: 0, subTotalPrice: 0 };
 
-    // Check if this exact item configuration already exists
     const existingItemIndex = existingCart.items.findIndex(
       (item) =>
         item.id === newItem.id && item.condition === newItem.condition && item.storage === newItem.storage && item.color === newItem.color
@@ -218,7 +217,6 @@ export default function ProductPage() {
     let updatedCart: Cart;
 
     if (existingItemIndex > -1) {
-      // If item exists, increment its quantity
       const updatedItems = existingCart.items.map((item, index) =>
         index === existingItemIndex ? { ...item, quantity: item.quantity + 1 } : item
       );
@@ -228,7 +226,6 @@ export default function ProductPage() {
         subTotalPrice: updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
       };
     } else {
-      // If item doesn't exist, add it to cart
       updatedCart = {
         items: [...existingCart.items, newItem],
         totalItems: existingCart.totalItems + 1,
@@ -238,6 +235,8 @@ export default function ProductPage() {
 
     if (session) {
       try {
+        showLoading();
+
         const response = await fetch("/api/cart", {
           method: "POST",
           headers: {
@@ -246,36 +245,51 @@ export default function ProductPage() {
           body: JSON.stringify({ cartItem: newItem }),
         });
 
-        if (!response.ok) {
-          throw new Error(`Failed to sync cart: ${response.status}`);
-        }
-
         const result = await response.json();
 
-        if (result.cart) {
-          setCart(result.cart);
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+
+        const syncCartResult = await syncCart();
+        
+        if (syncCartResult.success) {
+          showSuccess("Success", syncCartResult.message);
+        } else {
+          showError("Error", syncCartResult.message);
         }
       } catch (error) {
-        console.error("Error saving cart item:", error);
-        // Handle error appropriately
+        showError("Error", "Failed to save cart. Please check your connection and try again.");
+      } finally {
+        hideLoading();
       }
     } else {
-      setCart(updatedCart);
+      localStorage.setItem("cart", JSON.stringify(updatedCart));
+      const syncCartResult = await syncCart();
+
+      if (syncCartResult.success) {
+        showSuccess("Success", syncCartResult.message);
+      } else {
+        showError("Error", syncCartResult.message);
+      }
     }
   };
 
   return (
     <div>
-      {/* <StickyHeader
-        title={phoneModelName}
-        condition={selectedCondition}
-        storage={selectedStorage}
-        color={selectedColor}
-        price={priceSelected}
-        originalPrice={629.0}
-        savings={348.9}
-        imageSrc="../../../sticky_header_images/image.png"
-      /> */}
+      {modelImages.length > 0 && (
+        <StickyHeader
+          title={phoneModelName}
+          condition={selectedCondition}
+          storage={selectedStorage}
+          color={selectedColor}
+          price={priceSelected}
+          image={imageToUse || ""}
+          onAddToCart={handleAddToCart}
+        />
+      )}
 
       {/* Main div */}
       <div className="w-[95%] md:w-[70%] mx-auto mx-auto">
@@ -288,7 +302,7 @@ export default function ProductPage() {
                 <div className="relative h-[300px] md:h-[500px] w-full mb-4 bg-white">
                   {modelImages.length > 0 ? (
                     <img
-                      src={modelImages[currentImageIndex]}
+                      src={modelImages[currentImageIndex].image}
                       alt={`${selectedColor} iPhone - View ${currentImageIndex + 1}`}
                       className="absolute inset-0 h-full w-full object-contain rounded-lg"
                     />
@@ -337,14 +351,14 @@ export default function ProductPage() {
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto justify-center">
-                  {modelImages.map((imagePath, index) => (
+                  {modelImages.map((imageObj, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden border-2
                   ${currentImageIndex === index ? "border-blue-500" : "border-transparent"}`}
                     >
-                      <img src={imagePath} alt={`Thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                      <img src={imageObj.image} alt={`Thumbnail ${index + 1}`} className="h-full w-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -357,7 +371,7 @@ export default function ProductPage() {
             {/* Info First Section */}
             <div className="md:w-full md:h-screen flex pb-5 flex-col justify-center">
               <h1 className="text-2xl font-bold mb-4">
-                {phoneModelName} {selectedStorage} - {selectedColor} - Unlocked
+                {phoneModelName} {selectedStorage} - {selectedColor}
               </h1>
 
               <div className="mb-6">
@@ -433,7 +447,7 @@ export default function ProductPage() {
                           checked={selectedStorage === option.storage}
                           onChange={handleStorageChange}
                         />
-                        <span className="">{option.storage}</span>
+                        <span className="">{option.storage} GB</span>
                       </div>
                       {selectedStorage === option.storage && selectedColor ? (
                         <span className="text-gray-600 text-sm mt-1">
@@ -475,10 +489,14 @@ export default function ProductPage() {
                         checked={selectedColor === option.color.color}
                         onChange={handleColorChange}
                       />
-                      <div className={`w-4 h-4 rounded-full ${colors[option.color.color as keyof typeof colors] || ""}`}></div>
+                      <div
+                        className={`w-4 h-4 rounded-full ${
+                          Object.keys(colors).includes(option.color.color) ? colors[option.color.color] : "bg-gray-200"
+                        }`}
+                      ></div>
 
                       <div className="flex flex-col">
-                        <span className="text-gray-700">{option.color.color}</span>
+                        <span className="text-gray-700 capitalize">{option.color.color}</span>
                         <span className="text-gray-500">${option.price}</span>
                       </div>
                     </label>
@@ -490,7 +508,7 @@ export default function ProductPage() {
             </div>
 
             {/* Last Section */}
-            {/* <div className="md:w-full md:h-screen flex flex-col justify-center">
+            <div className="md:w-full md:h-screen flex flex-col justify-center">
               <div className="max-w-2xl">
                 <div className="flex justify-between items-start mb-6">
                   <h1 className="font-bold">Tadaaa</h1>
@@ -498,7 +516,7 @@ export default function ProductPage() {
 
                 <div className="border rounded-lg p-6 mb-4 bg-white">
                   <div className="flex items-center gap-2 mb-4">
-                    <h2>{phoneModelName} - Unlocked</h2>
+                    <h2>{phoneModelName}</h2>
                   </div>
 
                   <div className="flex gap-2 mb-4">
@@ -514,7 +532,7 @@ export default function ProductPage() {
 
                 <AddToCartButton className="w-full" onClick={handleAddToCart} />
               </div>
-            </div> */}
+            </div>
           </div>
         </div>
       </div>

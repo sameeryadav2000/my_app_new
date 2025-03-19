@@ -25,13 +25,7 @@ export async function GET(request: NextRequest) {
     (SELECT mi.image
      FROM ModelImage mi
      WHERE mi.phoneId = pm.id
-     AND mi.colorId = (
-       SELECT pmd.colorId
-       FROM PhoneModelDetails pmd
-       WHERE pmd.phoneId = pm.id
-       AND pmd.colorId IS NOT NULL
-       LIMIT 1
-     )
+     AND mi.mainImage = true
      LIMIT 1) as image
   FROM PhoneModel pm
   INNER JOIN PhoneModelDetails pmd ON pm.id = pmd.phoneId
