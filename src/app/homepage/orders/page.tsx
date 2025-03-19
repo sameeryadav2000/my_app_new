@@ -37,7 +37,7 @@ interface PurchaseHistory {
   totalSpent: number;
 }
 
-interface ReviewData {
+interface ReviewInfo {
   hasReviewed: boolean;
   review: {
     id: string;
@@ -49,14 +49,14 @@ interface ReviewData {
 }
 
 interface ReviewsMap {
-  [itemId: string]: ReviewData;
+  [itemId: string]: ReviewInfo;
 }
 
 export default function OrdersPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError, showInfo } = useNotification();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [productReviews, setProductReviews] = useState<Record<string, ReviewData>>({});
+  const [productReviews, setProductReviews] = useState<Record<string, ReviewInfo>>({});
   const [currentProduct, setCurrentProduct] = useState<PurchasedItem>();
   const [showReview, setShowReview] = useState<boolean>(false);
 
@@ -83,9 +83,11 @@ export default function OrdersPage() {
 
         if (result.data && result.data.purchases) {
           setOrders(result.data.purchases);
+          debugger;
 
           const reviewsData = await fetchReviewsForProducts(result.data.purchases.flatMap((order: Order) => order.items));
           setProductReviews(reviewsData);
+          debugger;
         }
       } catch (error) {
         showError("Error", "Error fetching orders. Please check your connection and try again.");
@@ -101,12 +103,13 @@ export default function OrdersPage() {
     const reviewsMap: ReviewsMap = {};
 
     try {
+      debugger;
       showLoading();
 
-      const uniqueItemIds = new Set(items.map((item) => item.itemId));
+      const uniqueIds = new Set(items.map((item) => item.id));
 
-      for (const itemId of uniqueItemIds) {
-        const response = await fetch(`/api/reviews?productId=${itemId}`, {
+      for (const id of uniqueIds) {
+        const response = await fetch(`/api/reviews?productId=${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -121,7 +124,7 @@ export default function OrdersPage() {
         }
 
         items.forEach((item) => {
-          if (item.itemId === itemId) {
+          if (item.id === id) {
             reviewsMap[item.id] = {
               hasReviewed: result.isReviewed,
               review: result.isReviewed ? result.review : null,
@@ -152,8 +155,9 @@ export default function OrdersPage() {
     setShowReview(true);
   };
 
-  const handleViewReview = (order: CartItem) => {
-    const review = productReviews[order.id]?.review;
+  const handleViewReview = (item: PurchasedItem) => {
+    debugger;
+    const review = productReviews[item.id]?.review;
     if (review) {
       setCurrentReview(review);
       setViewingReview(true);
@@ -161,7 +165,10 @@ export default function OrdersPage() {
   };
 
   const handleSubmitReview = async (reviewData: ReviewData) => {
+    debugger;
     try {
+      showLoading();
+
       const response = await fetch("/api/reviews", {
         method: "POST",
         headers: {
@@ -170,26 +177,28 @@ export default function OrdersPage() {
         body: JSON.stringify(reviewData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to submit review");
-      }
       const result = await response.json();
-      console.log("Review submitted successfully:", result);
+
+      if (!result.success) {
+        showError("Error", result.message);
+        return;
+      }
 
       if (currentProduct) {
+        const updatedReviews = await fetchReviewsForProducts([currentProduct]);
+
         setProductReviews((prev) => ({
           ...prev,
-          [currentProduct.id]: {
-            hasReviewed: true,
-            review: result.review,
-          },
+          ...updatedReviews,
         }));
       }
 
       setShowReview(false);
+      showSuccess("Success", "Review Submitted");
     } catch (error) {
-      console.error("Error submitting review:", error);
+      showError("Error", "Review could not be submitted. Please check your connection and try again.");
     } finally {
+      hideLoading();
     }
   };
 
@@ -342,7 +351,8 @@ export default function OrdersPage() {
             }}
           >
             <ReviewComponent
-              productId={currentProduct.itemId}
+              productId={currentProduct.id}
+              productItemId={currentProduct.itemId}
               productTitle={currentProduct.title}
               productImage={currentProduct.image}
               onSubmit={handleSubmitReview}

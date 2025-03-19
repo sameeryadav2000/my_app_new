@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         include: {
           reviews: {
             where: {
-              modelId: parseInt(productId),
+              purchasedItemId: productId,
             },
           },
         },
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
           isReviewed: true,
           review: {
             id: review.id,
+            purchasedItemId: review.purchasedItemId,
             rating: review.rating,
             title: review.title,
             comment: review.comment,
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       console.error("Error checking reviews:", error);
+
       return NextResponse.json(
         {
           success: false,
@@ -124,59 +126,49 @@ export async function GET(request: NextRequest) {
   );
 }
 
-// POST a new review
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.email) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "You must be logged in to submit a review",
-      },
-      { status: 401 }
-    );
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { productId, rating, title, review: reviewText } = body;
+    const session = await getServerSession(authOptions);
 
-    if (!productId || !rating || !title || !reviewText) {
+    if (!session || !session?.user?.email) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields",
+          message: "Authentication required",
+        },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { productId, productItemId, rating, title, review: reviewText } = body;
+
+    if (!productId || !productItemId || !rating || !title || !reviewText) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Missing required fields",
         },
         { status: 400 }
       );
     }
 
-    const parsedModelId = typeof productId === "string" ? parseInt(productId, 10) : productId;
+    const parsedModelId = typeof productItemId === "string" ? parseInt(productItemId, 10) : productItemId;
 
-    // Get user from database based on email from session
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email as string },
+      where: { email: session.user.email },
     });
 
     if (!user) {
       return NextResponse.json(
         {
           success: false,
-          error: "User not found",
+          message: "User not found in database",
         },
         { status: 404 }
       );
     }
 
-    const existingReview = await prisma.review.findFirst({
-      where: {
-        userId: user.id,
-        modelId: parsedModelId,
-      },
-    });
-
-    // Create the review
     const review = await prisma.review.create({
       data: {
         rating,
@@ -184,6 +176,7 @@ export async function POST(req: NextRequest) {
         comment: reviewText,
         userId: user.id,
         modelId: parsedModelId,
+        purchasedItemId: productId,
       },
     });
 
@@ -191,16 +184,16 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         message: "Review submitted successfully",
-        review: review,
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error creating review:", error);
+
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to create review",
+        message: error instanceof Error ? error.message : "Failed to create review",
       },
       { status: 500 }
     );
