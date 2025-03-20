@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
   const productId = searchParams.get("productId");
   const modelId = searchParams.get("modelId");
 
-  // Case 1: Get all reviews for a model (for product detail page)
   if (modelId) {
     try {
       const reviews = await prisma.review.findMany({
@@ -42,13 +41,12 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      // Format the response to include userName
       const formattedReviews = reviews.map((review) => ({
         id: review.id,
         userId: review.userId,
         modelId: review.modelId,
         rating: review.rating,
-        title: review.title || "",
+        title: review.title,
         comment: review.comment,
         createdAt: review.createdAt,
         userName: review.user
@@ -56,10 +54,20 @@ export async function GET(request: NextRequest) {
           : "Anonymous User",
       }));
 
-      return NextResponse.json({ reviews: formattedReviews });
+      return NextResponse.json({
+        success: true,
+        data: formattedReviews,
+      });
     } catch (error) {
       console.error("Error fetching reviews:", error);
-      return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: error instanceof Error ? error.message : "Failed to fetch reviews",
+        },
+        { status: 500 }
+      );
     }
   } else if (productId) {
     try {

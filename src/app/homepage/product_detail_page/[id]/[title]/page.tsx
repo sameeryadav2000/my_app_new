@@ -9,7 +9,6 @@ import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { CartItem, Cart } from "@/context/CartContext";
 import { useCart } from "@/context/CartContext";
-// import Card from "../../../../components/CardsForPhone";
 import AddToCartButton from "@/app/components/AddToCart";
 import StickyHeader from "@/app/components/StickyHeader";
 import ReviewList from "@/app/components/ReviewList";
@@ -188,11 +187,9 @@ export default function ProductPage() {
   };
 
   const { data: session } = useSession();
-  const { setCart, syncCart } = useCart();
+  const { syncCart } = useCart();
 
   const imageToUse = modelImages.find((img) => img.mainImage)?.image;
-
-  // const router = useRouter();
 
   const handleAddToCart = async () => {
     const newItem: CartItem = {

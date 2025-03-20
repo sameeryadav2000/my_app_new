@@ -42,10 +42,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: phoneModels.map((model) => ({
-        phoneModelId: model.id,
-        phoneModel: model.model,
+        id: model.id,
+        model: model.model,
         phoneId: model.phoneId,
-        bestseller: model.bestseller,
       })),
     });
   } catch (error) {

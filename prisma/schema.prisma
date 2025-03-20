@@ -41,8 +41,6 @@ model PhoneModel {
   model       String @db.VarChar(255)
   phoneId     Int    
   phone       Phone  @relation(fields: [phoneId], references: [id])
-  price       Float
-  bestseller  Boolean @default(false)
   details     PhoneModelDetails[]
   images      ModelImage[]
   
@@ -61,6 +59,11 @@ model PhoneModelDetails {
   color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
 
   price     Float
+  available Boolean     @default(true)
+  purchased Boolean     @default(false)
+
+  sellerId  String?
+  seller    Seller?     @relation(fields: [sellerId], references: [id])
 
   createdBy String
   user      User        @relation(fields: [createdBy], references: [id])
@@ -127,12 +130,11 @@ model User {
   updatedAt         DateTime       @updatedAt
   lastLoginAt       DateTime?
 
-  // Relations
   shippingInfo      ShippingInfo?
   cartItems         CartItem[]
   purchasedItems    PurchasedItem[]
-  reviews           Review[]       
-
+  reviews           Review[]  
+  managedSellers    Seller[]     
   phoneModelDetails PhoneModelDetails[] @relation
 
   @@index([email])
@@ -201,4 +203,26 @@ model PurchasedItem {
 
   @@index([userId])
   @@index([orderId])
+}
+
+model Seller {
+  id            String   @id @default(uuid())
+  businessName  String   @db.VarChar(255)
+  name          String   @db.VarChar(100)
+  email         String   @unique @db.VarChar(255)
+  phone         String   @db.VarChar(20)
+  address       String   @db.Text
+  taxId         String   @db.VarChar(50)
+  isActive      Boolean  @default(true)
+  
+  adminId       String
+  admin         User     @relation(fields: [adminId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  phoneDetails  PhoneModelDetails[]
+  
+  @@index([email])
+  @@index([adminId])
 }

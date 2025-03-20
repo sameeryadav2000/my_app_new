@@ -1,10 +1,11 @@
 "use client";
 
+import { FiPlus } from "react-icons/fi";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import React, { useState, useEffect } from "react";
-import DashboardProductAdd, { ProductData } from "@/app/dash_components/DashboardProductAdd";
-import DashboardProductCard from "@/app/dash_components/DashboardProductCard";
+import ProductDialog, { ProductData } from "@/app/dash_components/ProductDialog";
+import DashboardProductCard from "@/app/dash_components/ProductCard";
 
 export interface Color {
   id: number;
@@ -16,22 +17,15 @@ export interface Phone {
   phone: string;
 }
 
-export interface PhoneModel {
-  id: number;
-  model: string;
-  phoneId: number;
-  bestseller: boolean;
-  phone: Phone;
-}
-
 export interface ModelImage {
   id: number;
   image: string;
   colorId: number;
   phoneId: number;
+  mainImage: number;
 }
 
-export interface PhoneModelDetails {
+export interface Product {
   id: number;
   title: string;
   phoneId: number;
@@ -45,15 +39,17 @@ export interface PhoneModelDetails {
   price: number;
   purchased: boolean;
   images: ModelImage[];
+  sellerId: string;
 }
 
 export default function ProductsPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError, showInfo } = useNotification();
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState<boolean>(false);
-  const [products, setProducts] = useState<PhoneModelDetails[]>([]);
-  const [currentProduct, setCurrentProduct] = useState<PhoneModelDetails | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
 
   const fetchProducts = async () => {
     try {
@@ -86,18 +82,22 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
-  const handleEditProduct = (product: PhoneModelDetails) => {
+  const handleEditProduct = (id: string) => {
+    const productToEdit = products.find((product) => product.id === id);
+    if (productToEdit) {
+      openDialog(true, productToEdit);
+    }
+  };
+
+  const openDialog = (editMode = false, product: Product | null = null) => {
+    setIsEditMode(editMode);
     setCurrentProduct(product);
-    setIsAddDialogOpen(true);
+    setIsDialogOpen(true);
   };
 
-  const handleAddProduct = () => {
-    setCurrentProduct(null);
-    setIsAddDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsAddDialogOpen(false);
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setIsEditMode(false);
     setCurrentProduct(null);
   };
 
@@ -161,21 +161,16 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Your Products</h1>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-black">Products</h1>
+
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm flex items-center"
-          onClick={handleAddProduct}
+          onClick={() => openDialog()}
+          className="flex items-center px-4 py-2.5 bg-black text-white rounded-md hover:bg-[#333333] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#555555] focus:ring-offset-2"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Add Product
+          <FiPlus className="w-5 h-5 mr-2" />
+          <span>Add Product</span>
         </button>
       </div>
 
@@ -193,7 +188,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {isAddDialogOpen && <DashboardProductAdd onClose={handleCloseDialog} onSave={handleSaveProduct} productToEdit={currentProduct} />}
+      {isDialogOpen && <ProductDialog onClose={closeDialog} onSave={handleSaveProduct} productToEdit={currentProduct} />}
     </div>
   );
 }

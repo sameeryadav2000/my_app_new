@@ -4,13 +4,13 @@ import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { PhoneModelDetails } from "@/app/dashboard/products/page";
+import { Product } from "@/app/dashboard/products/page";
+// import { PhoneModel } from "@/app/dashboard/products/page";
 
-interface PhoneModels {
-  phoneModelId: number;
-  phoneModel: string;
+export interface PhoneModel {
+  id: number;
+  model: string;
   phoneId: number;
-  bestseller: boolean;
 }
 
 export interface ProductData {
@@ -30,15 +30,15 @@ export interface ProductData {
 interface DashboardProductAddProps {
   onClose: () => void;
   onSave: (productData: ProductData) => void;
-  productToEdit: PhoneModelDetails | null;
+  productToEdit: Product | null;
 }
 
-export default function DashboardProductAdd({ onClose, onSave, productToEdit }: DashboardProductAddProps) {
+export default function ProductDialog({ onClose, onSave, productToEdit }: DashboardProductAddProps) {
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError, showInfo } = useNotification();
   const [colors, setColors] = useState<{ id: number; color: string }[]>([]);
   const [phoneTypes, setPhoneTypes] = useState<{ id: number; phone_type: string }[]>([]);
-  const [phoneModels, setPhoneModels] = useState<PhoneModels[]>([]);
+  const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
   const { data: session } = useSession();
 
   const [formData, setFormData] = useState<ProductData>({
@@ -246,29 +246,39 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
   }, [productToEdit]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-gray-900/90 to-gray-800/90 flex items-center justify-center z-50 backdrop-blur-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-md">
+      {/* Dialog */}
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl mx-6 overflow-hidden transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 p-6 flex justify-between items-center">
+        {/* Header */}
+        <div className="bg-black p-6 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">{productToEdit ? "Edit Product" : "Add New Product"}</h2>
-            <p className="text-blue-100 text-sm mt-1">{productToEdit ? "Update product information" : "Create a new product listing"}</p>
+            <p className="text-gray-300 text-sm mt-1">{productToEdit ? "Update product information" : "Create a new product listing"}</p>
           </div>
-          <button onClick={onClose} className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10">
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10"
+            aria-label="Close dialog"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800 cursor">Phone Type</label>
+              <label htmlFor="phoneType" className="block text-sm font-semibold text-gray-800">
+                Phone Type
+              </label>
               <select
+                id="phoneType"
                 name="phoneType"
                 value={formData.phoneType}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
                 required
               >
                 <option value="">Select Type</option>
@@ -287,12 +297,15 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Model</label>
+              <label htmlFor="model" className="block text-sm font-semibold text-gray-800">
+                Model
+              </label>
               <select
+                id="model"
                 name="model"
                 value={formData.model ? JSON.stringify({ id: formData.modelId, model: formData.model }) : ""}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
                 required
               >
                 <option value="" disabled>
@@ -307,12 +320,15 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Condition</label>
+              <label htmlFor="condition" className="block text-sm font-semibold text-gray-800">
+                Condition
+              </label>
               <select
+                id="condition"
                 name="condition"
                 value={formData.condition}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
                 required
               >
                 <option value="">Select Condition</option>
@@ -324,12 +340,15 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Storage</label>
+              <label htmlFor="storage" className="block text-sm font-semibold text-gray-800">
+                Storage
+              </label>
               <select
+                id="storage"
                 name="storage"
                 value={formData.storage}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
                 required
               >
                 <option value="">Select Storage</option>
@@ -342,12 +361,15 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Color</label>
+              <label htmlFor="color" className="block text-sm font-semibold text-gray-800">
+                Color
+              </label>
               <select
+                id="color"
                 name="color"
                 value={formData.color ? JSON.stringify({ id: formData.colorId, color: formData.color }) : ""}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm capitalize"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm capitalize"
                 required
               >
                 <option value="">Select Color</option>
@@ -367,24 +389,30 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Price ($)</label>
+              <label htmlFor="price" className="block text-sm font-semibold text-gray-800">
+                Price ($)
+              </label>
               <input
+                id="price"
                 name="price"
                 type="number"
                 value={formData.price === null ? "" : formData.price}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-800">Availability</label>
+              <label htmlFor="available" className="block text-sm font-semibold text-gray-800">
+                Availability
+              </label>
               <select
+                id="available"
                 name="available"
                 value={formData.available}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
               >
                 <option value="yes">In Stock</option>
                 <option value="no">Out of Stock</option>
@@ -392,6 +420,7 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             </div>
           </div>
 
+          {/* Action buttons */}
           <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
             <button
               type="button"
@@ -403,9 +432,7 @@ export default function DashboardProductAdd({ onClose, onSave, productToEdit }: 
             <button
               type="submit"
               className={`px-8 py-3 text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
-                isFormValid()
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  : "bg-gradient-to-r from-blue-300 to-indigo-300 cursor-not-allowed"
+                isFormValid() ? "bg-black hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"
               }`}
               disabled={!isFormValid()}
             >

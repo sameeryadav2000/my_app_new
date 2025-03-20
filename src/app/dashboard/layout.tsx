@@ -4,7 +4,7 @@ import AuthProvider from "@/app/components/AuthProvider";
 import SessionGuard from "@/app/components/SessionGuard";
 import { LoadingProvider } from "@/context/LoadingContext";
 import { NotificationProvider } from "@/context/NotificationContext";
-import DashboardSidebar from "@/app/dash_components/DashboardSidebar";
+import DashboardSidebar from "@/app/dash_components/Sidebar";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
@@ -19,10 +19,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <SessionGuard>
             <LoadingProvider>
               <NotificationProvider>
-                <div className="flex h-screen bg-gray-100">
+                <div className="flex h-screen">
                   <DashboardSidebar />
 
-                  <div className="flex-1 overflow-auto">{children}</div>
+                  <div className="flex-1 overflow-auto lg:pt-0 pt-16">{children}</div>
                 </div>
               </NotificationProvider>
             </LoadingProvider>
