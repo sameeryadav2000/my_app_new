@@ -1,91 +1,106 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import React, { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { Product } from "@/app/dashboard/products/page";
-// import { PhoneModel } from "@/app/dashboard/products/page";
-
-export interface PhoneModel {
-  id: number;
-  model: string;
-  phoneId: number;
-}
 
 export interface ProductData {
-  id: number | null;
   phoneType: string;
-  model: string;
-  modelId: number | null;
-  colorId: number | null;
+  modelId: string;
   condition: string;
   storage: string;
   color: string;
-  price: number | null;
-  available: "yes" | "no";
-  createdBy: string;
+  price: string;
+  availability: string;
+  sellerId: string;
 }
 
-interface DashboardProductAddProps {
+interface FormErrors {
+  phoneType?: string;
+  modelId?: string;
+  condition?: string;
+  storage?: string;
+  color?: string;
+  price?: string;
+  availability?: string;
+  sellerId?: string;
+}
+
+interface TouchedFields {
+  phoneType: boolean;
+  modelId: boolean;
+  condition: boolean;
+  storage: boolean;
+  color: boolean;
+  price: boolean;
+  availability: boolean;
+  sellerId: boolean;
+}
+
+interface Seller {
+  id: string;
+  businessName: string;
+  name: string;
+  email: string;
+  phone: string;
+  taxId: string;
+  address: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface ProductDialogProps {
+  isOpen: boolean;
   onClose: () => void;
-  onSave: (productData: ProductData) => void;
-  productToEdit: Product | null;
+  onSave: (product: ProductData) => void;
+  productToEdit: ProductData | null;
 }
 
-export default function ProductDialog({ onClose, onSave, productToEdit }: DashboardProductAddProps) {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
-  const [colors, setColors] = useState<{ id: number; color: string }[]>([]);
-  const [phoneTypes, setPhoneTypes] = useState<{ id: number; phone_type: string }[]>([]);
-  const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
-  const { data: session } = useSession();
-
+export default function ProductDialog({ isOpen, onClose, onSave, productToEdit }: ProductDialogProps) {
   const [formData, setFormData] = useState<ProductData>({
-    id: null,
     phoneType: "",
-    model: "",
-    modelId: null,
-    colorId: null,
+    modelId: "",
     condition: "",
     storage: "",
     color: "",
-    price: null,
-    available: "yes",
-    createdBy: "",
+    price: "",
+    availability: "",
+    sellerId: "",
   });
 
-  useEffect(() => {
-    const fetchColors = async () => {
-      try {
-        showLoading();
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isFormValid, setIsFormValid] = useState<boolean>(false);
+  const [touched, setTouched] = useState<TouchedFields>({
+    phoneType: false,
+    modelId: false,
+    condition: false,
+    storage: false,
+    color: false,
+    price: false,
+    availability: false,
+    sellerId: false,
+  });
 
-        const response = await fetch("/dash_api/colors", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+  // States for API data
+  const [phoneTypes, setPhoneTypes] = useState<{ id: number; phone_type: string }[]>([]);
+  const [models, setModels] = useState<{ id: number; model: string; phoneId: number }[]>([]);
+  const [colors, setColors] = useState<{ id: number; color: string }[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
 
-        const result = await response.json();
+  // Use the provided context hooks
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
 
-        if (!result.success) {
-          showError("Error", result.message);
-          return;
-        }
+  // Condition options (static)
+  const conditionOptions = ["New", "Excellent", "Good", "Fair"];
 
-        const colors = result.data;
-        setColors(colors);
-      } catch (error) {
-        showError("Error", "Failed to load colors. Please check your connection and try again.");
-      } finally {
-        hideLoading();
-      }
-    };
+  // Storage options (static)
+  const storageOptions = ["64 GB", "128 GB", "256 GB", "512 GB", "1 TB"];
 
-    fetchColors();
-  }, []);
+  // Availability options (static)
+  const availabilityOptions = ["In Stock", "Out of Stock"];
 
+  // Fetch phone types from API
   useEffect(() => {
     const fetchPhoneTypes = async () => {
       try {
@@ -105,8 +120,8 @@ export default function ProductDialog({ onClose, onSave, productToEdit }: Dashbo
           return;
         }
 
-        const phone_types = result.data;
-        setPhoneTypes(phone_types);
+        const phoneTypeData = result.data;
+        setPhoneTypes(phoneTypeData);
       } catch (error) {
         showError("Error", "Failed to load phone types. Please check your connection and try again.");
       } finally {
@@ -117,133 +132,255 @@ export default function ProductDialog({ onClose, onSave, productToEdit }: Dashbo
     fetchPhoneTypes();
   }, []);
 
+  // Fetch models based on selected phone type
   useEffect(() => {
-    if (formData.phoneType) {
-      const fetchModels = async () => {
-        try {
-          showLoading();
+    const fetchModels = async () => {
+      if (!formData.phoneType) {
+        setModels([]);
+        return;
+      }
 
-          const response = await fetch(`/dash_api/phone_model?phone_type=${formData.phoneType}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+      try {
+        showLoading();
 
-          const result = await response.json();
+        // We're sending the phone type ID to get models that belong to this phone type
+        const response = await fetch(`/dash_api/phone_model?phone_type=${formData.phoneType}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-          if (!result.success) {
-            showError("Error", result.message);
-            return;
-          }
+        const result = await response.json();
 
-          const phoneModels = result.data;
-          setPhoneModels(phoneModels);
-        } catch (error) {
-          showError("Error", "Failed to load phone models. Please check your connection and try again.");
-        } finally {
-          hideLoading();
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
         }
-      };
-      fetchModels();
-    }
+
+        // Set models with the expected structure from your API
+        const modelData = result.data;
+        setModels(modelData);
+      } catch (error) {
+        showError("Error", "Failed to load models. Please check your connection and try again.");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    fetchModels();
   }, [formData.phoneType]);
 
+  // Fetch colors from API
   useEffect(() => {
-    const userId = session?.user?.id;
+    const fetchColors = async () => {
+      try {
+        showLoading();
 
-    if (userId) {
-      setFormData((prev) => ({
-        ...prev,
-        createdBy: userId,
-      }));
-    } else {
-      showError("Error", "User ID is required. Please log in again.");
-    }
-  }, [session]);
+        const response = await fetch("/dash_api/colors", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+        const result = await response.json();
 
-    if (name === "model") {
-      const selectedModel = JSON.parse(value);
-      setFormData((prev) => ({
-        ...prev,
-        model: selectedModel.model,
-        modelId: selectedModel.id,
-      }));
-    } else if (name === "color") {
-      const selectedColor = JSON.parse(value);
-      setFormData((prev) => ({
-        ...prev,
-        color: selectedColor.color,
-        colorId: selectedColor.id,
-      }));
-    } else if (name === "price") {
-      const priceValue = value === "" ? null : parseFloat(value);
-      setFormData((prev) => ({
-        ...prev,
-        price: priceValue,
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+        const colorData = result.data;
+        setColors(colorData);
+      } catch (error) {
+        showError("Error", "Failed to load colors. Please check your connection and try again.");
+      } finally {
+        hideLoading();
+      }
+    };
 
-    onSave({
-      ...formData,
-    });
+    fetchColors();
+  }, []);
 
-    setFormData({
-      id: null,
-      phoneType: "",
-      model: "",
-      modelId: null,
-      colorId: null,
-      condition: "",
-      storage: "",
-      color: "",
-      price: null,
-      available: "yes",
-      createdBy: "",
-    });
-    onClose();
-  };
+  // Fetch sellers from API
+  useEffect(() => {
+    const fetchSellers = async () => {
+      try {
+        showLoading();
 
-  const isFormValid = () => {
-    return (
-      formData.phoneType.trim() !== "" &&
-      formData.model.trim() !== "" &&
-      formData.modelId !== null &&
-      formData.colorId !== null &&
-      formData.condition.trim() !== "" &&
-      formData.storage.trim() !== "" &&
-      formData.color.trim() !== "" &&
-      formData.price !== null &&
-      formData.createdBy.trim() !== ""
-    );
-  };
+        const response = await fetch("/dash_api/sellers", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+        // Set sellers with the expected structure
+        const sellerData = result.data;
+        setSellers(sellerData);
+      } catch (error) {
+        showError("Error", "Failed to load sellers. Please check your connection and try again.");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    fetchSellers();
+  }, []);
 
   useEffect(() => {
     if (productToEdit) {
       setFormData({
-        id: productToEdit.id,
-        phoneType: productToEdit.phone.phone.phone,
-        model: productToEdit.title,
-        modelId: productToEdit.phoneId,
-        colorId: productToEdit.colorId,
+        phoneType: productToEdit.phoneType,
+        modelId: productToEdit.modelId || "",
         condition: productToEdit.condition,
         storage: productToEdit.storage,
-        color: productToEdit.color.color,
+        color: productToEdit.color,
         price: productToEdit.price,
-        available: productToEdit.available ? "yes" : "no",
-        createdBy: productToEdit.createdBy,
+        availability: productToEdit.availability,
+        sellerId: productToEdit.sellerId,
       });
     }
   }, [productToEdit]);
+
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscKey);
+    return () => window.removeEventListener("keydown", handleEscKey);
+  }, [isOpen, onClose]);
+
+  // Prevent scrolling of background when dialog is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
+
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+
+    // Validate phone type
+    if (!formData.phoneType) {
+      newErrors.phoneType = "Phone type is required";
+    }
+
+    // Validate model
+    if (!formData.modelId) {
+      newErrors.modelId = "Model is required";
+    }
+
+    // Validate condition
+    if (!formData.condition) {
+      newErrors.condition = "Condition is required";
+    }
+
+    // Validate storage
+    if (!formData.storage) {
+      newErrors.storage = "Storage capacity is required";
+    }
+
+    // Validate color
+    if (!formData.color) {
+      newErrors.color = "Color is required";
+    }
+
+    // Validate price
+    if (!formData.price) {
+      newErrors.price = "Price is required";
+    } else if (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0) {
+      newErrors.price = "Price must be a positive number";
+    }
+
+    // Validate availability
+    if (!formData.availability) {
+      newErrors.availability = "Availability status is required";
+    }
+
+    // Validate seller
+    if (!formData.sellerId) {
+      newErrors.sellerId = "Seller is required";
+    }
+
+    setErrors(newErrors);
+    setIsFormValid(Object.keys(newErrors).length === 0);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+
+    // For price field, only allow numeric input and decimals
+    if (name === "price" && value !== "" && !/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+
+    // Mark field as touched when user changes its value
+    if (!touched[name as keyof TouchedFields]) {
+      setTouched({
+        ...touched,
+        [name]: true,
+      });
+    }
+
+    // Special handling for phoneType to reset model if phone type changes
+    if (name === "phoneType" && formData.phoneType !== value) {
+      setFormData({
+        ...formData,
+        [name]: value,
+        modelId: "", // Reset model when phone type changes
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const allTouched: TouchedFields = {
+      phoneType: true,
+      modelId: true,
+      condition: true,
+      storage: true,
+      color: true,
+      price: true,
+      availability: true,
+      sellerId: true,
+    };
+    setTouched(allTouched);
+
+    validateForm();
+
+    if (isFormValid) {
+      onSave(formData);
+      onClose();
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-md">
@@ -269,154 +406,199 @@ export default function ProductDialog({ onClose, onSave, productToEdit }: Dashbo
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Seller Field */}
+            <div className="space-y-2 md:col-span-2">
+              <label htmlFor="sellerId" className="block text-sm font-semibold text-gray-800">
+                Seller *
+              </label>
+              <select
+                id="sellerId"
+                name="sellerId"
+                value={formData.sellerId}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.sellerId && errors.sellerId ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+                disabled={isLoading}
+              >
+                <option value="">Select seller</option>
+                {sellers
+                  .filter((seller) => seller.isActive)
+                  .map((seller) => (
+                    <option key={seller.id} value={seller.id}>
+                      {seller.businessName} ({seller.name})
+                    </option>
+                  ))}
+              </select>
+              {touched.sellerId && errors.sellerId && <p className="text-sm text-red-500">{errors.sellerId}</p>}
+            </div>
+
+            {/* Phone Type */}
             <div className="space-y-2">
               <label htmlFor="phoneType" className="block text-sm font-semibold text-gray-800">
-                Phone Type
+                Phone Type *
               </label>
               <select
                 id="phoneType"
                 name="phoneType"
                 value={formData.phoneType}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
-                required
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.phoneType && errors.phoneType ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+                disabled={isLoading}
               >
-                <option value="">Select Type</option>
-                {isLoading ? (
-                  <option value="" disabled>
-                    Loading phone types...
-                  </option>
-                ) : (
-                  phoneTypes.map((phoneType) => (
-                    <option key={phoneType.id} value={phoneType.phone_type}>
-                      {phoneType.phone_type}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="model" className="block text-sm font-semibold text-gray-800">
-                Model
-              </label>
-              <select
-                id="model"
-                name="model"
-                value={formData.model ? JSON.stringify({ id: formData.modelId, model: formData.model }) : ""}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
-                required
-              >
-                <option value="" disabled>
-                  Select Phone Type First
-                </option>
-                {phoneModels.map((model) => (
-                  <option key={model.phoneModelId} value={JSON.stringify({ id: model.phoneModelId, model: model.phoneModel })}>
-                    {model.phoneModel}
+                <option value="">Select phone type</option>
+                {phoneTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.phone_type}
                   </option>
                 ))}
               </select>
+              {touched.phoneType && errors.phoneType && <p className="text-sm text-red-500">{errors.phoneType}</p>}
             </div>
 
+            {/* Model */}
+            <div className="space-y-2">
+              <label htmlFor="modelId" className="block text-sm font-semibold text-gray-800">
+                Model *
+              </label>
+              <select
+                id="modelId"
+                name="modelId"
+                value={formData.modelId}
+                onChange={handleChange}
+                disabled={!formData.phoneType || isLoading}
+                className={`w-full px-4 py-3 border ${
+                  touched.modelId && errors.modelId ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm ${
+                  !formData.phoneType ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+              >
+                <option value="">Select model</option>
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.model}
+                  </option>
+                ))}
+              </select>
+              {touched.modelId && errors.modelId && <p className="text-sm text-red-500">{errors.modelId}</p>}
+            </div>
+
+            {/* Condition */}
             <div className="space-y-2">
               <label htmlFor="condition" className="block text-sm font-semibold text-gray-800">
-                Condition
+                Condition *
               </label>
               <select
                 id="condition"
                 name="condition"
                 value={formData.condition}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
-                required
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.condition && errors.condition ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
               >
-                <option value="">Select Condition</option>
-                <option value="new">New</option>
-                <option value="excellent">Excellent</option>
-                <option value="good">Good</option>
-                <option value="fair">Fair</option>
+                <option value="">Select condition</option>
+                {conditionOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
+              {touched.condition && errors.condition && <p className="text-sm text-red-500">{errors.condition}</p>}
             </div>
 
+            {/* Storage */}
             <div className="space-y-2">
               <label htmlFor="storage" className="block text-sm font-semibold text-gray-800">
-                Storage
+                Storage *
               </label>
               <select
                 id="storage"
                 name="storage"
                 value={formData.storage}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
-                required
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.storage && errors.storage ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
               >
-                <option value="">Select Storage</option>
-                <option value="64">64GB</option>
-                <option value="128">128GB</option>
-                <option value="256">256GB</option>
-                <option value="512">512GB</option>
-                <option value="1TB">1TB</option>
+                <option value="">Select storage capacity</option>
+                {storageOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
+              {touched.storage && errors.storage && <p className="text-sm text-red-500">{errors.storage}</p>}
             </div>
 
+            {/* Color */}
             <div className="space-y-2">
               <label htmlFor="color" className="block text-sm font-semibold text-gray-800">
-                Color
+                Color *
               </label>
               <select
                 id="color"
                 name="color"
-                value={formData.color ? JSON.stringify({ id: formData.colorId, color: formData.color }) : ""}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm capitalize"
-                required
+                value={formData.color}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.color && errors.color ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+                disabled={isLoading}
               >
-                <option value="">Select Color</option>
-                {isLoading ? (
-                  <option value="" disabled>
-                    Loading colors...
+                <option value="">Select color</option>
+                {colors.map((color) => (
+                  <option key={color.id} value={color.id}>
+                    {color.color}
                   </option>
-                ) : (
-                  colors.length > 0 &&
-                  colors.map((color) => (
-                    <option key={color.id} value={JSON.stringify({ id: color.id, color: color.color })}>
-                      {color.color}
-                    </option>
-                  ))
-                )}
+                ))}
               </select>
+              {touched.color && errors.color && <p className="text-sm text-red-500">{errors.color}</p>}
             </div>
 
+            {/* Price */}
             <div className="space-y-2">
               <label htmlFor="price" className="block text-sm font-semibold text-gray-800">
-                Price ($)
+                Price ($) *
               </label>
               <input
+                type="text"
                 id="price"
                 name="price"
-                type="number"
-                value={formData.price === null ? "" : formData.price}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
-                required
+                value={formData.price}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.price && errors.price ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+                placeholder="Enter price"
               />
+              {touched.price && errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
             </div>
 
+            {/* Availability */}
             <div className="space-y-2">
-              <label htmlFor="available" className="block text-sm font-semibold text-gray-800">
-                Availability
+              <label htmlFor="availability" className="block text-sm font-semibold text-gray-800">
+                Availability *
               </label>
               <select
-                id="available"
-                name="available"
-                value={formData.available}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm"
+                id="availability"
+                name="availability"
+                value={formData.availability}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border ${
+                  touched.availability && errors.availability ? "border-red-500" : "border-gray-200"
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
               >
-                <option value="yes">In Stock</option>
-                <option value="no">Out of Stock</option>
+                <option value="">Select availability</option>
+                {availabilityOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
+              {touched.availability && errors.availability && <p className="text-sm text-red-500">{errors.availability}</p>}
             </div>
           </div>
 
@@ -426,17 +608,18 @@ export default function ProductDialog({ onClose, onSave, productToEdit }: Dashbo
               type="button"
               onClick={onClose}
               className="px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               type="submit"
+              disabled={!isFormValid || isLoading}
               className={`px-8 py-3 text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
-                isFormValid() ? "bg-black hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"
+                isFormValid && !isLoading ? "bg-black hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"
               }`}
-              disabled={!isFormValid()}
             >
-              {productToEdit ? "Update Product" : "Save Product"}
+              {isLoading ? "Processing..." : productToEdit ? "Update Product" : "Save Product"}
             </button>
           </div>
         </form>

@@ -1,97 +1,69 @@
 "use client";
 
-import { FiPlus } from "react-icons/fi";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import React, { useState, useEffect } from "react";
-import ProductDialog, { ProductData } from "@/app/dash_components/ProductDialog";
-import DashboardProductCard from "@/app/dash_components/ProductCard";
+import { useEffect, useState } from "react";
+import { FiPlus } from "react-icons/fi";
+import ProductDialog from "@/app/dash_components/ProductDialog";
+import { ProductData } from "@/app/dash_components/ProductDialog";
+import { FiEdit, FiTrash2 } from "react-icons/fi";
 
-export interface Color {
-  id: number;
-  color: string;
-}
-
-export interface Phone {
-  id: number;
-  phone: string;
-}
-
-export interface ModelImage {
-  id: number;
-  image: string;
-  colorId: number;
-  phoneId: number;
-  mainImage: number;
-}
-
-export interface Product {
-  id: number;
-  title: string;
-  phoneId: number;
-  storage: string;
-  available: boolean;
-  color: Color;
-  colorId: number;
+interface Product {
+  id: string;
+  phoneType: string;
+  phoneTypeName: string;
+  model: string;
+  modelName: string;
   condition: string;
-  createdBy: string;
-  phone: PhoneModel;
-  price: number;
-  purchased: boolean;
-  images: ModelImage[];
+  storage: string;
+  color: string;
+  colorName: string;
+  price: string;
+  availability: string;
+  createdAt: string;
   sellerId: string;
+  sellerBusinessName: string;
 }
 
 export default function ProductsPage() {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError, showDeleteConfirmation } = useNotification();
 
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
-
-  const fetchProducts = async () => {
-    try {
-      showLoading();
-
-      const response = await fetch("/dash_api/phone_model_details", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        showError("Error", result.message);
-        return;
-      }
-
-      const phoneModels = result.data;
-      setProducts(phoneModels);
-    } catch (error) {
-      showError("Error", "Failed to load phone models. Please check your connection and try again.");
-    } finally {
-      hideLoading();
-    }
-  };
+  const [formattedProductData, setFormattedProductData] = useState<ProductData | null>(null);
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        showLoading();
+
+        // Use the right endpoint to fetch products
+        const response = await fetch("/dash_api/phone_model_details");
+        const result = await response.json();
+
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+        setProducts(result.data || []);
+      } catch (error) {
+        showError("Error", "Failed to load products. Please try again.");
+      } finally {
+        hideLoading();
+      }
+    };
+
     fetchProducts();
   }, []);
 
-  const handleEditProduct = (id: string) => {
-    const productToEdit = products.find((product) => product.id === id);
-    if (productToEdit) {
-      openDialog(true, productToEdit);
-    }
-  };
-
-  const openDialog = (editMode = false, product: Product | null = null) => {
+  const openDialog = (editMode = false, product: Product | null = null, formattedData: ProductData | null = null) => {
     setIsEditMode(editMode);
     setCurrentProduct(product);
+    setFormattedProductData(formattedData);
     setIsDialogOpen(true);
   };
 
@@ -101,41 +73,19 @@ export default function ProductsPage() {
     setCurrentProduct(null);
   };
 
-  const handleSaveProduct = async (productData: ProductData) => {
+  const handleSaveProduct = async (formData: ProductData) => {
     try {
       showLoading();
 
-      const formData = new FormData();
+      const method = isEditMode ? "PUT" : "POST";
+      const endpoint = isEditMode ? `/dash_api/phone_model_details?id=${currentProduct?.id}` : "/dash_api/phone_model_details";
 
-      if (productData.id !== null) {
-        formData.append("id", productData.id.toString());
-      }
-
-      formData.append("title", productData.model);
-      formData.append("condition", productData.condition);
-      formData.append("storage", productData.storage);
-      formData.append("available", productData.available);
-      formData.append("createdBy", productData.createdBy);
-
-      if (productData.price !== null) {
-        formData.append("price", productData.price.toString());
-      }
-
-      if (productData.modelId !== null) {
-        formData.append("phoneId", productData.modelId.toString());
-      }
-
-      if (productData.colorId !== null) {
-        formData.append("colorId", productData.colorId.toString());
-      }
-
-      let url = "/dash_api/phone_model_details";
-
-      const method = productData.id ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method: method,
-        body: formData,
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData), // Send formData directly
       });
 
       const result = await response.json();
@@ -145,19 +95,71 @@ export default function ProductsPage() {
         return;
       }
 
-      showSuccess(
-        productData.id ? "Product Updated" : "Product Added",
-        productData.id
-          ? `The product ${productData.model} has been successfully updated.`
-          : `The product ${productData.model} has been successfully added.`
-      );
+      if (isEditMode) {
+        setProducts(products.map((product) => (product.id === currentProduct?.id ? result.data : product)));
+      } else {
+        setProducts([...products, result.data]);
+      }
 
-      fetchProducts();
+      showSuccess("Success", isEditMode ? "Product updated successfully" : "Product added successfully");
     } catch (error) {
-      showError("Error", "Error saving phone model detail: Please check your connection and try again.");
+      showError("Error", `Failed to ${isEditMode ? "update" : "save"} product. Please try again.`);
     } finally {
       hideLoading();
     }
+  };
+  const handleEditProduct = (id: string) => {
+    const productToEdit = products.find((product) => product.id === id);
+    if (productToEdit) {
+      const formattedProduct = {
+        phoneType: productToEdit.phoneType,
+        modelId: productToEdit.model,
+        condition: productToEdit.condition,
+        storage: productToEdit.storage,
+        color: productToEdit.color,
+        price: productToEdit.price,
+        availability: productToEdit.availability,
+        sellerId: productToEdit.sellerId,
+      };
+
+      openDialog(true, productToEdit, formattedProduct);
+    }
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    debugger;
+    const performDelete = async () => {
+      try {
+        showLoading();
+
+        // Updated to use the same endpoint as our API
+        const response = await fetch(`/dash_api/phone_model_details?id=${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          showError("Error", result.message);
+          return;
+        }
+
+        setProducts(products.filter((product) => product.id !== id));
+      } catch (error) {
+        showError("Error", "Failed to delete product. Please try again.");
+      } finally {
+        hideLoading();
+      }
+    };
+
+    showDeleteConfirmation(
+      "Confirm Deletion",
+      "Are you sure you want to delete this product? This action cannot be undone.",
+      performDelete
+    );
   };
 
   return (
@@ -174,21 +176,88 @@ export default function ProductsPage() {
         </button>
       </div>
 
-      {isLoading ? (
-        <div className="bg-white rounded-lg shadow p-6 flex justify-center">
-          <p className="text-gray-500">Loading products...</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <DashboardProductCard key={product.id} product={product} onEdit={handleEditProduct} />
-            ))}
+      <div className="bg-white border border-[#e0e0e0] rounded-md shadow-sm p-6">
+        {products.length > 0 ? (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Seller
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Model
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Storage
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Color
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Condition
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Availability
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {products.map((product) => (
+                    <tr key={product.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.sellerBusinessName || "—"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.phoneTypeName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.modelName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.storage}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.colorName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.condition}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${parseFloat(product.price).toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.availability}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleEditProduct(product.id)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-4 flex items-center"
+                        >
+                          <FiEdit className="w-4 h-4 mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="text-red-600 hover:text-red-900 flex items-center"
+                        >
+                          <FiTrash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-[#999999] text-center py-8">No products found. Add your first product to get started.</p>
+        )}
+      </div>
 
-      {isDialogOpen && <ProductDialog onClose={closeDialog} onSave={handleSaveProduct} productToEdit={currentProduct} />}
+      {isDialogOpen && (
+        <ProductDialog
+          isOpen={isDialogOpen}
+          onClose={closeDialog}
+          onSave={handleSaveProduct}
+          productToEdit={formattedProductData} // Pass the formatted data to dialog
+        />
+      )}
     </div>
   );
 }

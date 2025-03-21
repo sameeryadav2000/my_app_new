@@ -16,26 +16,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const phone = await prisma.phone.findFirst({
-      where: {
-        phone: phone_type,
-      },
-    });
-
-    if (!phone) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Phone not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Query for all dropdown models matching the phoneId
+    // Convert phone_type to integer for the database query
+    const phoneId = parseInt(phone_type);
+    
+    // Query for all dropdown models matching the phoneId directly
     const phoneModels = await prisma.phoneModel.findMany({
       where: {
-        phoneId: phone.id,
+        phoneId: phoneId,
       },
     });
 
