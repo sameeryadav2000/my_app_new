@@ -41,25 +41,23 @@ export default function CartPage() {
 
   return (
     <div className="flex flex-col md:flex-row justify-between w-[70%] mx-auto gap-8">
-      <div className="md:w-[60%] rounded-xl">
+      <div className="md:w-[60%] rounded-lg">
         {cart.items && cart.items.length > 0 ? (
           cart.items.map((item) => (
             <div
               key={item.id}
-              className="flex md:flex-row flex-col gap-6 border-b border-gray-200 py-6 transition-all duration-300 hover:bg-white hover:shadow-md rounded-lg px-4"
+              className="flex md:flex-row flex-col gap-6 border-b border-gray-200 py-6 transition-all duration-300 hover:bg-white hover:shadow-sm rounded-lg px-4"
             >
               <div className="md:w-1/4 w-full flex justify-center">
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="w-full max-h-[180px] object-contain rounded-lg transform hover:scale-105 transition-transform duration-300"
+                  className="w-full max-h-[160px] object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
                 />
               </div>
 
               <div className="flex-1 space-y-2">
-                <h2 className="text-xl font-semibold text-gray-800 tracking-tight hover:text-indigo-600 transition-colors duration-200">
-                  {item.title}
-                </h2>
+                <h2 className="text-lg font-medium text-gray-900 tracking-tight">{item.title}</h2>
                 <p className="text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Condition:</span> {item.condition}
                 </p>
@@ -69,20 +67,18 @@ export default function CartPage() {
                 <p className="text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Color:</span> {item.color}
                 </p>
-                <p className="text-lg font-bold text-gray-900">${item.price}</p>
+                <p className="text-lg font-medium text-gray-900">${item.price}</p>
                 <p className="text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Quantity:</span>
-                  <span className="ml-2 bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs font-semibold">{item.quantity}</span>
+                  <span className="ml-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-md text-xs">{item.quantity}</span>
                 </p>
               </div>
 
               <div className="flex md:flex-col flex-row justify-between items-center gap-4">
-                <span className="bg-gray-200 text-gray-800 text-center px-6 py-2 rounded-full font-medium text-sm w-20">
-                  {item.quantity}
-                </span>
+                <span className="bg-gray-100 text-gray-800 text-center px-5 py-2 rounded-md font-medium text-sm w-16">{item.quantity}</span>
 
                 <button
-                  className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-2 rounded-full font-medium text-sm shadow-md hover:from-red-600 hover:to-red-700 transform hover:scale-105 transition-all duration-300"
+                  className="bg-black text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-800 transition-colors duration-300"
                   onClick={() => handleRemove(item.id)}
                 >
                   Remove
@@ -91,9 +87,9 @@ export default function CartPage() {
             </div>
           ))
         ) : (
-          <div className="text-center py-12">
-            <p className="text-lg font-medium text-gray-700 tracking-wide">Your cart is empty.</p>
-            <p className="text-sm text-gray-500 mt-2">Explore our collection to find something exquisite.</p>
+          <div className="text-center py-12 border border-gray-200 rounded-lg">
+            <p className="text-base font-medium text-gray-800">Your cart is empty.</p>
+            <p className="text-sm text-gray-500 mt-2">Explore our collection to find something you'll love.</p>
           </div>
         )}
       </div>

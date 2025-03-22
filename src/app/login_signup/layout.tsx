@@ -1,3 +1,5 @@
+import { LoadingProvider } from "@/context/LoadingContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -25,8 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          {children}
+        <LoadingProvider>
+          <NotificationProvider>{children}</NotificationProvider>
+        </LoadingProvider>
       </body>
-    </html >
+    </html>
   );
 }

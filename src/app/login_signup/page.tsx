@@ -1,192 +1,259 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
 import { useSearchParams } from "next/navigation";
-import RegistrationDialog from "@/app/components/RegistrationDialog";
-import SessionExpiredAlert from "@/app/components/SessionExpiredAlert";
+import { useNotification } from "@/context/NotificationContext"; // Adjust path as needed
+import { useLoading } from "@/context/LoadingContext"; // Adjust path as needed
+import RegistrationDialog from "@/app/components/RegistrationDialog"; // Adjust path as needed
+
+interface LoginData {
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  email?: string;
+  password?: string;
+}
+
+interface TouchedFields {
+  email: boolean;
+  password: boolean;
+}
 
 export default function LoginPage() {
+  // Get callback URL from search parameters
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/homepage";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<LoginData>({
+    email: "",
+    password: "",
+  });
 
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isFormValid, setIsFormValid] = useState<boolean>(false);
+  const [touched, setTouched] = useState<TouchedFields>({
+    email: false,
+    password: false,
+  });
+
+  // Registration dialog state
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signIn("keycloak-google", {
-        callbackUrl: callbackUrl,
-      });
-    } catch (error) {
-      console.error("Authentication error:", error);
+  // Use the notification and loading contexts
+  const { showError, showSuccess } = useNotification();
+  const { showLoading, hideLoading, isLoading } = useLoading();
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
+
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+
+    // Validate email
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
     }
+
+    // Validate password
+    if (!formData.password.trim()) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    }
+
+    setErrors(newErrors);
+    setIsFormValid(Object.keys(newErrors).length === 0);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    // Mark field as touched when user changes its value
+    if (!touched[name as keyof TouchedFields]) {
+      setTouched({
+        ...touched,
+        [name]: true,
+      });
+    }
+
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
   const handleDirectLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    setIsLoading(true);
-    setError("");
+    if (!isFormValid) {
+      // Mark all fields as touched to show errors
+      setTouched({
+        email: true,
+        password: true,
+      });
+      return;
+    }
+
+    // Show loading state
+    showLoading();
 
     try {
-      if (!email || !password) {
-        setError("Please enter both email and password");
-        setIsLoading(false);
+      if (!formData.email || !formData.password) {
+        hideLoading();
+        showError("Login Failed", "Please enter both email and password");
         return;
       }
 
       const result = await signIn("keycloak-direct", {
         redirect: false,
-        username: email,
-        password: password,
+        username: formData.email,
+        password: formData.password,
         callbackUrl: callbackUrl,
       });
 
       if (result?.error) {
         console.log("Login failed with error:", result.error);
+        hideLoading();
 
         if (result.error.includes("Account is not fully set up")) {
-          setError("Please verify your email before logging in. Check your inbox for a verification email.");
+          showError(
+            "Email Verification Required",
+            "Please verify your email before logging in. Check your inbox for a verification email."
+          );
         } else {
-          setError("Invalid email or password");
+          showError("Login Failed", "Invalid email or password");
         }
-
-        setIsLoading(false);
       } else {
-        console.log("Login successful, redirecting to:", callbackUrl);
-        window.location.href = callbackUrl;
+        setTimeout(() => {
+          window.location.href = callbackUrl;
+        }, 1000);
       }
     } catch (error) {
-      console.error("Detailed login error:", error);
+      hideLoading();
+
       if (error instanceof Error) {
-        setError("An error occurred during login: " + error.message);
+        showError("Login Error", "An error occurred during login", error.message);
       } else {
-        setError("An unexpected error occurred during login");
+        showError("Login Error", "An unexpected error occurred during login");
       }
-      setIsLoading(false);
+    } finally {
+      hideLoading();
     }
   };
 
-  const handleCreateAccount = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    setIsRegistrationOpen(true);
-  };
-
+  // Handle successful registration
   const handleRegistrationSuccess = (email: string) => {
-    setEmail(email);
+    setFormData({
+      ...formData,
+      email: email,
+    });
+    showSuccess(
+      "Registration Successful",
+      "Your account has been created! Please check your email to verify your account before logging in."
+    );
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg transform hover:scale-[1.02] transition-all duration-300">
-        <div className="text-center">
-          <h2 className="text-4xl font-extrabold text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Welcome Back
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-6 overflow-hidden transform transition-all">
+        {/* Header */}
+        <div className="bg-black p-6">
+          <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+          <p className="text-gray-300 text-sm mt-1">Log in to your account</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleDirectLogin}>
-          <SessionExpiredAlert />
-
-          {error && <div className="p-3 bg-red-50 text-red-500 rounded-lg text-sm">{error}</div>}
-
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all duration-200 placeholder-gray-400"
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all duration-200 placeholder-gray-400"
-                placeholder="Enter your password"
-              />
-            </div>
+        {/* Form */}
+        <form onSubmit={handleDirectLogin} className="p-8 space-y-6">
+          {/* Email */}
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-800">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border ${
+                touched.email && errors.email ? "border-red-500" : "border-gray-200"
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              placeholder="example@email.com"
+              disabled={isLoading}
+            />
+            {touched.email && errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-            <a href="#" className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors duration-200">
+          {/* Password */}
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-800">
+              Password *
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border ${
+                touched.password && errors.password ? "border-red-500" : "border-gray-200"
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              placeholder="Enter your password"
+              disabled={isLoading}
+            />
+            {touched.password && errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+          </div>
+
+          {/* Forgot Password Link */}
+          <div className="text-right">
+            <a href="/forgot-password" className="text-sm text-black hover:underline">
               Forgot password?
             </a>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-          >
-            {isLoading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <div className="mt-2 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{" "}
+          {/* Action buttons */}
+          <div className="pt-6">
             <button
-              onClick={handleCreateAccount}
-              className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors duration-200"
+              type="submit"
+              disabled={isLoading}
+              className={`w-full py-3 text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
+                isFormValid && !isLoading ? "bg-black hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {isLoading ? "Logging in..." : "Log In"}
+            </button>
+          </div>
+
+          {/* Create Account Section */}
+          <div className="text-center pt-4 border-t border-gray-200 mt-6">
+            <p className="text-gray-600 mb-4">Don't have an account?</p>
+            <button
+              type="button"
+              onClick={() => setIsRegistrationOpen(true)}
+              disabled={isLoading}
+              className="w-full px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
             >
               Create Account
             </button>
-          </p>
-
-          <div className="mt-6 relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
-            </div>
           </div>
-
-          <button
-            onClick={handleGoogleSignIn}
-            className="mt-6 w-full flex items-center justify-center px-6 py-3 border border-gray-200 rounded-lg shadow-sm bg-white font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-          >
-            <FcGoogle className="w-5 h-5 mr-2" />
-            <span>Sign in with Google</span>
-          </button>
-        </div>
+        </form>
       </div>
 
-      <RegistrationDialog isOpen={isRegistrationOpen} onClose={() => setIsRegistrationOpen(false)} onSuccess={handleRegistrationSuccess} />
+      {/* Only render the RegistrationDialog when isRegistrationOpen is true */}
+      {isRegistrationOpen && (
+        <RegistrationDialog
+          isOpen={isRegistrationOpen}
+          onClose={() => setIsRegistrationOpen(false)}
+          onSuccess={handleRegistrationSuccess}
+        />
+      )}
     </div>
   );
 }

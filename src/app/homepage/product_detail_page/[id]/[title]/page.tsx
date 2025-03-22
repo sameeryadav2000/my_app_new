@@ -67,11 +67,11 @@ export default function ProductPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
   const colors: Record<string, string> = {
-    black: "bg-black",
-    red: "bg-red-400",
-    blue: "bg-blue-400",
-    green: "bg-green-400",
-    pink: "bg-pink-300",
+    Black: "bg-black",
+    Red: "bg-red-400",
+    Blue: "bg-blue-400",
+    Green: "bg-green-400",
+    Pink: "bg-pink-300",
   };
 
   useEffect(() => {
@@ -249,9 +249,8 @@ export default function ProductPage() {
           return;
         }
 
-
         const syncCartResult = await syncCart();
-        
+
         if (syncCartResult.success) {
           showSuccess("Success", syncCartResult.message);
         } else {
@@ -289,12 +288,12 @@ export default function ProductPage() {
       )}
 
       {/* Main div */}
-      <div className="w-[95%] md:w-[70%] mx-auto mx-auto">
+      <div className="w-[95%] md:w-[70%] mx-auto">
         {/* Div into two columns */}
         <div className="flex flex-col md:flex-row gap-8">
           {/* Left side container box */}
           <div className="w-full md:w-1/2 bg-white rounded-lg">
-            <div className="md:w-full md:h-screen md:sticky md:top-10">
+            <div className="md:w-full md:h-[80vh] md:sticky md:top-10">
               <div className="h-auto md:h-full flex flex-col justify-center">
                 <div className="relative h-[300px] md:h-[500px] w-full mb-4 bg-white">
                   {modelImages.length > 0 ? (
@@ -309,7 +308,7 @@ export default function ProductPage() {
                   <button
                     onClick={prevImage}
                     disabled={modelImages.length <= 1}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
                     aria-label="Previous image"
                   >
                     <svg
@@ -329,7 +328,7 @@ export default function ProductPage() {
                   <button
                     onClick={nextImage}
                     disabled={modelImages.length <= 1}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2.5 rounded-full shadow-lg transition-all duration-200 border border-gray-200 text-gray-800 hover:text-black focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50"
                     aria-label="Next image"
                   >
                     <svg
@@ -353,7 +352,7 @@ export default function ProductPage() {
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden border-2
-                  ${currentImageIndex === index ? "border-blue-500" : "border-transparent"}`}
+                ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
                     >
                       <img src={imageObj.image} alt={`Thumbnail ${index + 1}`} className="h-full w-full object-cover" />
                     </button>
@@ -366,7 +365,7 @@ export default function ProductPage() {
           {/* Right side container box */}
           <div className="w-full md:w-1/2 bg-white rounded-lg">
             {/* Info First Section */}
-            <div className="md:w-full md:h-screen flex pb-5 flex-col justify-center">
+            <div className="md:w-full md:h-[80vh] flex pb-5 flex-col justify-center">
               <h1 className="text-2xl font-bold mb-4">
                 {phoneModelName} {selectedStorage} - {selectedColor}
               </h1>
@@ -376,13 +375,13 @@ export default function ProductPage() {
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-bold">${priceSelected}</span>
                   </div>
-                  <AddToCartButton className="!w-40" onClick={handleAddToCart} />
+                  <AddToCartButton className="!w-40 bg-black text-white hover:bg-gray-800" onClick={handleAddToCart} />
                 </div>
               </div>
             </div>
 
             {/* Condition Section */}
-            <div className="md:w-full md:h-screen flex pb-10 flex-col justify-center">
+            <div className="md:w-full md:h-[80vh] flex pb-10 flex-col justify-center">
               <h2 className="font-bold mb-6">Select the condition</h2>
 
               <div className="grid grid-cols-2 gap-4">
@@ -391,17 +390,13 @@ export default function ProductPage() {
                     <label
                       key={index}
                       className={`flex items-center gap-4 p-2 border rounded-lg cursor-pointer 
-                                transition-all duration-200 ease-in-out
-                                ${
-                                  selectedCondition === option.condition
-                                    ? "border-blue-500 bg-blue-50"
-                                    : "border-gray-200 hover:border-blue-500"
-                                }`}
+                          transition-all duration-200 ease-in-out
+                          ${selectedCondition === option.condition ? "border-black bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
                     >
                       <input
                         type="radio"
                         name="condition"
-                        className="h-4 w-4"
+                        className="h-4 w-4 accent-black"
                         value={option.condition}
                         checked={selectedCondition === option.condition}
                         onChange={handleConditionChange}
@@ -425,7 +420,7 @@ export default function ProductPage() {
             </div>
 
             {/* Storage Section */}
-            <div className="md:w-full md:h-screen flex pb-10 flex-col justify-center">
+            <div className="md:w-full md:h-[80vh] flex pb-10 flex-col justify-center">
               <h2 className="font-bold mb-6">Select storage</h2>
 
               <div className="flex flex-col gap-4">
@@ -433,18 +428,19 @@ export default function ProductPage() {
                   storageOptions.map((option, index) => (
                     <label
                       key={index}
-                      className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:border-blue-500"
+                      className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all duration-200
+                ${selectedStorage === option.storage ? "border-black bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
                     >
                       <div className="flex items-center gap-4">
                         <input
                           type="radio"
                           name="storage"
-                          className="h-4 w-4"
+                          className="h-4 w-4 accent-black"
                           value={option.storage}
                           checked={selectedStorage === option.storage}
                           onChange={handleStorageChange}
                         />
-                        <span className="">{option.storage} GB</span>
+                        <span className="">{option.storage}</span>
                       </div>
                       {selectedStorage === option.storage && selectedColor ? (
                         <span className="text-gray-600 text-sm mt-1">
@@ -462,7 +458,7 @@ export default function ProductPage() {
             </div>
 
             {/* Color Section */}
-            <div className="md:w-full md:h-screen flex pb-10 flex-col justify-center">
+            <div className="md:w-full md:h-[80vh] flex pb-10 flex-col justify-center">
               <h2 className="font-bold mb-6">Select the color</h2>
 
               <div className="grid grid-cols-2 gap-2 w-full">
@@ -471,17 +467,13 @@ export default function ProductPage() {
                     <label
                       key={index}
                       className={`flex items-center gap-4 p-2 border rounded-lg cursor-pointer 
-                                transition-all duration-200 ease-in-out
-                                ${
-                                  selectedColor === option.color.color
-                                    ? "border-blue-500 bg-blue-50"
-                                    : "border-gray-200 hover:border-blue-500"
-                                }`}
+                          transition-all duration-200 ease-in-out
+                          ${selectedColor === option.color.color ? "border-black bg-gray-50" : "border-gray-200 hover:border-gray-400"}`}
                     >
                       <input
                         type="radio"
                         name="color"
-                        className="h-4 w-4"
+                        className="h-4 w-4 accent-black"
                         value={option.color.color}
                         checked={selectedColor === option.color.color}
                         onChange={handleColorChange}
@@ -505,21 +497,21 @@ export default function ProductPage() {
             </div>
 
             {/* Last Section */}
-            <div className="md:w-full md:h-screen flex flex-col justify-center">
+            <div className="md:w-full md:h-[80vh] flex flex-col justify-center">
               <div className="max-w-2xl">
                 <div className="flex justify-between items-start mb-6">
                   <h1 className="font-bold">Tadaaa</h1>
                 </div>
 
-                <div className="border rounded-lg p-6 mb-4 bg-white">
+                <div className="border rounded-lg p-6 mb-4 bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <h2>{phoneModelName}</h2>
                   </div>
 
                   <div className="flex gap-2 mb-4">
-                    <span className="px-3 py-1 border capitalize">{selectedCondition}</span>
-                    <span className="px-3 py-1 border">{selectedStorage}</span>
-                    <span className="px-3 py-1 border">{selectedColor}</span>
+                    <span className="px-3 py-1 border capitalize bg-gray-50 rounded-md">{selectedCondition}</span>
+                    <span className="px-3 py-1 border bg-gray-50 rounded-md">{selectedStorage}</span>
+                    <span className="px-3 py-1 border bg-gray-50 rounded-md">{selectedColor}</span>
                   </div>
 
                   <div className="flex items-baseline gap-2">
@@ -527,7 +519,7 @@ export default function ProductPage() {
                   </div>
                 </div>
 
-                <AddToCartButton className="w-full" onClick={handleAddToCart} />
+                <AddToCartButton className="w-full bg-black text-white hover:bg-gray-800 rounded-lg py-3" onClick={handleAddToCart} />
               </div>
             </div>
           </div>

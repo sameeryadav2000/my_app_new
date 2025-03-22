@@ -40,7 +40,6 @@ export default function ProductsPage() {
       try {
         showLoading();
 
-        // Use the right endpoint to fetch products
         const response = await fetch("/dash_api/phone_model_details");
         const result = await response.json();
 

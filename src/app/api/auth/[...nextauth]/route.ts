@@ -113,7 +113,6 @@ export const authOptions: AuthOptions = {
       issuer: process.env.KEYCLOAK_GOOGLE_ISSUER,
     }),
 
-    // Keycloak provider for direct login (pure Keycloak)
     CredentialsProvider({
       id: "keycloak-direct",
       name: "Keycloak (Direct)",
@@ -133,7 +132,6 @@ export const authOptions: AuthOptions = {
           throw new Error("Missing username or password");
         }
 
-        // Step 1: Get access token
         const tokenResponse = await fetch("http://localhost:8080/realms/key_cloak/protocol/openid-connect/token", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -147,28 +145,22 @@ export const authOptions: AuthOptions = {
           }),
         });
 
-        console.log("Token request status:", tokenResponse.status);
         const tokenData = await tokenResponse.json();
-        console.log("Token response:", JSON.stringify(tokenData, null, 2));
 
         if (!tokenData.access_token) {
           throw new Error(tokenData.error_description || "Authentication failed");
         }
 
-        // Step 2: Get user info using the access token
         const userInfoResponse = await fetch("http://localhost:8080/realms/key_cloak/protocol/openid-connect/userinfo", {
           headers: { Authorization: `Bearer ${tokenData.access_token}` },
         });
 
-        console.log("User info request status:", userInfoResponse.status);
         if (!userInfoResponse.ok) {
           const errorText = await userInfoResponse.text();
-          console.error("User info request failed - Raw response:", errorText);
           throw new Error(`Failed to fetch user info: ${userInfoResponse.status} - ${errorText}`);
         }
 
         const userInfo = await userInfoResponse.json();
-        console.log("User info:", JSON.stringify(userInfo, null, 2));
 
         if (!userInfo.sub) {
           throw new Error("Unable to retrieve user ID (sub) from Keycloak userinfo");
@@ -176,7 +168,6 @@ export const authOptions: AuthOptions = {
 
         const isAdmin = Array.isArray(userInfo.roles) && userInfo.roles.includes("app_admin");
 
-        // Return all data in the user object
         return {
           id: userInfo.sub,
           email: userInfo.email || credentials.username,
@@ -185,7 +176,7 @@ export const authOptions: AuthOptions = {
           emailVerified: userInfo.email_verified,
           accessToken: tokenData.access_token,
           refreshToken: tokenData.refresh_token,
-          idToken: tokenData.id_token || tokenData.access_token, // Fallback if id_token is missing
+          idToken: tokenData.id_token || tokenData.access_token,
           expiresAt: Math.floor(Date.now() / 1000) + (tokenData.expires_in || 3600),
           admin: isAdmin,
         };
@@ -251,7 +242,6 @@ export const authOptions: AuthOptions = {
     },
 
     async jwt({ token, user, account }: { token: JWT; user: ExtendedUser; account: Account | null }) {
-
       if (account && account.access_token) {
         token.idToken = account.id_token;
         token.accessToken = account.access_token;

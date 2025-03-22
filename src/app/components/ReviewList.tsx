@@ -3,7 +3,7 @@
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState } from "react";
-import { Star } from "lucide-react";
+import { Star, MessageSquare, ThumbsUp, Award, User } from "lucide-react";
 
 interface Review {
   id: number;
@@ -27,6 +27,7 @@ export default function ReviewList({ modelId }: ReviewListProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string>("");
   const [averageRating, setAverageRating] = useState<number>(0);
+  const [activeFilter, setActiveFilter] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -70,18 +71,28 @@ export default function ReviewList({ modelId }: ReviewListProps) {
   }, [modelId]);
 
   // Function to render stars based on rating
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number, size = 16) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} size={16} className={`${i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`} />
+      <Star key={i} size={size} className={`${i < rating ? "text-black fill-black" : "text-gray-200"}`} />
     ));
   };
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 7) {
+      if (diffDays === 0) return "Today";
+      if (diffDays === 1) return "Yesterday";
+      return `${diffDays} days ago`;
+    }
+
     return date.toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
     });
   };
@@ -102,33 +113,80 @@ export default function ReviewList({ modelId }: ReviewListProps) {
   const ratingDistribution = generateRatingDistribution();
   const maxCount = Math.max(...ratingDistribution, 1);
 
-  return (
-    <div className="space-y-8">
-      {/* Average Rating Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold mb-4">Customer Reviews</h3>
+  const filteredReviews = activeFilter ? reviews.filter((review) => review.rating === activeFilter) : reviews;
 
-        <div className="flex flex-col md:flex-row gap-8">
+  return (
+    <div className="space-y-6">
+      {/* Average Rating Section */}
+      <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-xl font-semibold tracking-tight">Customer Reviews</h2>
+          {reviews.length > 0 && (
+            <div className="flex items-center gap-1">
+              <MessageSquare size={18} className="text-gray-400" />
+              <span className="text-sm text-gray-600">
+                {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-10">
           {/* Left: Average score */}
-          <div className="md:w-1/3 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
-            <span className="text-4xl font-bold text-indigo-600">{averageRating}</span>
-            <div className="flex mt-2">{renderStars(Math.round(averageRating))}</div>
-            <p className="text-sm text-gray-600 mt-2 text-center">
-              Based on {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
-            </p>
+          <div className="md:w-1/3">
+            <div className="flex flex-col items-center p-6 bg-gray-50 rounded-lg border border-gray-100">
+              {reviews.length > 0 ? (
+                <>
+                  <div className="flex mb-2">{renderStars(Math.round(averageRating), 24)}</div>
+                  <span className="text-5xl font-bold text-black mb-1">{averageRating}</span>
+                  <p className="text-sm text-gray-600">out of 5.0</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex mb-2">{renderStars(0, 24)}</div>
+                  <span className="text-4xl font-bold text-black mb-1">—</span>
+                  <p className="text-sm text-gray-600">No ratings yet</p>
+                </>
+              )}
+            </div>
+
+            {reviews.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setActiveFilter(null)}
+                  className={`px-3 py-1 text-sm rounded-full transition-all ${
+                    activeFilter === null ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  All
+                </button>
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <button
+                    key={rating}
+                    onClick={() => setActiveFilter(activeFilter === rating ? null : rating)}
+                    className={`px-3 py-1 text-sm rounded-full transition-all flex items-center gap-1 ${
+                      activeFilter === rating ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    disabled={ratingDistribution[5 - rating] === 0}
+                  >
+                    {rating} <Star size={12} className="fill-current" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* Right: Rating distribution */}
           <div className="md:w-2/3">
-            {[5, 4, 3, 2, 1].map((star, idx) => (
-              <div key={star} className="flex items-center mb-2">
-                <div className="w-16 text-sm text-gray-600 flex items-center">
-                  <span>{star}</span>
-                  <Star size={12} className="ml-1 text-yellow-400 fill-yellow-400" />
+            {[5, 4, 3, 2, 1].map((star) => (
+              <div key={star} className="flex items-center mb-3">
+                <div className="w-10 text-sm text-gray-600 flex items-center gap-1">
+                  {star} <Star size={12} className="text-gray-400" />
                 </div>
 
-                <div className="flex-1 h-4 mx-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 mx-3 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full"
+                    className="h-full bg-black rounded-full"
                     style={{
                       width: `${(ratingDistribution[5 - star] / maxCount) * 100}%`,
                       transition: "width 0.5s ease",
@@ -136,45 +194,86 @@ export default function ReviewList({ modelId }: ReviewListProps) {
                   ></div>
                 </div>
 
-                <div className="w-10 text-xs text-gray-500 text-right">{ratingDistribution[5 - star]}</div>
+                <div className="w-10 text-sm text-right">
+                  {Math.round((ratingDistribution[5 - star] / Math.max(reviews.length, 1)) * 100)}%
+                </div>
               </div>
             ))}
+
+            {reviews.length > 0 && (
+              <div className="mt-8 grid grid-cols-3 gap-3">
+                <div className="col-span-1 p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
+                  <ThumbsUp size={18} className="mb-1 text-gray-600" />
+                  <div className="text-xl font-semibold">{reviews.filter((r) => r.rating >= 4).length}</div>
+                  <div className="text-xs text-gray-500 text-center">Satisfied customers</div>
+                </div>
+
+                <div className="col-span-1 p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
+                  <Award size={18} className="mb-1 text-gray-600" />
+                  <div className="text-xl font-semibold">
+                    {reviews.length > 0 ? `${Math.round((reviews.filter((r) => r.rating >= 4).length / reviews.length) * 100)}%` : "0%"}
+                  </div>
+                  <div className="text-xs text-gray-500 text-center">Recommendation rate</div>
+                </div>
+
+                <div className="col-span-1 p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
+                  <User size={18} className="mb-1 text-gray-600" />
+                  <div className="text-xl font-semibold">{new Set(reviews.map((r) => r.userId)).size}</div>
+                  <div className="text-xs text-gray-500 text-center">Unique reviewers</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Reviews List */}
       {reviews.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-100 shadow-sm">
-          <div className="mx-auto w-16 h-16 mb-4 text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="mx-auto w-16 h-16 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <MessageSquare size={24} className="text-gray-400" />
           </div>
-          <p className="text-gray-600 font-medium">No reviews yet for this product</p>
-          <p className="text-sm mt-2 text-gray-500">Be the first to share your experience!</p>
+          <p className="text-gray-700 font-medium">No reviews yet</p>
+          <p className="text-sm mt-2 text-gray-500 max-w-md mx-auto">
+            Be the first to share your experience with this product. Your feedback helps others make better decisions.
+          </p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="p-5 bg-white rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <div className="flex bg-indigo-50 text-indigo-600 px-2 py-1 rounded">{renderStars(review.rating)}</div>
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-medium text-gray-800">
+              {activeFilter
+                ? `${filteredReviews.length} ${filteredReviews.length === 1 ? "review" : "reviews"} with ${activeFilter} ${
+                    activeFilter === 1 ? "star" : "stars"
+                  }`
+                : "All Reviews"}
+            </h3>
+          </div>
 
-                {review.userName && <span className="font-medium">{review.userName}</span>}
+          <div className="space-y-4">
+            {filteredReviews.map((review) => (
+              <div key={review.id} className="p-6 bg-white rounded-lg border border-gray-100 transition-all hover:border-gray-300">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 flex-shrink-0">
+                    {review.userName ? review.userName.charAt(0).toUpperCase() : "U"}
+                  </div>
 
-                <span className="text-xs text-gray-500 ml-auto">{formatDate(review.createdAt)}</span>
+                  <div className="flex-1">
+                    {review.userName && <div className="font-medium text-gray-800">{review.userName}</div>}
+                    <div className="flex text-sm text-gray-500">
+                      <span>{formatDate(review.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex bg-gray-50 px-2 py-1 rounded-full border border-gray-100">{renderStars(review.rating)}</div>
+                </div>
+
+                {review.title && <h4 className="font-semibold text-lg mb-3 text-black">{review.title}</h4>}
+
+                <p className="text-gray-700 whitespace-pre-line leading-relaxed">{review.comment}</p>
               </div>
-
-              {review.title && <h4 className="font-semibold text-lg mb-2 text-gray-800">{review.title}</h4>}
-
-              <p className="text-gray-700 whitespace-pre-line leading-relaxed">{review.comment}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

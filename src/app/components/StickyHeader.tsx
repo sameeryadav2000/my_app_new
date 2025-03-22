@@ -30,31 +30,55 @@ export default function StickyHeader({ title, condition, storage, color, price, 
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 bg-white border-b z-50 py-3 transform transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 right-0 bg-white shadow-md z-50 transform transition-all duration-300 ease-in-out ${
         isVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <div className="md:px-20">
-        <div className="flex items-center md:justify-between gap-5">
-          <div className="flex items-center space-x-4">
-            <img src={image} alt={title} className="w-12 h-12 object-contain hidden md:block" />
-            <span className="capitalize">
-              {condition} - {storage} - {color}
-            </span>
+      <div className="container mx-auto px-4 md:px-8 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gray-50 rounded-lg p-1 flex items-center justify-center hidden md:flex">
+              <img src={image} alt={title} className="w-11 h-11 object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs text-gray-500 hidden md:block">{title}</span>
+              <span className="text-sm font-medium capitalize">
+                {condition} · {storage} · {color}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-8">
-            <div>
-              <div className="flex items-baseline space-x-2">
-                <span className="font-medium">${price}</span>
-              </div>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-end">
+              <span className="text-xs text-gray-500 hidden md:block">Price</span>
+              <span className="text-lg font-bold">${price}</span>
             </div>
 
             <button
-              className="bg-black text-white px-10 py-2 rounded-lg hover:bg-gray-800 transition-colors hidden md:block"
+              className="bg-black text-white px-6 py-2.5 rounded-lg hover:bg-gray-900 transition-all duration-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hidden md:block"
               onClick={onAddToCart}
             >
-              Add to cart
+              Add to Cart
+            </button>
+
+            <button
+              className="bg-black text-white p-2.5 rounded-lg hover:bg-gray-900 transition-all duration-200 md:hidden"
+              onClick={onAddToCart}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
+                />
+              </svg>
             </button>
           </div>
         </div>

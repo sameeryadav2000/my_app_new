@@ -32,7 +32,7 @@ export default function LoginLogout() {
   if (isNavigating) {
     return (
       <div className="inline-flex items-center">
-        <Loader2 className="md:w-8 md:h-8 w-6 h-6 text-white animate-spin" />
+        <Loader2 className="w-7 h-7 text-gray-700 animate-spin" />
       </div>
     );
   }
@@ -44,9 +44,10 @@ export default function LoginLogout() {
         query: { callbackUrl: pathname },
       }}
       onClick={handleClick}
-      className="inline-flex items-center hover:opacity-80 transition-opacity duration-200"
+      className="p-2 text-gray-700 hover:text-black focus:outline-none hover:bg-gray-100 rounded-full transition-colors duration-200"
+      aria-label="Login or Signup"
     >
-      <User className="md:w-8 md:h-8 w-6 h-6 text-white" />
+      <User className="w-6 h-6" />
     </Link>
   );
 }

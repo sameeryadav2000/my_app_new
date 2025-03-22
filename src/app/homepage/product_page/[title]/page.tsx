@@ -208,9 +208,9 @@ export default function ProductListingPage() {
   return (
     <div className="w-[95%] md:w-[70%] mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="md:text-4xl text-2xl font-bold">Verified Refurbished {title}</h1>
+        <h1 className="md:text-4xl text-2xl font-bold text-black">Verified Refurbished {title}</h1>
 
-        <button onClick={clearCache} className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded">
+        <button onClick={clearCache} className="text-xs px-3 py-1.5 bg-black text-white rounded-md hover:bg-gray-800 transition-colors">
           Clear Cache
         </button>
       </div>
@@ -224,9 +224,9 @@ export default function ProductListingPage() {
             href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
             className="group block h-full transition-all duration-300"
           >
-            <div className="h-full bg-white rounded-xl shadow-sm overflow-hidden group-hover:shadow-md transition-all duration-300 group-hover:translate-y-[-4px]">
+            <div className="h-full bg-white border border-gray-100 rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
               {Boolean(phoneModel.bestseller) && (
-                <div className="bg-gray-500 absolute text-[#DAD3C9] text-xs font-bold px-2 py-1 rounded-lg z-10">Bestseller</div>
+                <div className="bg-black absolute text-white text-xs font-bold px-2 py-1 rounded-lg z-10 m-2">Bestseller</div>
               )}
               <CardsForPhone
                 title={`${phoneModel.model}`}
@@ -236,10 +236,10 @@ export default function ProductListingPage() {
                 className="flex flex-row sm:flex-col h-full"
                 imageContainerClassName="w-1/3 sm:w-full sm:h-60 flex items-center justify-center bg-gray-50"
                 imageClassName="w-full h-full object-cover rounded-xl"
-                contentClassName="flex-1 p-4 sm:border-t border-gray-100"
-                titleClassName="font-medium text-gray-800 line-clamp-2"
-                startingTextClassName="text-xs text-gray-900 py-1"
-                priceClassName="text-md text-gray-900 py-1 font-bold"
+                contentClassName="flex-1 p-5 sm:border-t border-gray-100"
+                titleClassName="font-medium text-black line-clamp-2 text-lg"
+                startingTextClassName="text-xs text-gray-500 py-1"
+                priceClassName="text-lg text-black py-1 font-bold"
               />
             </div>
           </Link>
@@ -253,7 +253,7 @@ export default function ProductListingPage() {
       )}
 
       {totalPages > 0 && !isLoading && (
-        <div className="mt-8 flex flex-col items-center">
+        <div className="mt-10 flex flex-col items-center">
           <div className="text-sm text-gray-500 mb-3">
             Page {currentPage} of {totalPages}
           </div>
@@ -261,8 +261,10 @@ export default function ProductListingPage() {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-200 hover:bg-gray-300"
+              className={`px-4 py-2 rounded-md ${
+                currentPage === 1
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white border border-gray-200 text-black hover:bg-gray-50"
               }`}
             >
               Previous
@@ -273,8 +275,10 @@ export default function ProductListingPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-gray-200 hover:bg-gray-300"
+              className={`px-4 py-2 rounded-md ${
+                currentPage === totalPages
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white border border-gray-200 text-black hover:bg-gray-50"
               }`}
             >
               Next
