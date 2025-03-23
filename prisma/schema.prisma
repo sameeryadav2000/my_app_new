@@ -25,15 +25,8 @@ model Slideshow {
 model Phone {
   id                  Int                 @id @default(autoincrement())
   phone               String              @db.VarChar(255)
+  image               String?             @db.VarChar(255) 
   modelDropdowns      PhoneModel[]
-}
-
-model Color {
-  id        Int      @id @default(autoincrement())
-  color     String   @db.VarChar(50)
-
-  phoneModelDetails PhoneModelDetails[] @relation("ColorToPhoneModelDetails")
-  modelImages       ModelImage[]        @relation("ColorToModelImage")
 }
 
 model PhoneModel {
@@ -75,6 +68,14 @@ model PhoneModelDetails {
   @@index([phoneId])
   @@index([colorId])
   @@index([createdBy])
+}
+
+model Color {
+  id        Int      @id @default(autoincrement())
+  color     String   @db.VarChar(50)
+
+  phoneModelDetails PhoneModelDetails[] @relation("ColorToPhoneModelDetails")
+  modelImages       ModelImage[]        @relation("ColorToModelImage")
 }
 
 model ModelImage {

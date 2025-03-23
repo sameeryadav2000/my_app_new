@@ -10,7 +10,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { getStripePromise } from "../../../../lib/stripe_client";
 import CheckoutForm from "@/app/components/CheckoutForm";
 import OrderSummary from "@/app/components/OrderSummary";
-import { ShippingForm } from "@/app/homepage/shipping_page/page";
+import { ShippingData } from "@/app/homepage/shipping_page/page";
 
 export default function PaymentPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
@@ -19,7 +19,7 @@ export default function PaymentPage() {
   const router = useRouter();
   const { cart, isLoading: isCartLoading } = useCart();
   const [clientSecret, setClientSecret] = useState<string>("");
-  const [shippingInfo, setShippingInfo] = useState<ShippingForm>({
+  const [shippingInfo, setShippingInfo] = useState<ShippingData>({
     firstName: "",
     lastName: "",
     email: "",

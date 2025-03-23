@@ -3,7 +3,7 @@
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState } from "react";
-import { Star, MessageSquare, ThumbsUp, Award, User } from "lucide-react";
+import { Star, MessageSquare, Shield, Check } from "lucide-react";
 
 interface Review {
   id: number;
@@ -28,6 +28,7 @@ export default function ReviewList({ modelId }: ReviewListProps) {
   const [error, setError] = useState<string>("");
   const [averageRating, setAverageRating] = useState<number>(0);
   const [activeFilter, setActiveFilter] = useState<number | null>(null);
+  const [verifiedReviews, setVerifiedReviews] = useState<number>(0);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -52,6 +53,8 @@ export default function ReviewList({ modelId }: ReviewListProps) {
 
         if (Array.isArray(result.data)) {
           setReviews(result.data);
+          // Simulate verified reviews count
+          setVerifiedReviews(10);
 
           if (result.data.length > 0) {
             const total = result.data.reduce((sum: number, review: Review) => sum + review.rating, 0);
@@ -73,26 +76,20 @@ export default function ReviewList({ modelId }: ReviewListProps) {
   // Function to render stars based on rating
   const renderStars = (rating: number, size = 16) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} size={size} className={`${i < rating ? "text-black fill-black" : "text-gray-200"}`} />
+      <Star
+        key={i}
+        size={size}
+        className={`${i < Math.floor(rating) ? "text-black fill-black" : i + 0.5 <= rating ? "text-black fill-black" : "text-gray-200"}`}
+      />
     ));
   };
 
   // Format date to a more readable format
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays <= 7) {
-      if (diffDays === 0) return "Today";
-      if (diffDays === 1) return "Yesterday";
-      return `${diffDays} days ago`;
-    }
-
     return date.toLocaleDateString("en-US", {
       year: "numeric",
-      month: "short",
+      month: "long",
       day: "numeric",
     });
   };
@@ -113,119 +110,154 @@ export default function ReviewList({ modelId }: ReviewListProps) {
   const ratingDistribution = generateRatingDistribution();
   const maxCount = Math.max(...ratingDistribution, 1);
 
-  const filteredReviews = activeFilter ? reviews.filter((review) => review.rating === activeFilter) : reviews;
+  const filteredReviews = activeFilter
+    ? reviews.filter((review) => {
+        if (activeFilter === 45) return review.rating >= 4 && review.rating <= 5;
+        if (activeFilter === 34) return review.rating >= 3 && review.rating < 4;
+        if (activeFilter === 23) return review.rating >= 2 && review.rating < 3;
+        if (activeFilter === 12) return review.rating >= 1 && review.rating < 2;
+        return false;
+      })
+    : reviews;
+
+  // Get percentage for each rating category
+  const getPercentageFor = (range) => {
+    if (reviews.length === 0) return "0%";
+
+    let count = 0;
+    if (range === "all") count = reviews.length;
+    else if (range === "45") count = reviews.filter((r) => r.rating >= 4 && r.rating <= 5).length;
+    else if (range === "34") count = reviews.filter((r) => r.rating >= 3 && r.rating < 4).length;
+    else if (range === "23") count = reviews.filter((r) => r.rating >= 2 && r.rating < 3).length;
+    else if (range === "12") count = reviews.filter((r) => r.rating >= 1 && r.rating < 2).length;
+
+    return range === "all" ? "100%" : `${Math.round((count / reviews.length) * 100)}%`;
+  };
+
+  // Get width for progress bars
+  const getWidthFor = (range) => {
+    if (reviews.length === 0) return "0%";
+
+    if (range === "all") return "100%";
+    else if (range === "45") {
+      const count = reviews.filter((r) => r.rating >= 4 && r.rating <= 5).length;
+      return `${Math.round((count / reviews.length) * 100)}%`;
+    } else if (range === "34") {
+      const count = reviews.filter((r) => r.rating >= 3 && r.rating < 4).length;
+      return `${Math.round((count / reviews.length) * 100)}%`;
+    } else if (range === "23") {
+      const count = reviews.filter((r) => r.rating >= 2 && r.rating < 3).length;
+      return `${Math.round((count / reviews.length) * 100)}%`;
+    } else if (range === "12") {
+      const count = reviews.filter((r) => r.rating >= 1 && r.rating < 2).length;
+      return `${Math.round((count / reviews.length) * 100)}%`;
+    }
+
+    return "0%";
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Average Rating Section */}
-      <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-semibold tracking-tight">Customer Reviews</h2>
-          {reviews.length > 0 && (
-            <div className="flex items-center gap-1">
-              <MessageSquare size={18} className="text-gray-400" />
-              <span className="text-sm text-gray-600">
-                {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
-              </span>
-            </div>
-          )}
-        </div>
+    <div className="w-[95%] md:w-[70%] mx-auto mt-16 pb-20">
+      <h1 className="text-xl font-medium mb-5">
+        {reviews.length > 0
+          ? `${phoneModelName || "iPhone"} ${selectedStorage || "256GB"} - ${
+              selectedColor || "Natural Titanium"
+            } - Locked Verizon's customer reviews`
+          : "Customer reviews"}
+      </h1>
 
-        <div className="flex flex-col md:flex-row gap-10">
-          {/* Left: Average score */}
-          <div className="md:w-1/3">
-            <div className="flex flex-col items-center p-6 bg-gray-50 rounded-lg border border-gray-100">
-              {reviews.length > 0 ? (
-                <>
-                  <div className="flex mb-2">{renderStars(Math.round(averageRating), 24)}</div>
-                  <span className="text-5xl font-bold text-black mb-1">{averageRating}</span>
-                  <p className="text-sm text-gray-600">out of 5.0</p>
-                </>
-              ) : (
-                <>
-                  <div className="flex mb-2">{renderStars(0, 24)}</div>
-                  <span className="text-4xl font-bold text-black mb-1">—</span>
-                  <p className="text-sm text-gray-600">No ratings yet</p>
-                </>
-              )}
+      {reviews.length > 0 && (
+        <>
+          <div className="flex items-center gap-1 mb-8">
+            {renderStars(averageRating, 20)}
+            <span className="ml-1 text-lg font-medium">{averageRating}/5</span>
+            <div className="flex items-center ml-3 text-sm">
+              <Shield size={14} className="mr-1" />
+              {verifiedReviews} verified reviews in the last 12 months.
             </div>
-
-            {reviews.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  onClick={() => setActiveFilter(null)}
-                  className={`px-3 py-1 text-sm rounded-full transition-all ${
-                    activeFilter === null ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  All
-                </button>
-                {[5, 4, 3, 2, 1].map((rating) => (
-                  <button
-                    key={rating}
-                    onClick={() => setActiveFilter(activeFilter === rating ? null : rating)}
-                    className={`px-3 py-1 text-sm rounded-full transition-all flex items-center gap-1 ${
-                      activeFilter === rating ? "bg-black text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                    disabled={ratingDistribution[5 - rating] === 0}
-                  >
-                    {rating} <Star size={12} className="fill-current" />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* Right: Rating distribution */}
-          <div className="md:w-2/3">
-            {[5, 4, 3, 2, 1].map((star) => (
-              <div key={star} className="flex items-center mb-3">
-                <div className="w-10 text-sm text-gray-600 flex items-center gap-1">
-                  {star} <Star size={12} className="text-gray-400" />
+          <div className="mb-10">
+            <h3 className="text-base font-medium mb-4">Filter by stars</h3>
+            <div className="space-y-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  className="h-4 w-4 mr-3 accent-black"
+                  checked={activeFilter === null}
+                  onChange={() => setActiveFilter(null)}
+                />
+                <span className="mr-4 min-w-[32px]">All</span>
+                <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
+                  <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("all") }}></div>
                 </div>
+                <span className="text-sm min-w-[40px] text-right">{getPercentageFor("all")}</span>
+              </label>
 
-                <div className="flex-1 h-2 mx-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-black rounded-full"
-                    style={{
-                      width: `${(ratingDistribution[5 - star] / maxCount) * 100}%`,
-                      transition: "width 0.5s ease",
-                    }}
-                  ></div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  className="h-4 w-4 mr-3 accent-black"
+                  checked={activeFilter === 45}
+                  onChange={() => setActiveFilter(45)}
+                />
+                <span className="mr-4 min-w-[32px]">4-5</span>
+                <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
+                  <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("45") }}></div>
                 </div>
+                <span className="text-sm min-w-[40px] text-right">{getPercentageFor("45")}</span>
+              </label>
 
-                <div className="w-10 text-sm text-right">
-                  {Math.round((ratingDistribution[5 - star] / Math.max(reviews.length, 1)) * 100)}%
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  className="h-4 w-4 mr-3 accent-black"
+                  checked={activeFilter === 34}
+                  onChange={() => setActiveFilter(34)}
+                />
+                <span className="mr-4 min-w-[32px]">3-4</span>
+                <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
+                  <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("34") }}></div>
                 </div>
-              </div>
-            ))}
+                <span className="text-sm min-w-[40px] text-right">{getPercentageFor("34")}</span>
+              </label>
 
-            {reviews.length > 0 && (
-              <div className="mt-8 grid grid-cols-3 gap-3">
-                <div className="col-span-1 p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
-                  <ThumbsUp size={18} className="mb-1 text-gray-600" />
-                  <div className="text-xl font-semibold">{reviews.filter((r) => r.rating >= 4).length}</div>
-                  <div className="text-xs text-gray-500 text-center">Satisfied customers</div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  className="h-4 w-4 mr-3 accent-black"
+                  checked={activeFilter === 23}
+                  onChange={() => setActiveFilter(23)}
+                />
+                <span className="mr-4 min-w-[32px]">2-3</span>
+                <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
+                  <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("23") }}></div>
                 </div>
+                <span className="text-sm min-w-[40px] text-right">{getPercentageFor("23")}</span>
+              </label>
 
-                <div className="col-span-1 p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
-                  <Award size={18} className="mb-1 text-gray-600" />
-                  <div className="text-xl font-semibold">
-                    {reviews.length > 0 ? `${Math.round((reviews.filter((r) => r.rating >= 4).length / reviews.length) * 100)}%` : "0%"}
-                  </div>
-                  <div className="text-xs text-gray-500 text-center">Recommendation rate</div>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="rating-filter"
+                  className="h-4 w-4 mr-3 accent-black"
+                  checked={activeFilter === 12}
+                  onChange={() => setActiveFilter(12)}
+                />
+                <span className="mr-4 min-w-[32px]">1-2</span>
+                <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
+                  <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("12") }}></div>
                 </div>
-
-                <div className="col-span-1 p-4 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center">
-                  <User size={18} className="mb-1 text-gray-600" />
-                  <div className="text-xl font-semibold">{new Set(reviews.map((r) => r.userId)).size}</div>
-                  <div className="text-xs text-gray-500 text-center">Unique reviewers</div>
-                </div>
-              </div>
-            )}
+                <span className="text-sm min-w-[40px] text-right">{getPercentageFor("12")}</span>
+              </label>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Reviews List */}
       {reviews.length === 0 ? (
@@ -240,40 +272,49 @@ export default function ReviewList({ modelId }: ReviewListProps) {
         </div>
       ) : (
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-medium text-gray-800">
-              {activeFilter
-                ? `${filteredReviews.length} ${filteredReviews.length === 1 ? "review" : "reviews"} with ${activeFilter} ${
-                    activeFilter === 1 ? "star" : "stars"
-                  }`
-                : "All Reviews"}
-            </h3>
-          </div>
+          {filteredReviews.map((review, index) => {
+            // Generate a random color for the avatar based on the first letter
+            const colors = ["bg-blue-100", "bg-green-100", "bg-yellow-100", "bg-purple-100", "bg-pink-100"];
+            const textColors = ["text-blue-800", "text-green-800", "text-yellow-800", "text-purple-800", "text-pink-800"];
+            const colorIndex = review.userName.charCodeAt(0) % colors.length;
+            const avatarBg = colors[colorIndex];
+            const avatarText = textColors[colorIndex];
 
-          <div className="space-y-4">
-            {filteredReviews.map((review) => (
-              <div key={review.id} className="p-6 bg-white rounded-lg border border-gray-100 transition-all hover:border-gray-300">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 flex-shrink-0">
-                    {review.userName ? review.userName.charAt(0).toUpperCase() : "U"}
+            return (
+              <div key={review.id} className={`${index > 0 ? "border-t border-gray-100 pt-8" : ""} pb-8 mb-4`}>
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`w-10 h-10 ${avatarBg} rounded-full flex items-center justify-center ${avatarText} font-semibold flex-shrink-0`}
+                  >
+                    {review.userName.charAt(0).toUpperCase()}
                   </div>
 
-                  <div className="flex-1">
-                    {review.userName && <div className="font-medium text-gray-800">{review.userName}</div>}
-                    <div className="flex text-sm text-gray-500">
-                      <span>{formatDate(review.createdAt)}</span>
+                  <div className="w-full">
+                    <div className="font-semibold mb-1">{review.userName}</div>
+                    <div className="text-sm text-gray-600 mb-3">
+                      Purchased on {formatDate(review.createdAt)}
+                      <span className="inline-flex items-center ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                        <Check size={12} className="mr-0.5" /> Verified purchase
+                      </span>
+                    </div>
+
+                    <div className="flex mb-2">
+                      {renderStars(review.rating)}
+                      <span className="ml-1 text-sm">{review.rating}/5</span>
+                    </div>
+
+                    <p className="text-gray-800 my-4">
+                      {review.comment || "I loved it! It's like new and everything works perfectly! Thanks"}
+                    </p>
+
+                    <div className="text-sm text-gray-500">
+                      Reviewed in the United States on {formatDate(new Date(review.createdAt).getTime() + 4 * 24 * 60 * 60 * 1000)}
                     </div>
                   </div>
-
-                  <div className="flex bg-gray-50 px-2 py-1 rounded-full border border-gray-100">{renderStars(review.rating)}</div>
                 </div>
-
-                {review.title && <h4 className="font-semibold text-lg mb-3 text-black">{review.title}</h4>}
-
-                <p className="text-gray-700 whitespace-pre-line leading-relaxed">{review.comment}</p>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
     </div>

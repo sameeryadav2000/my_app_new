@@ -7,11 +7,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { FaLock } from "react-icons/fa";
-import { ShippingForm } from "@/app/homepage/shipping_page/page";
+import { ShippingData } from "@/app/homepage/shipping_page/page";
 
 interface CheckoutFormProps {
   totalAmount: number;
-  shippingInfo: ShippingForm;
+  shippingInfo: ShippingData;
 }
 
 export default function CheckoutForm({ totalAmount, shippingInfo }: CheckoutFormProps) {

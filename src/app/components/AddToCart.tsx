@@ -5,10 +5,7 @@ interface AddToCartButtonProps {
   className?: string;
 }
 
-export default function AddToCartButton({
-  onClick,
-  className,
-}: AddToCartButtonProps) {
+export default function AddToCartButton({ onClick, className }: AddToCartButtonProps) {
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
       onClick();
@@ -16,10 +13,7 @@ export default function AddToCartButton({
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className={`bg-black text-white py-4 rounded-lg hover:bg-gray-800 transition-colors ${className}`}
-    >
+    <button onClick={handleClick} className={`${className}`}>
       Add to Cart
     </button>
   );

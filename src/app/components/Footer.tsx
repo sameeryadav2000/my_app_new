@@ -68,9 +68,6 @@ export default function Footer() {
 
   return (
     <div className="w-full">
-      {/* Spacer */}
-      <div className="h-20"></div>
-
       <footer className="bg-white border-t border-gray-200">
         {/* Top section with columns */}
         <div className="container mx-auto pt-16 pb-12 px-4 sm:px-6 lg:px-8">

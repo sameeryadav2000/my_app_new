@@ -5,18 +5,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session?.user?.email) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Authentication required",
-      },
-      { status: 401 }
-    );
-  }
-
   const { searchParams } = new URL(request.url);
 
   const productId = searchParams.get("productId");
@@ -71,6 +59,17 @@ export async function GET(request: NextRequest) {
     }
   } else if (productId) {
     try {
+      const session = await getServerSession(authOptions);
+
+      if (!session || !session?.user?.email) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Authentication required",
+          },
+          { status: 401 }
+        );
+      }
       const user = await prisma.user.findUnique({
         where: { email: session.user.email },
         include: {
