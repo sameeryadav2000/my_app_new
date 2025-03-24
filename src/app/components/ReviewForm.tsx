@@ -2,7 +2,8 @@ import React, { useState } from "react";
 
 export interface ReviewProps {
   productId: string;
-  productTitle: string;
+  productColorId: number;
+  productTitleName: string;
   productItemId: string;
   productImage?: string;
   onSubmit: (reviewData: ReviewData) => void;
@@ -12,12 +13,21 @@ export interface ReviewProps {
 export interface ReviewData {
   productId: string;
   productItemId: string;
+  productColorId: number;
   rating: number;
   title: string;
   review: string;
 }
 
-export default function ReviewComponent({ productId, productItemId, productTitle, productImage, onSubmit, onCancel }: ReviewProps) {
+export default function ReviewComponent({
+  productId,
+  productItemId,
+  productColorId,
+  productTitleName,
+  productImage,
+  onSubmit,
+  onCancel,
+}: ReviewProps) {
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [title, setTitle] = useState<string>("");
@@ -40,6 +50,7 @@ export default function ReviewComponent({ productId, productItemId, productTitle
     onSubmit({
       productId,
       productItemId,
+      productColorId,
       rating,
       title,
       review,
@@ -60,10 +71,10 @@ export default function ReviewComponent({ productId, productItemId, productTitle
       <div className="flex items-center mb-6 pb-6 border-b border-gray-200">
         {productImage && (
           <div className="w-16 h-16 bg-gray-100 rounded mr-4 flex-shrink-0">
-            <img src={productImage} alt={productTitle} className="w-full h-full object-contain" />
+            <img src={productImage} alt={productTitleName} className="w-full h-full object-contain" />
           </div>
         )}
-        <h3 className="text-lg font-medium text-gray-900">{productTitle}</h3>
+        <h3 className="text-lg font-medium text-gray-900">{productTitleName}</h3>
       </div>
 
       <form onSubmit={handleSubmit}>

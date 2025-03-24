@@ -51,13 +51,13 @@ export default function CartPage() {
               <div className="md:w-1/4 w-full flex justify-center">
                 <img
                   src={item.image}
-                  alt={item.title}
+                  alt={item.titleName}
                   className="w-full max-h-[160px] object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
                 />
               </div>
 
               <div className="flex-1 space-y-2">
-                <h2 className="text-lg font-medium text-gray-900 tracking-tight">{item.title}</h2>
+                <h2 className="text-lg font-medium text-gray-900 tracking-tight">{item.titleName}</h2>
                 <p className="text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Condition:</span> {item.condition}
                 </p>
@@ -65,7 +65,7 @@ export default function CartPage() {
                   <span className="font-medium text-gray-800">Storage:</span> {item.storage}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium text-gray-800">Color:</span> {item.color}
+                  <span className="font-medium text-gray-800">Color:</span> {item.colorName}
                 </p>
                 <p className="text-lg font-medium text-gray-900">${item.price}</p>
                 <p className="text-sm text-gray-600">

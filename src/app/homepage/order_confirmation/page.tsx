@@ -8,7 +8,7 @@ import { useCart, CartItem } from "@/context/CartContext";
 import Link from "next/link";
 import { FaCheckCircle, FaEnvelope, FaFileAlt, FaHome, FaTimesCircle } from "react-icons/fa";
 import { getStripePromise } from "../../../../lib/stripe_client";
-import { ShippingForm } from "@/app/homepage/shipping_page/page";
+import { ShippingData } from "@/app/homepage/shipping_page/page";
 
 interface OrderDetails {
   orderNumber: string;
@@ -17,7 +17,7 @@ interface OrderDetails {
   subtotal: number;
   tax: number;
   fee: number;
-  shippingInfo: ShippingForm;
+  shippingInfo: ShippingData;
 }
 
 export default function OrderConfirmationPage() {

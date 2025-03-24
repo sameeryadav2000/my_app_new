@@ -97,7 +97,7 @@ export default function PaymentPage() {
             items: JSON.stringify(
               cart.items.map((item) => ({
                 id: item.id,
-                title: item.title,
+                title: item.titleName,
                 quantity: item.quantity,
               }))
             ),

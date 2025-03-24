@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
         email: session.user.email || undefined,
       },
       include: {
-        purchasedItems: true,
+        purchasedItems: {
+          include: {
+            title: true,
+            color: true,
+          },
+        },
       },
     });
 
@@ -50,10 +55,12 @@ export async function GET(request: NextRequest) {
       orders[item.orderId].items.push({
         id: item.id,
         itemId: item.itemId,
-        title: item.title,
+        titleId: item.titleId,
+        titleName: item.title.model,
         condition: item.condition,
         storage: item.storage,
-        color: item.color,
+        colorId: item.color.id,
+        colorName: item.color.color,
         price: parseFloat(item.price.toString()),
         quantity: item.quantity,
         image: item.image,

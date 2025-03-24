@@ -10,12 +10,13 @@ import Link from "next/link";
 import CardsForPhone from "@/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import CacheVisualizer from "@/app/components/CacheVisualizer";
+import ReviewList from "@/app/components/ReviewList";
 
 interface PhoneModel {
   id: number;
   model: string;
   startingPrice: number;
-  bestseller: boolean;
+  phoneId: number;
   image: string;
 }
 
@@ -38,7 +39,7 @@ export default function ProductListingPage() {
   const currentPage = Number(searchParams.get("page") || 1);
 
   const params = useParams();
-  const id = params.id;
+  const id = Number(params.id);
   const title = params.title;
 
   const cacheRef = useRef<Record<string, CacheItem>>({});
@@ -126,7 +127,7 @@ export default function ProductListingPage() {
   const router = useRouter();
 
   const handlePageChange = (pageNumber: number) => {
-    router.replace(`/homepage/product_page/${title}?page=${pageNumber}`, {
+    router.replace(`/homepage/product_page/${id}/${title}?page=${pageNumber}`, {
       scroll: false,
     });
   };
@@ -276,9 +277,6 @@ export default function ProductListingPage() {
             className="group block h-full transition-all duration-300"
           >
             <div className="h-full bg-white border border-gray-100 rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
-              {Boolean(phoneModel.bestseller) && (
-                <div className="bg-black absolute text-white text-xs font-bold px-2 py-1 rounded-lg z-10 m-2">Bestseller</div>
-              )}
               <CardsForPhone
                 title={`${phoneModel.model}`}
                 image={phoneModel.image}
@@ -355,6 +353,8 @@ export default function ProductListingPage() {
       </div>
 
       <CacheVisualizer cache={cacheRef.current} cacheExpiry={CACHE_EXPIRY} />
+
+      {id && <ReviewList modelId={id} />}
     </div>
   );
 }

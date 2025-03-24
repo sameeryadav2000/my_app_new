@@ -66,17 +66,15 @@ export async function GET(request: NextRequest) {
         colorId: true,
         phoneId: true,
         price: true,
-        color: {
-          select: {
-            id: true,
-            color: true,
+        color: true, // This will select all fields from the color model
+        phone: {
+          include: {
+            phone: true, // This will include all fields from the nested phone relation
           },
         },
       },
     });
 
-    // Get the image for each color option
-    // Get the images for each color option
     const colorOptionsWithImages = await Promise.all(
       colorOptions.map(async (option) => {
         if (option.colorId) {
@@ -106,9 +104,20 @@ export async function GET(request: NextRequest) {
         };
       })
     );
+
+    const selectedData = colorOptionsWithImages.map((option) => ({
+      id: option.id,
+      colorName: option.color?.color,
+      colorId: option.colorId,
+      phoneId: option.phoneId,
+      idForReview: option.phone.phone.id,
+      price: option.price,
+      images: option.images,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: colorOptionsWithImages,
+      data: selectedData,
     });
   } catch (error) {
     console.error("Error fetching phone model details:", error);

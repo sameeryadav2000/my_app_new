@@ -5,12 +5,13 @@ import { getServerSession } from "next-auth";
 import prisma from "../../../../lib/prisma";
 import { CartItem } from "@/context/CartContext";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { title } from "process";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session || !session.user?.email) {
       return NextResponse.json(
         {
           success: false,
@@ -22,10 +23,15 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: {
-        email: session.user.email || undefined,
+        email: session.user.email,
       },
       include: {
-        cartItems: true,
+        cartItems: {
+          include: {
+            title: true,
+            color: true,
+          },
+        },
       },
     });
 
@@ -42,10 +48,12 @@ export async function GET(request: NextRequest) {
     const cart = {
       items: user.cartItems.map((item) => ({
         id: item.itemId,
-        title: item.title,
+        titleId: item.title.id,
+        titleName: item.title.model,
         condition: item.condition,
         storage: item.storage,
-        color: item.color,
+        colorId: item.color.id,
+        colorName: item.color.color,
         price: item.price,
         quantity: item.quantity,
         image: item.image,
@@ -115,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     for (const item of cartItems) {
-      if (!item.id || !item.title || !item.price) {
+      if (!item.id || !item.titleId || !item.price) {
         return NextResponse.json(
           {
             success: false,
@@ -148,10 +156,10 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             itemId: item.id,
-            title: item.title,
+            titleId: parseInt(item.titleId),
             condition: item.condition,
             storage: item.storage,
-            color: item.color,
+            colorId: parseInt(item.colorId),
             price: item.price,
             quantity: isFullCart ? item.quantity : 1,
             image: item.image,
@@ -216,10 +224,10 @@ export async function PUT(request: NextRequest) {
         data: {
           userId: user.id,
           itemId: item.id,
-          title: item.title,
+          titleId: parseInt(item.titleId),
           condition: item.condition,
           storage: item.storage,
-          color: item.color,
+          colorId: parseInt(item.colorId),
           price: item.price,
           quantity: item.quantity,
           image: item.image,

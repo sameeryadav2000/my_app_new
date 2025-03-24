@@ -9,12 +9,14 @@ export async function GET(request: NextRequest) {
 
   const productId = searchParams.get("productId");
   const modelId = searchParams.get("modelId");
+  const colorId = searchParams.get("colorId");
 
-  if (modelId) {
+  if (modelId && colorId && colorId !== "undefined") {
     try {
       const reviews = await prisma.review.findMany({
         where: {
           modelId: parseInt(modelId),
+          colorId: parseInt(colorId),
         },
         orderBy: {
           createdAt: "desc",
@@ -31,8 +33,55 @@ export async function GET(request: NextRequest) {
 
       const formattedReviews = reviews.map((review) => ({
         id: review.id,
-        userId: review.userId,
-        modelId: review.modelId,
+        rating: review.rating,
+        title: review.title,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        userName: review.user
+          ? `${review.user.firstName || ""} ${review.user.lastName || ""}`.trim() || "Anonymous User"
+          : "Anonymous User",
+      }));
+
+      return NextResponse.json({
+        success: true,
+        data: formattedReviews,
+      });
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: error instanceof Error ? error.message : "Failed to fetch reviews",
+        },
+        { status: 500 }
+      );
+    }
+  } else if (modelId) {
+    try {
+      const reviews = await prisma.review.findMany({
+        where: {
+          modelId: parseInt(modelId),
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          model: true,
+          color: true,
+        },
+      });
+
+      const formattedReviews = reviews.map((review) => ({
+        id: review.id,
+        colorName: review.color?.color,
+        modelName: review.model.model,
         rating: review.rating,
         title: review.title,
         comment: review.comment,
@@ -148,7 +197,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { productId, productItemId, rating, title, review: reviewText } = body;
+    const { productId, productColorId, productItemId, productTitleName, rating, title, review: reviewText } = body;
 
     if (!productId || !productItemId || !rating || !title || !reviewText) {
       return NextResponse.json(
@@ -181,6 +230,7 @@ export async function POST(request: NextRequest) {
         rating,
         title,
         comment: reviewText,
+        colorId: productColorId,
         userId: user.id,
         modelId: parsedModelId,
         purchasedItemId: productId,

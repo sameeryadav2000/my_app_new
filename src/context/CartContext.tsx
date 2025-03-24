@@ -5,11 +5,13 @@ import { useSession } from "next-auth/react";
 
 export interface CartItem {
   id: string;
-  title: string;
+  titleId: string;
+  titleName?: string;
   condition: string;
   orderId?: string;
   storage: string;
-  color: string;
+  colorId: string;
+  colorName?: string;
   price: number;
   quantity: number;
   image: string;
