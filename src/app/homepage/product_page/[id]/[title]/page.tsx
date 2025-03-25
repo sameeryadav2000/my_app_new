@@ -4,12 +4,11 @@
 
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import slugify from "slugify";
 import Link from "next/link";
 import CardsForPhone from "@/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import CacheVisualizer from "@/app/components/CacheVisualizer";
 import ReviewList from "@/app/components/ReviewList";
 
 interface PhoneModel {
@@ -19,15 +18,6 @@ interface PhoneModel {
   phoneId: number;
   image: string;
 }
-
-interface CacheItem {
-  data: PhoneModel[];
-  totalItems: number;
-  totalPages: number;
-  timestamp: number;
-}
-
-const CACHE_EXPIRY = 5 * 60 * 1000;
 
 const ITEMS_PER_PAGE = 4;
 
@@ -42,28 +32,12 @@ export default function ProductListingPage() {
   const id = Number(params.id);
   const title = params.title;
 
-  const cacheRef = useRef<Record<string, CacheItem>>({});
-
   const [phoneModels, setPhoneModels] = useState<PhoneModel[]>([]);
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
 
   const fetchCards = useCallback(() => {
     showLoading();
-
-    const cacheKey = `${title}-page-${currentPage}-limit-${ITEMS_PER_PAGE}`;
-
-    const cachedData = cacheRef.current[cacheKey];
-    const now = Date.now();
-
-    if (cachedData && now - cachedData.timestamp < CACHE_EXPIRY) {
-      setPhoneModels(cachedData.data);
-      setTotalItems(cachedData.totalItems);
-      setTotalPages(cachedData.totalPages);
-      hideLoading();
-
-      return () => {};
-    }
 
     const fetchPhoneModels = async () => {
       try {
@@ -89,13 +63,6 @@ export default function ProductListingPage() {
           setPhoneModels(data);
           setTotalItems(totalItems);
           setTotalPages(totalPages);
-
-          cacheRef.current[cacheKey] = {
-            data,
-            totalItems,
-            totalPages,
-            timestamp: now,
-          };
         }
       } catch (error) {
         showError("Error", "Failed to load phone models. Please check your connection and try again.");
@@ -105,24 +72,18 @@ export default function ProductListingPage() {
     };
 
     fetchPhoneModels();
-  }, [currentPage, title]);
+
+    // Return an empty cleanup function to avoid the TypeScript error
+    return () => {};
+  }, [currentPage, title, id, showLoading, hideLoading, showError]);
 
   useEffect(() => {
     const cleanup = fetchCards();
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    return () => {
-      if (typeof cleanup === "function") cleanup();
-    };
+    return cleanup;
   }, [fetchCards]);
-
-  const [cacheVersion, setCacheVersion] = useState<number>(0);
-
-  const clearCache = useCallback(() => {
-    cacheRef.current = {};
-    setCacheVersion((prev) => prev + 1);
-  }, []);
 
   const router = useRouter();
 
@@ -139,7 +100,11 @@ export default function ProductListingPage() {
       <button
         key="first"
         onClick={() => handlePageChange(1)}
-        className={`px-3 py-1 rounded-md ${currentPage === 1 ? "bg-black text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+        className={`px-3 py-1.5 rounded-md font-medium min-w-[32px] transition-all duration-200 ${
+          currentPage === 1
+            ? "bg-black text-white shadow-md"
+            : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+        }`}
       >
         1
       </button>
@@ -148,8 +113,8 @@ export default function ProductListingPage() {
     if (totalPages > 6) {
       if (currentPage > 3) {
         buttons.push(
-          <span key="ellipsis1" className="px-2">
-            ...
+          <span key="ellipsis1" className="px-2 flex items-center text-gray-500">
+            •••
           </span>
         );
       }
@@ -163,7 +128,11 @@ export default function ProductListingPage() {
             <button
               key={i}
               onClick={() => handlePageChange(i)}
-              className={`px-3 py-1 rounded-md ${currentPage === i ? "bg-black text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+              className={`px-3 py-1.5 rounded-md font-medium min-w-[32px] transition-all duration-200 ${
+                currentPage === i
+                  ? "bg-black text-white shadow-md"
+                  : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+              }`}
             >
               {i}
             </button>
@@ -173,8 +142,8 @@ export default function ProductListingPage() {
 
       if (currentPage < totalPages - 2) {
         buttons.push(
-          <span key="ellipsis2" className="px-2">
-            ...
+          <span key="ellipsis2" className="px-2 flex items-center text-gray-500">
+            •••
           </span>
         );
       }
@@ -184,7 +153,11 @@ export default function ProductListingPage() {
           <button
             key={i}
             onClick={() => handlePageChange(i)}
-            className={`px-3 py-1 rounded-md ${currentPage === i ? "bg-black text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+            className={`px-3 py-1.5 rounded-md font-medium min-w-[32px] transition-all duration-200 ${
+              currentPage === i
+                ? "bg-black text-white shadow-md"
+                : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+            }`}
           >
             {i}
           </button>
@@ -197,7 +170,11 @@ export default function ProductListingPage() {
         <button
           key="last"
           onClick={() => handlePageChange(totalPages)}
-          className={`px-3 py-1 rounded-md ${currentPage === totalPages ? "bg-black text-white" : "bg-gray-200 hover:bg-gray-300"}`}
+          className={`px-3 py-1.5 rounded-md font-medium min-w-[32px] transition-all duration-200 ${
+            currentPage === totalPages
+              ? "bg-black text-white shadow-md"
+              : "bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+          }`}
         >
           {totalPages}
         </button>
@@ -205,7 +182,7 @@ export default function ProductListingPage() {
     }
 
     return buttons;
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, handlePageChange]);
 
   return (
     <div className="w-[95%] md:w-[70%] mx-auto py-8">
@@ -221,7 +198,7 @@ export default function ProductListingPage() {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <span className="text-sm font-medium">1-year warranty</span>
+            <span className="text-sm font-medium">6-month warranty</span>
           </div>
           <div className="flex items-center gap-3 p-4 justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -261,10 +238,6 @@ export default function ProductListingPage() {
 
       <div className="flex justify-between items-center mb-8">
         <h1 className="md:text-4xl text-2xl font-bold text-black">Verified Refurbished {title}</h1>
-
-        <button onClick={clearCache} className="text-xs px-3 py-1.5 bg-black text-white rounded-md hover:bg-gray-800 transition-colors">
-          Clear Cache
-        </button>
       </div>
 
       <div className="text-gray-500 text-sm mb-6">{!isLoading ? <span>{totalItems} products</span> : <span>Loading models...</span>}</div>
@@ -276,20 +249,31 @@ export default function ProductListingPage() {
             href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
             className="group block h-full transition-all duration-300"
           >
-            <div className="h-full bg-white border border-gray-100 rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
-              <CardsForPhone
-                title={`${phoneModel.model}`}
-                image={phoneModel.image}
-                startingText="Starting at"
-                price={phoneModel.startingPrice}
-                className="flex flex-row sm:flex-col h-full"
-                imageContainerClassName="w-1/3 sm:w-full sm:h-60 flex items-center justify-center bg-gray-50"
-                imageClassName="w-full h-full object-cover rounded-xl"
-                contentClassName="flex-1 p-5 sm:border-t border-gray-100"
-                titleClassName="font-medium text-black line-clamp-2 text-lg"
-                startingTextClassName="text-xs text-gray-500 py-1"
-                priceClassName="text-lg text-black py-1 font-bold"
-              />
+            <div className="h-full bg-white border rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
+              <div className="flex flex-row items-center h-full">
+                <div className="order-2 sm:order-1 flex-1">
+                  <CardsForPhone
+                    title={`${phoneModel.model}`}
+                    image={phoneModel.image}
+                    startingText="Starting at"
+                    price={phoneModel.startingPrice}
+                    className="flex flex-col h-full"
+                    imageContainerClassName="hidden sm:block w-full h-64 overflow-hidden relative"
+                    imageClassName="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                    contentClassName="flex-1 p-6 border-t sm:border-t border-gray-100"
+                    titleClassName="text-black line-clamp-2 text-lg mb-2"
+                    startingTextClassName="text-gray-500 py-1"
+                    priceClassName="text-xl text-black py-1"
+                  />
+                </div>
+                <div className="order-1 sm:hidden w-1/2 p-4">
+                  <img
+                    src={phoneModel.image}
+                    alt={phoneModel.model}
+                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+              </div>
             </div>
           </Link>
         ))}
@@ -310,12 +294,26 @@ export default function ProductListingPage() {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-md ${
+              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-1 ${
                 currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white border border-gray-200 text-black hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                  : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
               }`}
             >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={currentPage === 1 ? "text-gray-400" : "text-gray-600"}
+              >
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
               Previous
             </button>
 
@@ -324,13 +322,27 @@ export default function ProductListingPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-md ${
+              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-1 ${
                 currentPage === totalPages
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-white border border-gray-200 text-black hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                  : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
               }`}
             >
               Next
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={currentPage === totalPages ? "text-gray-400" : "text-gray-600"}
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
             </button>
           </div>
         </div>
@@ -351,8 +363,6 @@ export default function ProductListingPage() {
           </p>
         </div>
       </div>
-
-      <CacheVisualizer cache={cacheRef.current} cacheExpiry={CACHE_EXPIRY} />
 
       {id && <ReviewList modelId={id} />}
     </div>

@@ -6,14 +6,13 @@ interface CardProps {
   startingText: string;
   price: string | number;
 
-  className?: string;
-  containerClassName?: string;
-  imageContainerClassName?: string;
-  imageClassName?: string;
-  contentClassName?: string;
-  titleClassName?: string;
-  startingTextClassName?: string;
-  priceClassName?: string;
+  className: string;
+  imageContainerClassName: string;
+  imageClassName: string;
+  contentClassName: string;
+  titleClassName: string;
+  startingTextClassName: string;
+  priceClassName: string;
 }
 
 const CardsForPhone: React.FC<CardProps> = ({
@@ -42,7 +41,7 @@ const CardsForPhone: React.FC<CardProps> = ({
 
         <p className={`${startingTextClassName}`}>{startingText}</p>
 
-        <div className={`${priceClassName}`}>{typeof price === "number" ? `$${price.toFixed(2)}` : price}</div>
+        <div className={`${priceClassName}`}>NPR {price}</div>
       </div>
     </div>
   );

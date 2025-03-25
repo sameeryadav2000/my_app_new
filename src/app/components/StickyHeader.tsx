@@ -41,8 +41,8 @@ export default function StickyHeader({ title, condition, storage, color, price, 
               <img src={image} alt={title} className="w-11 h-11 object-contain" />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-gray-500 hidden md:block">{title}</span>
-              <span className="text-sm font-medium capitalize">
+              <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">{title}</span>
+              <span className="text-sm md:text-lg lg:text-lg capitalize">
                 {condition} · {storage} · {color}
               </span>
             </div>
@@ -50,12 +50,12 @@ export default function StickyHeader({ title, condition, storage, color, price, 
 
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end">
-              <span className="text-xs text-gray-500 hidden md:block">Price</span>
-              <span className="text-lg font-bold">${price}</span>
+              <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">Price</span>
+              <span className="text-lg md:text-lg lg:text-xl">NPR {price}</span>
             </div>
 
             <button
-              className="bg-black text-white px-6 py-2.5 rounded-lg hover:bg-gray-900 transition-all duration-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hidden md:block"
+              className="bg-black text-white px-5 py-2 md:px-6 lg:px-6 md:py-2.5 lg:py-2.5 rounded-lg hover:bg-gray-900 transition-all duration-200 text-sm md:text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hidden md:block"
               onClick={onAddToCart}
             >
               Add to Cart

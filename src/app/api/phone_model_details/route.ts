@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       colorName: option.color?.color,
       colorId: option.colorId,
       phoneId: option.phoneId,
-      idForReview: option.phone.phone.id,
+      idForReview: option.phoneId,
       price: option.price,
       images: option.images,
     }));

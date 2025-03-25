@@ -7,6 +7,7 @@ import { useNotification } from "@/context/NotificationContext";
 import CardsForHomepage from "@/app/components/CardForHomepage";
 import { useEffect, useState } from "react";
 import RecentlyViewed from "@/app/components/RecentlyViewed";
+import FAQ from "@/app/components/FAQ";
 
 interface Phone {
   id: number;
@@ -72,7 +73,7 @@ export default function HomePage() {
             </div>
             <div>
               <h3 className="font-semibold text-sm">Free Shipping</h3>
-              <p className="text-xs text-gray-600">On orders over $50</p>
+              <p className="text-xs text-gray-600">On orders over NPR 20,000</p>
             </div>
           </div>
           <div className="bg-green-50 rounded-lg p-4 flex items-center shadow-sm">
@@ -112,9 +113,9 @@ export default function HomePage() {
       <div className="h-6"></div>
 
       {/* About Our Process Banner */}
-      <div className="w-full bg-gray-900 text-white py-16">
+      <div className="w-full bg-gray-900 text-white py-10">
         <div className="w-[95%] md:w-[70%] mx-auto">
-          <h2 className="text-2xl font-bold tracking-wide mb-6">How We Refurbish</h2>
+          <h2 className="text-2xl font-bold tracking-wide mb-8">How We Refurbish</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col items-center text-center">
@@ -178,7 +179,7 @@ export default function HomePage() {
                       title={phone.phone}
                       image={phone.image}
                       className="flex flex-col h-full"
-                      imageContainerClassName="relative h-40 sm:h-44 md:h-48 p-3 flex items-center justify-center"
+                      imageContainerClassName="relative h-40 sm:h-44 md:h-48 flex items-center justify-center"
                       imageClassName="max-w-full max-h-full object-contain"
                       contentClassName="px-4 py-3 flex-grow border-t border-gray-200"
                       titleClassName="font-medium text-sm sm:text-base text-black"
@@ -205,6 +206,9 @@ export default function HomePage() {
           <p className="text-lg text-gray-700 mb-8">We believe in a world that does more with what we already have.</p>
         </div>
       </div>
+
+      {/* Add FAQ Section after Main Banner */}
+      <FAQ />
     </div>
   );
 }

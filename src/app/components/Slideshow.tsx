@@ -22,7 +22,7 @@ export default function Slideshow() {
               <div className="features">
                 <div className="feature">
                   <div className="feature-icon">✓</div>
-                  <div className="feature-text">90-day warranty</div>
+                  <div className="feature-text">180-day warranty</div>
                 </div>
                 <div className="feature">
                   <div className="feature-icon">✓</div>

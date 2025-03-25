@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       include: {
         cartItems: {
           include: {
-            title: true,
+            phones: true,
             color: true,
           },
         },
@@ -48,11 +48,11 @@ export async function GET(request: NextRequest) {
     const cart = {
       items: user.cartItems.map((item) => ({
         id: item.itemId,
-        titleId: item.title.id,
-        titleName: item.title.model,
+        titleId: item.phoneModelId,
+        titleName: item.phones.model,
         condition: item.condition,
         storage: item.storage,
-        colorId: item.color.id,
+        colorId: item.colorId,
         colorName: item.color.color,
         price: item.price,
         quantity: item.quantity,
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             itemId: item.id,
-            titleId: parseInt(item.titleId),
+            phoneModelId: item.titleId,
             condition: item.condition,
             storage: item.storage,
             colorId: parseInt(item.colorId),
@@ -224,10 +224,10 @@ export async function PUT(request: NextRequest) {
         data: {
           userId: user.id,
           itemId: item.id,
-          titleId: parseInt(item.titleId),
+          phoneModelId: item.titleId,
           condition: item.condition,
           storage: item.storage,
-          colorId: parseInt(item.colorId),
+          colorId: item.colorId,
           price: item.price,
           quantity: item.quantity,
           image: item.image,

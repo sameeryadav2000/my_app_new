@@ -1,30 +1,78 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 
-const footerSections = {
-  About: [
-    { title: "Our Story", href: "/homepage/about/story" },
-    { title: "Contact Us", href: "/homepage/about/contact" },
-    { title: "Blog", href: "/homepage/about/blog" },
-    { title: "Careers", href: "/homepage/about/careers" },
+// Type definitions
+interface DialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  content: string;
+}
+
+interface DialogState {
+  isOpen: boolean;
+  title: string;
+  content: string;
+}
+
+interface FooterLink {
+  title: string;
+  id: string;
+  content: string;
+}
+
+interface ContactFormData {
+  email: string;
+  phone: string;
+  message: string;
+}
+
+interface ContactFormErrors {
+  email?: string;
+  phone?: string;
+  message?: string;
+}
+
+interface TouchedFields {
+  email: boolean;
+  phone: boolean;
+  message: boolean;
+}
+
+// Simplified footer links with updated dialog content
+const footerSections: Record<string, FooterLink[]> = {
+  Company: [
+    {
+      title: "About Us",
+      id: "about-us",
+      content:
+        "RECELL is Nepal's premier marketplace for high-quality refurbished devices. Based in Kathmandu, we're proud to be one of the best places in Nepal to purchase reliable used phones. Our expert technicians thoroughly inspect, clean, and refurbish each device to ensure optimal performance.\n\nWe specialize in restoring smartphones to like-new condition, replacing worn components, updating software, and rigorously testing functionality. By extending the lifecycle of electronics, we're reducing e-waste while providing affordable options for Nepali consumers. Since 2020, we've helped thousands of customers find premium pre-owned devices at a fraction of retail prices.",
+    },
+    {
+      title: "Contact",
+      id: "contact",
+      content:
+        "Email: support@recell.com\nPhone: (977) 01-1234567\nHours: Sunday-Friday, 10am-6pm NPT\n\nVisit our store:\nNew Road, Kathmandu\nNepal\n\nFor customer support inquiries, please include your order number in all communications.",
+    },
   ],
-  Help: [
-    { title: "FAQ", href: "/homepage/help/faq" },
-    { title: "Delivery Information", href: "/homepage/help/delivery" },
-    { title: "Returns", href: "/homepage/help/returns" },
-    { title: "Order Status", href: "/homepage/help/order-status" },
-  ],
-  Services: [
-    { title: "iPhone Repair", href: "/homepage/services/iphone-repair" },
-    { title: "Device Trade-In", href: "/homepage/services/trade-in" },
-    { title: "Insurance", href: "/homepage/services/insurance" },
-    { title: "Warranty", href: "/homepage/services/warranty" },
+  Support: [
+    {
+      title: "Returns",
+      id: "returns",
+      content:
+        "We offer a hassle-free 30-day return policy on all purchases. Items must be returned in the original packaging and in the same condition as received.\n\nAll returned devices include a 6-month warranty from the date of purchase, covering hardware defects and malfunctions. Our warranty does not cover physical damage, water damage, or unauthorized repairs.\n\nPlease note that return shipping fees will be charged to the customer unless the item is defective. A return shipping fee of NPR 500 applies for standard returns.",
+    },
+    {
+      title: "Delivery",
+      id: "delivery",
+      content:
+        "We offer fast and reliable delivery services throughout Nepal. Orders within Kathmandu Valley are typically delivered within 1-2 business days. For locations outside the valley, delivery takes 3-5 business days.\n\nFree delivery is available on all orders above NPR 15,000 within Kathmandu Valley. For orders below NPR 15,000 or outside the valley, shipping charges apply based on location and package weight.\n\nTrack your order anytime through your account dashboard or by contacting our customer service team.",
+    },
   ],
 };
 
-// Social media icons
+// Social media icons (unchanged)
 const socialLinks = [
   {
     name: "Instagram",
@@ -48,87 +96,406 @@ const socialLinks = [
       </svg>
     ),
   },
-  {
-    name: "Facebook",
-    href: "#",
-    icon: (
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          fillRule="evenodd"
-          d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
-          clipRule="evenodd"
-        />
-      </svg>
-    ),
-  },
 ];
 
-export default function Footer() {
-  const currentYear = new Date().getFullYear();
+// Dialog component with centered text and contact form
+const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
+  const [formData, setFormData] = useState<ContactFormData>({
+    email: "",
+    phone: "",
+    message: "",
+  });
+
+  const [errors, setErrors] = useState<ContactFormErrors>({});
+  const [isFormValid, setIsFormValid] = useState<boolean>(false);
+  const [touched, setTouched] = useState<TouchedFields>({
+    email: false,
+    phone: false,
+    message: false,
+  });
+
+  const [isContactForm, setIsContactForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsContactForm(title === "Contact");
+  }, [title]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
+
+  const validateForm = () => {
+    const newErrors: ContactFormErrors = {};
+
+    // Validate email
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
+    }
+
+    // Validate phone - optional but must be valid if provided
+    if (formData.phone.trim() && !/^\d+$/.test(formData.phone)) {
+      newErrors.phone = "Phone must contain only numbers";
+    }
+
+    // Validate message
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+    } else if (formData.message.length < 10) {
+      newErrors.message = "Message must be at least 10 characters";
+    }
+
+    setErrors(newErrors);
+    setIsFormValid(Object.keys(newErrors).length === 0);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+
+    // For phone field, only allow numeric input
+    if (name === "phone" && value !== "" && !/^\d+$/.test(value)) {
+      return;
+    }
+
+    // Mark field as touched when user changes its value
+    if (!touched[name as keyof TouchedFields]) {
+      setTouched({
+        ...touched,
+        [name]: true,
+      });
+    }
+
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Mark all fields as touched on submit
+    setTouched({
+      email: true,
+      phone: true,
+      message: true,
+    });
+
+    validateForm();
+
+    if (!isFormValid) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Reset form after successful submission
+      setFormData({
+        email: "",
+        phone: "",
+        message: "",
+      });
+
+      setTouched({
+        email: false,
+        phone: false,
+        message: false,
+      });
+
+      alert("Your message has been submitted. We'll get back to you soon!");
+      onClose();
+    } catch (error) {
+      alert("Error submitting form. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="w-full">
-      <footer className="bg-white border-t border-gray-200">
-        {/* Top section with columns */}
-        <div className="container mx-auto pt-16 pb-12 px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Brand section */}
-            <div className="space-y-6">
-              <div className="flex items-center">
-                <span className="text-xl font-bold tracking-wider text-black">RECELL</span>
-              </div>
-              <p className="text-gray-600 text-sm max-w-xs">
-                Buying and selling refurbished devices made simple. Quality guaranteed with every purchase.
-              </p>
-              <div className="flex space-x-5">
-                {socialLinks.map((item) => (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="text-gray-500 hover:text-black transition-colors duration-200"
-                    aria-label={item.name}
-                  >
-                    {item.icon}
-                  </a>
-                ))}
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        {/* Background overlay */}
+        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose} aria-hidden="true"></div>
+
+        {/* Center dialog */}
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+          &#8203;
+        </span>
+
+        <div
+          className="inline-block overflow-hidden align-bottom bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle dialog-animation max-w-[90vw]"
+          style={{ width: "800px", height: isContactForm ? "auto" : "600px", maxHeight: "90vh" }}
+        >
+          <div className="flex flex-col h-full">
+            <div className="px-8 pt-8 pb-6 bg-white flex-grow overflow-y-auto">
+              <div className="w-full text-center">
+                <h3 className="text-2xl font-medium leading-6 text-gray-900 mb-8">{title}</h3>
+
+                {isContactForm ? (
+                  <div className="mt-4 px-4 mx-auto max-w-2xl">
+                    <div className="text-left mb-6">
+                      <p className="text-base text-gray-500 whitespace-pre-line">{content}</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-6 text-left">
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-[#333333] mb-2">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 border ${
+                            touched.email && errors.email ? "border-red-500" : "border-[#e0e0e0]"
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                          placeholder="your@email.com"
+                          required
+                        />
+                        {touched.email && errors.email && <p className="text-sm text-red-500 mt-2">{errors.email}</p>}
+                      </div>
+
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-[#333333] mb-2">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 border ${
+                            touched.phone && errors.phone ? "border-red-500" : "border-[#e0e0e0]"
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                          placeholder="Enter numbers only"
+                        />
+                        {touched.phone && errors.phone && <p className="text-sm text-red-500 mt-2">{errors.phone}</p>}
+                      </div>
+
+                      <div>
+                        <label htmlFor="message" className="block text-sm font-medium text-[#333333] mb-2">
+                          Message or Feedback
+                        </label>
+                        <textarea
+                          id="message"
+                          name="message"
+                          value={formData.message}
+                          onChange={handleInputChange}
+                          rows={4}
+                          className={`w-full px-4 py-3 border ${
+                            touched.message && errors.message ? "border-red-500" : "border-[#e0e0e0]"
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                          placeholder="How can we help you?"
+                          required
+                        />
+                        {touched.message && errors.message && <p className="text-sm text-red-500 mt-2">{errors.message}</p>}
+                      </div>
+
+                      <div className="flex justify-center gap-4 pt-2">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className={`px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors duration-200 ${
+                            isSubmitting ? "opacity-75 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          {isSubmitting ? (
+                            <span className="flex items-center justify-center">
+                              <svg
+                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              Sending...
+                            </span>
+                          ) : (
+                            "Send Message"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onClose}
+                          className="px-6 py-3 bg-white text-[#666666] border border-[#e0e0e0] rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="mt-4 px-4 mx-auto max-w-2xl">
+                    <p className="text-base text-gray-500 whitespace-pre-line">{content}</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Links sections */}
-            {Object.entries(footerSections).map(([section, links]) => (
-              <div key={section} className="space-y-5">
-                <h3 className="font-medium text-black text-base">{section}</h3>
-                <ul className="space-y-3.5">
-                  {links.map((link) => (
-                    <li key={link.title}>
-                      <Link href={link.href} className="text-gray-600 hover:text-black text-sm transition-colors duration-200">
-                        {link.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+            {!isContactForm && (
+              <div className="px-8 py-6 bg-gray-50 flex justify-center mt-auto">
+                <button
+                  type="button"
+                  className="inline-flex justify-center px-8 py-3 text-sm font-medium text-white bg-black border border-transparent rounded-md shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                  onClick={onClose}
+                >
+                  Close
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </div>
-
-        {/* Bottom section with copyright and terms */}
-        <div className="border-t border-gray-200 bg-gray-50">
-          <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <p className="text-xs text-gray-500">© {currentYear} RECELL. All rights reserved.</p>
-              <div className="flex space-x-8">
-                <Link href="/homepage/privacy-policy" className="text-xs text-gray-500 hover:text-black transition-colors duration-200">
-                  Privacy Policy
-                </Link>
-                <Link href="/homepage/terms" className="text-xs text-gray-500 hover:text-black transition-colors duration-200">
-                  Terms of Service
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
+  );
+};
+
+export default function Footer() {
+  const [dialogState, setDialogState] = useState<DialogState>({
+    isOpen: false,
+    title: "",
+    content: "",
+  });
+
+  const currentYear = new Date().getFullYear();
+
+  const openDialog = (title: string, content: string) => {
+    setDialogState({
+      isOpen: true,
+      title,
+      content,
+    });
+  };
+
+  const closeDialog = () => {
+    setDialogState({
+      ...dialogState,
+      isOpen: false,
+    });
+  };
+
+  return (
+    <>
+      <style jsx global>{`
+        @keyframes dialogFade {
+          from {
+            opacity: 0;
+            transform: translate3d(0, -30px, 0);
+          }
+          to {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+          }
+        }
+
+        .dialog-animation {
+          animation: dialogFade 0.3s ease-out forwards;
+        }
+      `}</style>
+
+      <div className="w-full">
+        <footer className="bg-white border-t border-gray-200">
+          {/* Main footer section - simplified */}
+          <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Brand section */}
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <span className="text-xl font-bold tracking-wider text-black">RECELL</span>
+                </div>
+                <p className="text-gray-600 text-sm max-w-xs">
+                  Buying and selling refurbished devices made simple. Quality guaranteed with every purchase.
+                </p>
+                <div className="flex space-x-5">
+                  {socialLinks.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      className="text-gray-500 hover:text-black transition-colors duration-200"
+                      aria-label={item.name}
+                    >
+                      {item.icon}
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              {/* Links sections - now with popup dialogs */}
+              {Object.entries(footerSections).map(([section, links]) => (
+                <div key={section} className="space-y-4">
+                  <h3 className="font-medium text-black text-base">{section}</h3>
+                  <ul className="space-y-2">
+                    {links.map((link) => (
+                      <li key={link.id}>
+                        <button
+                          onClick={() => openDialog(link.title, link.content)}
+                          className="text-gray-600 hover:text-black text-sm transition-colors duration-200 text-left"
+                        >
+                          {link.title}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom section with copyright and terms */}
+          <div className="border-t border-gray-200 bg-gray-50">
+            <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+                <p className="text-xs text-gray-500">© {currentYear} RECELL. All rights reserved.</p>
+                <div className="flex space-x-6">
+                  <button
+                    onClick={() =>
+                      openDialog(
+                        "Privacy Policy",
+                        "This privacy policy outlines how RECELL collects, uses, and protects your personal information. We respect your privacy and are committed to maintaining the confidentiality of your personal data.\n\nWe collect basic information necessary to process your orders, including name, address, email, and payment details. Your data is secured using industry-standard encryption protocols and is never shared with unauthorized third parties.\n\nFor complete details about our privacy practices, you may request a copy of our full privacy policy by contacting our customer service team."
+                      )
+                    }
+                    className="text-xs text-gray-500 hover:text-black transition-colors duration-200"
+                  >
+                    Privacy Policy
+                  </button>
+                  <button
+                    onClick={() =>
+                      openDialog(
+                        "Terms of Service",
+                        "By using the RECELL website and services, you agree to these Terms of Service. These terms outline the rules for using our platform, purchasing policies, and your rights and responsibilities as a user.\n\nAll products sold by RECELL are guaranteed to be fully functional and in the condition described. We verify the authenticity and quality of all devices before listing them for sale.\n\nPayment must be made in full before delivery of any product. We accept various payment methods including cash on delivery within Kathmandu Valley, bank transfers, and digital payment services like eSewa and Khalti."
+                      )
+                    }
+                    className="text-xs text-gray-500 hover:text-black transition-colors duration-200"
+                  >
+                    Terms of Service
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      {/* Dialog component */}
+      <Dialog isOpen={dialogState.isOpen} onClose={closeDialog} title={dialogState.title} content={dialogState.content} />
+    </>
   );
 }

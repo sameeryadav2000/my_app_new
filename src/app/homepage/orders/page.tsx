@@ -11,6 +11,11 @@ import { CartItem } from "@/context/CartContext";
 import ReviewComponent from "@/app/components/ReviewForm";
 import { ReviewData } from "@/app/components/ReviewForm";
 
+interface ReviewApiData extends ReviewData {
+  productColorId: number;
+  productItemId: number;
+}
+
 interface PurchasedItem {
   id: string;
   itemId: string;
@@ -162,12 +167,18 @@ export default function OrdersPage() {
     try {
       showLoading();
 
+      const apiData: ReviewApiData = {
+        ...reviewData,
+        productItemId: currentProduct!.titleId,
+        productColorId: currentProduct!.colorId,
+      };
+
       const response = await fetch("/api/reviews", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(reviewData),
+        body: JSON.stringify(apiData),
       });
 
       const result = await response.json();
@@ -344,8 +355,6 @@ export default function OrdersPage() {
           >
             <ReviewComponent
               productId={currentProduct.id}
-              productItemId={currentProduct.itemId}
-              productColorId={currentProduct.colorId}
               productTitleName={currentProduct.titleName}
               productImage={currentProduct.image}
               onSubmit={handleSubmitReview}

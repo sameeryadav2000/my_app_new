@@ -21,7 +21,6 @@ model Phone {
   id                  Int                 @id @default(autoincrement())
   phone               String              @db.VarChar(255)
   image               String?             @db.VarChar(255) 
-  reviews             Review[]  // Add this line for the new relation
   modelDropdowns      PhoneModel[]
 }
 
@@ -34,6 +33,8 @@ model PhoneModel {
   images          ModelImage[]
   cartItems       CartItem[]
   purchasedItems  PurchasedItem[]
+  reviews             Review[]  // Add this line for the new relation
+
   
   @@index([phoneId])
 }
@@ -157,7 +158,7 @@ model Review {
   user           User       @relation(fields: [userId], references: [id])
   
   modelId        Int
-  model          Phone      @relation(fields: [modelId], references: [id])  // Changed from PhoneModelDetails to PhoneModel
+  model          PhoneModel      @relation(fields: [modelId], references: [id])  // Changed from PhoneModelDetails to PhoneModel
   
   colorId        Int?       // Added colorId field (optional with ?)
   color          Color?     @relation(fields: [colorId], references: [id])  // Added relation to Color

@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
         comment: review.comment,
         createdAt: review.createdAt,
         userName: review.user
-          ? `${review.user.firstName || ""} ${review.user.lastName || ""}`.trim() || "Anonymous User"
+          ? `${review.user.firstName ? review.user.firstName.charAt(0).toUpperCase() + review.user.firstName.slice(1) : ""} ${
+              review.user.lastName ? review.user.lastName.charAt(0).toUpperCase() + review.user.lastName.slice(1) : ""
+            }`.trim() || "Anonymous User"
           : "Anonymous User",
       }));
 
@@ -80,14 +82,14 @@ export async function GET(request: NextRequest) {
 
       const formattedReviews = reviews.map((review) => ({
         id: review.id,
-        colorName: review.color?.color,
-        modelName: review.model.model,
         rating: review.rating,
         title: review.title,
         comment: review.comment,
         createdAt: review.createdAt,
         userName: review.user
-          ? `${review.user.firstName || ""} ${review.user.lastName || ""}`.trim() || "Anonymous User"
+          ? `${review.user.firstName ? review.user.firstName.charAt(0).toUpperCase() + review.user.firstName.slice(1) : ""} ${
+              review.user.lastName ? review.user.lastName.charAt(0).toUpperCase() + review.user.lastName.slice(1) : ""
+            }`.trim() || "Anonymous User"
           : "Anonymous User",
       }));
 
@@ -197,7 +199,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { productId, productColorId, productItemId, productTitleName, rating, title, review: reviewText } = body;
+    const { productId, productColorId, productItemId, rating, title, review: reviewText } = body;
 
     if (!productId || !productItemId || !rating || !title || !reviewText) {
       return NextResponse.json(

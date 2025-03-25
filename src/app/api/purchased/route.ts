@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session || !session.user?.email) {
       return NextResponse.json(
         {
           success: false,
@@ -19,12 +19,12 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: {
-        email: session.user.email || undefined,
+        email: session.user.email,
       },
       include: {
         purchasedItems: {
           include: {
-            title: true,
+            phone: true,
             color: true,
           },
         },
@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
       orders[item.orderId].items.push({
         id: item.id,
         itemId: item.itemId,
-        titleId: item.titleId,
-        titleName: item.title.model,
+        titleId: item.phone.id,
+        titleName: item.phone.model,
         condition: item.condition,
         storage: item.storage,
         colorId: item.color.id,

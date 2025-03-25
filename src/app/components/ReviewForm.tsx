@@ -2,32 +2,20 @@ import React, { useState } from "react";
 
 export interface ReviewProps {
   productId: string;
-  productColorId: number;
   productTitleName: string;
-  productItemId: string;
-  productImage?: string;
+  productImage: string;
   onSubmit: (reviewData: ReviewData) => void;
   onCancel: () => void;
 }
 
 export interface ReviewData {
   productId: string;
-  productItemId: string;
-  productColorId: number;
   rating: number;
   title: string;
   review: string;
 }
 
-export default function ReviewComponent({
-  productId,
-  productItemId,
-  productColorId,
-  productTitleName,
-  productImage,
-  onSubmit,
-  onCancel,
-}: ReviewProps) {
+export default function ReviewComponent({ productId, productTitleName, productImage, onSubmit, onCancel }: ReviewProps) {
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [title, setTitle] = useState<string>("");
@@ -49,8 +37,6 @@ export default function ReviewComponent({
 
     onSubmit({
       productId,
-      productItemId,
-      productColorId,
       rating,
       title,
       review,

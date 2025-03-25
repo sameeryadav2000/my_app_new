@@ -19,9 +19,10 @@ interface Review {
 interface ReviewListProps {
   modelId: number;
   colorId?: number;
+  onReviewDataLoaded?: (data: { averageRating: number; reviewCount: number }) => void;
 }
 
-export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps) {
+export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoaded }: ReviewListProps) {
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError, showInfo } = useNotification();
 
@@ -59,10 +60,24 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
 
           if (result.data.length > 0) {
             const total = result.data.reduce((sum: number, review: Review) => sum + review.rating, 0);
-            setAverageRating(parseFloat((total / result.data.length).toFixed(1)));
+            const avgRating = parseFloat((total / result.data.length).toFixed(1));
+            setAverageRating(avgRating);
+
+            if (onReviewDataLoaded) {
+              onReviewDataLoaded({
+                averageRating: avgRating,
+                reviewCount: result.data.length,
+              });
+            }
           }
         } else {
           setReviews([]);
+          if (onReviewDataLoaded) {
+            onReviewDataLoaded({
+              averageRating: 0,
+              reviewCount: 0,
+            });
+          }
         }
       } catch (error) {
         setError("Error fetching reviews. Please check your connection and try again.");
@@ -73,7 +88,7 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
     };
 
     fetchReviews();
-  }, [modelId, colorId]);
+  }, [modelId, colorId, onReviewDataLoaded]);
 
   // Get unique model names for filtering (with explicit type assertion)
   const uniqueModels = [
@@ -193,19 +208,21 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
   }
 
   return (
-    <div className="w-[95%] md:w-[70%] mx-auto mt-16 pb-20">
+    <div className="w-[95%] md:w-[70%] mx-auto mt-12 md:mt-14 lg:mt-16 pb-16 md:pb-18 lg:pb-20">
       {reviews.length > 0 && (
         <>
-          <div className="flex items-center gap-1 mb-8">
-            {renderStars(averageRating, 20)}
-            <span className="ml-1 text-lg font-medium">{averageRating}/5</span>
-            <span className="ml-3 text-sm text-gray-600">({reviews.length} total reviews)</span>
+          <div className="flex items-center gap-1 mb-6 md:mb-7 lg:mb-8">
+            <div className="hidden md:hidden lg:flex">{renderStars(averageRating, 20)}</div>
+            <div className="hidden md:flex lg:hidden">{renderStars(averageRating, 18)}</div>
+            <div className="flex md:hidden lg:hidden">{renderStars(averageRating, 16)}</div>
+            <span className="ml-1 text-lg md:text-lg lg:text-xl font-medium">{averageRating}/5</span>
+            <span className="ml-3 text-sm md:text-lg lg:text-lg text-gray-600">({reviews.length} total reviews)</span>
           </div>
 
           <div className="flex flex-col md:flex-row gap-8">
             {/* Filters - Left Side */}
             <div className="w-full md:w-1/3">
-              <h3 className="text-base font-medium mb-4">Filter by stars</h3>
+              <h3 className="text-base md:text-base lg:text-lg font-medium mb-4">Filter by stars</h3>
               <div className="space-y-4 mb-8">
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -215,11 +232,11 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                     checked={activeFilter === null}
                     onChange={() => setActiveFilter(null)}
                   />
-                  <span className="mr-4 min-w-[32px]">All</span>
+                  <span className="mr-4 min-w-[32px] text-sm md:text-base lg:text-base">All</span>
                   <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
                     <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("all") }}></div>
                   </div>
-                  <span className="text-sm min-w-[40px] text-right">{getPercentageFor("all")}</span>
+                  <span className="text-sm md:text-base lg:text-base min-w-[40px] text-right">{getPercentageFor("all")}</span>
                 </label>
 
                 <label className="flex items-center cursor-pointer">
@@ -230,11 +247,11 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                     checked={activeFilter === 45}
                     onChange={() => setActiveFilter(45)}
                   />
-                  <span className="mr-4 min-w-[32px]">4-5</span>
+                  <span className="mr-4 min-w-[32px] text-sm md:text-base lg:text-base">4-5</span>
                   <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
                     <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("45") }}></div>
                   </div>
-                  <span className="text-sm min-w-[40px] text-right">{getPercentageFor("45")}</span>
+                  <span className="text-sm md:text-base lg:text-base min-w-[40px] text-right">{getPercentageFor("45")}</span>
                 </label>
 
                 <label className="flex items-center cursor-pointer">
@@ -245,11 +262,11 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                     checked={activeFilter === 34}
                     onChange={() => setActiveFilter(34)}
                   />
-                  <span className="mr-4 min-w-[32px]">3-4</span>
+                  <span className="mr-4 min-w-[32px] text-sm md:text-base lg:text-base">3-4</span>
                   <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
                     <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("34") }}></div>
                   </div>
-                  <span className="text-sm min-w-[40px] text-right">{getPercentageFor("34")}</span>
+                  <span className="text-sm md:text-base lg:text-base min-w-[40px] text-right">{getPercentageFor("34")}</span>
                 </label>
 
                 <label className="flex items-center cursor-pointer">
@@ -260,11 +277,11 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                     checked={activeFilter === 23}
                     onChange={() => setActiveFilter(23)}
                   />
-                  <span className="mr-4 min-w-[32px]">2-3</span>
+                  <span className="mr-4 min-w-[32px] text-sm md:text-base lg:text-base">2-3</span>
                   <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
                     <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("23") }}></div>
                   </div>
-                  <span className="text-sm min-w-[40px] text-right">{getPercentageFor("23")}</span>
+                  <span className="text-sm md:text-base lg:text-base min-w-[40px] text-right">{getPercentageFor("23")}</span>
                 </label>
 
                 <label className="flex items-center cursor-pointer">
@@ -275,18 +292,18 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                     checked={activeFilter === 12}
                     onChange={() => setActiveFilter(12)}
                   />
-                  <span className="mr-4 min-w-[32px]">1-2</span>
+                  <span className="mr-4 min-w-[32px] text-sm md:text-base lg:text-base">1-2</span>
                   <div className="flex-grow h-1 bg-gray-200 rounded-full overflow-hidden mr-2">
                     <div className="h-full bg-black rounded-full" style={{ width: getWidthFor("12") }}></div>
                   </div>
-                  <span className="text-sm min-w-[40px] text-right">{getPercentageFor("12")}</span>
+                  <span className="text-sm md:text-base lg:text-base min-w-[40px] text-right">{getPercentageFor("12")}</span>
                 </label>
               </div>
 
               {/* Model Filter */}
               {uniqueModels.length > 1 && (
                 <div className="mb-8">
-                  <h3 className="text-base font-medium mb-4">Filter by model</h3>
+                  <h3 className="text-base md:text-base lg:text-lg font-medium mb-4">Filter by model</h3>
                   <div className="space-y-2">
                     <label className="flex items-center cursor-pointer">
                       <input
@@ -296,7 +313,7 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                         checked={activeModelFilter === null}
                         onChange={() => setActiveModelFilter(null)}
                       />
-                      <span>All Models</span>
+                      <span className="text-sm md:text-base lg:text-base">All Models</span>
                     </label>
                     {uniqueModels.map((model) => (
                       <label key={model} className="flex items-center cursor-pointer">
@@ -307,7 +324,7 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                           checked={activeModelFilter === model}
                           onChange={() => setActiveModelFilter(model)}
                         />
-                        <span>{model}</span>
+                        <span className="text-sm md:text-base lg:text-base">{model}</span>
                       </label>
                     ))}
                   </div>
@@ -317,7 +334,7 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
               {/* Color Filter */}
               {uniqueColors.length > 1 && (
                 <div>
-                  <h3 className="text-base font-medium mb-4">Filter by color</h3>
+                  <h3 className="text-base md:text-base lg:text-lg font-medium mb-4">Filter by color</h3>
                   <div className="space-y-2">
                     <label className="flex items-center cursor-pointer">
                       <input
@@ -327,7 +344,7 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                         checked={activeColorFilter === null}
                         onChange={() => setActiveColorFilter(null)}
                       />
-                      <span>All Colors</span>
+                      <span className="text-sm md:text-base lg:text-base">All Colors</span>
                     </label>
                     {uniqueColors.map((color) => (
                       <label key={color} className="flex items-center cursor-pointer">
@@ -338,7 +355,7 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                           checked={activeColorFilter === color}
                           onChange={() => setActiveColorFilter(color)}
                         />
-                        <span>{color}</span>
+                        <span className="text-sm md:text-base lg:text-base">{color}</span>
                       </label>
                     ))}
                   </div>
@@ -349,12 +366,14 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
             {/* Reviews List - Right Side */}
             <div className="w-full md:w-2/3">
               {filteredReviews.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
+                <div className="text-center py-12 rounded-lg border border-gray-100">
                   <div className="mx-auto w-16 h-16 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <MessageSquare size={24} className="text-gray-400" />
                   </div>
-                  <p className="text-gray-700 font-medium">No reviews found</p>
-                  <p className="text-sm mt-2 text-gray-500 max-w-md mx-auto">Try adjusting your filter to see more reviews.</p>
+                  <p className="text-base md:text-lg lg:text-lg text-gray-700 font-medium">No reviews found</p>
+                  <p className="text-sm md:text-base lg:text-base mt-2 text-gray-500 max-w-md mx-auto">
+                    Try adjusting your filter to see more reviews.
+                  </p>
                 </div>
               ) : (
                 <div>
@@ -375,10 +394,10 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                           </div>
 
                           <div className="w-full">
-                            <div className="font-semibold mb-1">{review.userName}</div>
-                            <div className="text-sm text-gray-600 mb-3">
+                            <div className="text-base md:text-lg lg:text-lg font-semibold mb-1">{review.userName}</div>
+                            <div className="text-sm md:text-base lg:text-base text-gray-600 mb-3">
                               Purchased on {formatDate(review.createdAt)}
-                              <span className="inline-flex items-center ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                              <span className="inline-flex items-center ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs md:text-sm lg:text-sm rounded-full">
                                 <Check size={12} className="mr-0.5" /> Verified purchase
                               </span>
                             </div>
@@ -386,26 +405,28 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
                             {/* Display model and color information */}
                             <div className="flex flex-wrap gap-2 mb-3">
                               {review.modelName && (
-                                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs md:text-sm lg:text-sm rounded-full">
                                   <Tag size={12} className="mr-1" /> Model: {review.modelName}
                                 </span>
                               )}
                               {review.colorName && (
-                                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                                <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-800 text-xs md:text-sm lg:text-sm rounded-full">
                                   <Tag size={12} className="mr-1" /> Color: {review.colorName}
                                 </span>
                               )}
                             </div>
 
                             <div className="flex mb-2">
-                              {renderStars(review.rating)}
-                              <span className="ml-1 text-sm">{review.rating}/5</span>
+                              <div className="hidden md:hidden lg:flex">{renderStars(review.rating, 18)}</div>
+                              <div className="hidden md:flex lg:hidden">{renderStars(review.rating, 16)}</div>
+                              <div className="flex md:hidden lg:hidden">{renderStars(review.rating, 14)}</div>
+                              <span className="ml-1 text-sm md:text-base lg:text-base">{review.rating}/5</span>
                             </div>
 
                             {/* Display review title if available */}
-                            {review.title && <h4 className="text-base font-medium mb-2">{review.title}</h4>}
+                            {review.title && <h4 className="text-base md:text-lg lg:text-lg font-medium mb-2">{review.title}</h4>}
 
-                            <p className="text-gray-800 my-4">
+                            <p className="text-sm md:text-base lg:text-base text-gray-800 my-4">
                               {review.comment || "I loved it! It's like new and everything works perfectly! Thanks"}
                             </p>
                           </div>
@@ -421,12 +442,12 @@ export default function EnhancedReviewList({ modelId, colorId }: ReviewListProps
       )}
 
       {reviews.length === 0 && !error && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
+        <div className="text-center py-12 rounded-lg border border-gray-100">
           <div className="mx-auto w-16 h-16 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
             <MessageSquare size={24} className="text-gray-400" />
           </div>
-          <p className="text-gray-700 font-medium">No reviews yet</p>
-          <p className="text-sm mt-2 text-gray-500 max-w-md mx-auto">
+          <p className="text-base md:text-lg lg:text-lg text-gray-700 font-medium">No reviews yet</p>
+          <p className="text-sm md:text-base lg:text-base mt-2 text-gray-500 max-w-md mx-auto">
             Be the first to share your experience with this product. Your feedback helps others make better decisions.
           </p>
         </div>
