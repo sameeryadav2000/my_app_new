@@ -144,7 +144,7 @@ export default function OrdersPage() {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "NPR",
     }).format(price);
   };
 
@@ -207,13 +207,13 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Orders</h1>
+    <div className="w-[95%] xl:w-[70%] mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-8">Your Orders</h1>
 
       {orders.length === 0 ? (
-        <div className="bg-white rounded-xl shadow p-8 text-center">
+        <div className="bg-white rounded-xl shadow p-6 md:p-8 text-center">
           <div className="mb-4">
-            <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-12 md:h-14 w-12 md:w-14 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -222,87 +222,86 @@ export default function OrdersPage() {
               />
             </svg>
           </div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">No orders yet</h3>
-          <p className="text-gray-500 mb-6">Looks like you haven't placed any orders yet.</p>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+          <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+          <p className="text-xs md:text-sm text-gray-500 mb-6">Looks like you haven't placed any orders yet.</p>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 md:py-2 px-4 md:px-6 rounded-lg transition-colors text-xs md:text-sm">
             Browse Products
           </button>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           {orders.map((order) => (
             <div key={order.orderId} className="bg-white rounded-xl shadow overflow-hidden transition-all hover:shadow-lg">
               <div className="border-b border-gray-200 bg-gray-50 p-4 sm:px-6">
                 <div className="flex flex-wrap items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div>
-                      <p className="text-sm text-gray-500">ORDER PLACED</p>
-                      <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs md:text-sm text-gray-500">ORDER PLACED</p>
+                      <p className="font-medium text-sm md:text-base">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="h-6 border-l border-gray-300"></div>
                     <div>
-                      <p className="text-sm text-gray-500">ORDER ID</p>
-                      <p className="font-medium">#{order.orderId}</p>
+                      <p className="text-xs md:text-sm text-gray-500">ORDER ID</p>
+                      <p className="font-medium text-sm md:text-base">#{order.orderId}</p>
                     </div>
                     <div className="h-6 border-l border-gray-300"></div>
                     <div>
-                      <p className="text-sm text-gray-500">TOTAL</p>
-                      <p className="font-medium">{formatPrice(order.totalPrice)}</p>
+                      <p className="text-xs md:text-sm text-gray-500">TOTAL</p>
+                      <p className="font-medium text-sm md:text-base">{formatPrice(order.totalPrice)}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center">
-                    <span className="mr-2 bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                  <div className="flex items-center mt-4 sm:mt-0">
+                    <span className="mr-2 bg-gray-100 text-gray-800 text-xs md:text-sm font-medium px-2 md:px-3 py-0.5 md:py-1 rounded-full">
                       {order.totalItems} {order.totalItems === 1 ? "item" : "items"}
                     </span>
-                    <button className="text-blue-600 hover:text-blue-800 font-medium">Track Package</button>
+                    <button className="text-blue-600 hover:text-blue-800 font-medium text-xs md:text-sm">Track Package</button>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 {order.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex flex-col md:flex-row mb-6 pb-6 border-b border-gray-200 last:mb-0 last:pb-0 last:border-0"
+                    className="flex flex-col md:flex-row mb-4 md:mb-6 pb-4 md:pb-6 border-b border-gray-200 last:mb-0 last:pb-0 last:border-0"
                   >
-                    <div className="md:w-24 flex-shrink-0 bg-gray-100 rounded-lg p-2 mb-4 md:mb-0">
+                    <div className="w-24 flex-shrink-0 bg-gray-100 rounded-lg p-2 mb-4 md:mb-0">
                       <img src={item.image} alt={item.titleName} className="w-full h-auto object-contain" />
                     </div>
 
                     <div className="md:ml-6 flex-grow">
-                      <h2 className="text-xl font-medium text-gray-900 mb-2">{item.titleName}</h2>
+                      <h2 className="text-base md:text-lg font-medium text-gray-900 mb-2">{item.titleName}</h2>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div>
-                          <p className="text-sm text-gray-500">Condition</p>
-                          <p className="font-medium">{item.condition}</p>
+                          <p className="text-xs md:text-sm text-gray-500">Condition</p>
+                          <p className="font-medium text-sm md:text-base">{item.condition}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Storage</p>
-                          <p className="font-medium">{item.storage}GB</p>
+                          <p className="text-xs md:text-sm text-gray-500">Storage</p>
+                          <p className="font-medium text-sm md:text-base">{item.storage}GB</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Color</p>
-                          <p className="font-medium">{item.colorName}</p>
+                          <p className="text-xs md:text-sm text-gray-500">Color</p>
+                          <p className="font-medium text-sm md:text-base">{item.colorName}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Quantity</p>
-                          <p className="font-medium">{item.quantity}</p>
+                          <p className="text-xs md:text-sm text-gray-500">Quantity</p>
+                          <p className="font-medium text-sm md:text-base">{item.quantity}</p>
                         </div>
                       </div>
 
                       <div className="flex justify-between items-end">
-                        <div className="text-gray-900 font-bold text-xl">{formatPrice(item.price * item.quantity)}</div>
+                        <div className="text-gray-900 font-bold text-base md:text-lg">{formatPrice(item.price * item.quantity)}</div>
 
                         <div className="flex space-x-2">
-                          {/* Keep review buttons functionality as is but connect to individual items */}
                           {productReviews[item.id]?.hasReviewed ? (
                             <button
-                              className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+                              className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 md:py-2 px-3 md:px-4 rounded-lg transition-colors flex items-center text-xs md:text-sm"
                               onClick={() => handleViewReview(item)}
                             >
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-3 md:w-4 h-3 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path
                                   strokeLinecap="round"
@@ -315,10 +314,10 @@ export default function OrdersPage() {
                             </button>
                           ) : (
                             <button
-                              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 md:py-2 px-3 md:px-4 rounded-lg transition-colors flex items-center text-xs md:text-sm"
                               onClick={() => handleReviewOrder(item)}
                             >
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-3 md:w-4 h-3 md:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
@@ -329,7 +328,7 @@ export default function OrdersPage() {
                               Write a Review
                             </button>
                           )}
-                          <button className="text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg px-4 py-2 transition-colors">
+                          <button className="text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg px-3 md:px-4 py-1 md:py-2 transition-colors text-xs md:text-sm">
                             Buy Again
                           </button>
                         </div>
@@ -367,40 +366,40 @@ export default function OrdersPage() {
       {viewingReview && currentProduct && currentReview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div
-            className="w-full max-w-2xl max-h-screen overflow-y-auto animate-slideIn bg-white rounded-xl shadow-xl p-6"
+            className="w-full max-w-2xl max-h-screen overflow-y-auto animate-slideIn bg-white rounded-xl shadow-xl p-4 md:p-6"
             style={{
               animationDuration: "0.3s",
               transform: "translateY(0)",
             }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Your Review</h2>
+              <h2 className="text-lg md:text-xl font-bold">Your Review</h2>
               <button onClick={() => setViewingReview(false)} className="text-gray-500 hover:text-gray-800">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 md:w-6 h-5 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             <div className="flex items-center mb-4">
-              <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded p-1 mr-4">
+              <div className="flex-shrink-0 w-12 md:w-14 h-12 md:h-14 bg-gray-100 rounded p-1 mr-4">
                 <img src={currentProduct.image} alt={currentProduct.titleName} className="w-full h-full object-contain" />
               </div>
               <div>
-                <p className="font-medium text-lg">{currentProduct.titleName}</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium text-sm md:text-base">{currentProduct.titleName}</p>
+                <p className="text-xs md:text-sm text-gray-500">
                   {currentProduct.colorName} · {currentProduct.storage}GB · {currentProduct.condition}
                 </p>
               </div>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg mb-4">
+            <div className="bg-gray-50 p-3 md:p-4 rounded-lg mb-4">
               <div className="flex items-center mb-2">
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`w-5 h-5 ${i < currentReview.rating ? "text-yellow-400" : "text-gray-300"}`}
+                      className={`w-4 md:w-5 h-4 md:h-5 ${i < currentReview.rating ? "text-yellow-400" : "text-gray-300"}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -408,15 +407,18 @@ export default function OrdersPage() {
                     </svg>
                   ))}
                 </div>
-                <span className="ml-2 text-gray-600">{new Date(currentReview.createdAt).toLocaleDateString()}</span>
+                <span className="ml-2 text-gray-600 text-xs md:text-sm">{new Date(currentReview.createdAt).toLocaleDateString()}</span>
               </div>
 
-              <h3 className="text-xl font-semibold mb-2">{currentReview.title}</h3>
-              <p className="text-gray-700">{currentReview.comment}</p>
+              <h3 className="text-base md:text-lg font-semibold mb-2">{currentReview.title}</h3>
+              <p className="text-gray-700 text-sm md:text-base">{currentReview.comment}</p>
             </div>
 
             <div className="flex justify-end">
-              <button onClick={() => setViewingReview(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button
+                onClick={() => setViewingReview(false)}
+                className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs md:text-sm"
+              >
                 Close
               </button>
             </div>
@@ -428,11 +430,9 @@ export default function OrdersPage() {
       <style jsx>{`
         @keyframes slideIn {
           from {
-            // opacity: 0;
             transform: translateY(50px);
           }
           to {
-            opacity: 1;
             transform: translateY(0);
           }
         }

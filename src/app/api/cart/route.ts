@@ -5,7 +5,6 @@ import { getServerSession } from "next-auth";
 import prisma from "../../../../lib/prisma";
 import { CartItem } from "@/context/CartContext";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { title } from "process";
 
 export async function GET(request: NextRequest) {
   try {

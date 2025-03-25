@@ -75,7 +75,7 @@ export default function ProductListingPage() {
 
     // Return an empty cleanup function to avoid the TypeScript error
     return () => {};
-  }, [currentPage, title, id, showLoading, hideLoading, showError]);
+  }, [currentPage, title, id]);
 
   useEffect(() => {
     const cleanup = fetchCards();
@@ -185,186 +185,226 @@ export default function ProductListingPage() {
   }, [currentPage, totalPages, handlePageChange]);
 
   return (
-    <div className="w-[95%] md:w-[70%] mx-auto py-8">
-      {/* Trust banners section */}
-      <div className="bg-gray-100 rounded-xl mb-8 overflow-hidden">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
-          <div className="flex items-center gap-3 p-4 justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-            <span className="text-sm font-medium">6-month warranty</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-              />
-            </svg>
-            <span className="text-sm font-medium">Free standard shipping</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            <span className="text-sm font-medium">Free 30-day returns</span>
-          </div>
-          <div className="flex items-center gap-3 p-4 justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            <span className="text-sm font-medium">Friendly customer service</span>
+    <>
+      <div className="w-[95%] md:w-[70%] mx-auto py-6 md:py-7 lg:py-8">
+        {/* Trust banners section */}
+        <div className="bg-gray-100 rounded-xl mb-6 md:mb-7 lg:mb-8 overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
+            <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 md:h-5 lg:h-6 w-5 md:w-5 lg:w-6 text-black"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+              <span className="text-xs md:text-xs lg:text-sm font-medium">6-month warranty</span>
+            </div>
+            <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 md:h-5 lg:h-6 w-5 md:w-5 lg:w-6 text-black"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                />
+              </svg>
+              <span className="text-xs md:text-xs lg:text-sm font-medium">Free standard shipping</span>
+            </div>
+            <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 md:h-5 lg:h-6 w-5 md:w-5 lg:w-6 text-black"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span className="text-xs md:text-xs lg:text-sm font-medium">Free 30-day returns</span>
+            </div>
+            <div className="flex items-center gap-2 md:gap-3 p-3 md:p-4 justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 md:h-5 lg:h-6 w-5 md:w-5 lg:w-6 text-black"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              <span className="text-xs md:text-xs lg:text-sm font-medium">Friendly customer service</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="md:text-4xl text-2xl font-bold text-black">Verified Refurbished {title}</h1>
-      </div>
+        <div className="flex justify-between items-center mb-6 md:mb-7 lg:mb-8">
+          <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-black">Verified Refurbished {title}</h1>
+        </div>
 
-      <div className="text-gray-500 text-sm mb-6">{!isLoading ? <span>{totalItems} products</span> : <span>Loading models...</span>}</div>
+        <div className="text-xs md:text-sm text-gray-500 mb-4 md:mb-5 lg:mb-6">
+          {!isLoading ? <span>{totalItems} products</span> : <span>Loading models...</span>}
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6">
-        {phoneModels.map((phoneModel) => (
-          <Link
-            key={phoneModel.id}
-            href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
-            className="group block h-full transition-all duration-300"
-          >
-            <div className="h-full bg-white border rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
-              <div className="flex flex-row items-center h-full">
-                <div className="order-2 sm:order-1 flex-1">
-                  <CardsForPhone
-                    title={`${phoneModel.model}`}
-                    image={phoneModel.image}
-                    startingText="Starting at"
-                    price={phoneModel.startingPrice}
-                    className="flex flex-col h-full"
-                    imageContainerClassName="hidden sm:block w-full h-64 overflow-hidden relative"
-                    imageClassName="w-full h-full object-contain p-4 transition-transform duration-300 group-hover:scale-105"
-                    contentClassName="flex-1 p-6 border-t sm:border-t border-gray-100"
-                    titleClassName="text-black line-clamp-2 text-lg mb-2"
-                    startingTextClassName="text-gray-500 py-1"
-                    priceClassName="text-xl text-black py-1"
-                  />
-                </div>
-                <div className="order-1 sm:hidden w-1/2 p-4">
-                  <img
-                    src={phoneModel.image}
-                    alt={phoneModel.model}
-                    className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
-                  />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">
+          {phoneModels.map((phoneModel) => (
+            <Link
+              key={phoneModel.id}
+              href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
+              className="group block h-full transition-all duration-300"
+            >
+              <div className="h-full bg-white border rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
+                <div className="flex flex-row items-center h-full">
+                  <div className="order-2 sm:order-1 flex-1">
+                    <CardsForPhone
+                      title={`${phoneModel.model}`}
+                      image={phoneModel.image}
+                      startingText="Starting at"
+                      price={phoneModel.startingPrice}
+                      className="flex flex-col h-full"
+                      imageContainerClassName="hidden sm:block w-full h-36 md:h-40 lg:h-44 overflow-hidden relative"
+                      imageClassName="w-full h-full object-contain p-2 md:p-3 transition-transform duration-300 group-hover:scale-105"
+                      contentClassName="flex-1 p-3 md:p-4 lg:p-5 border-t sm:border-t border-gray-100"
+                      titleClassName="text-black line-clamp-2 text-sm md:text-base lg:text-base mb-0.5 md:mb-1 lg:mb-1.5"
+                      startingTextClassName="text-gray-500 text-xs md:text-xs lg:text-xs py-0.5"
+                      priceClassName="text-base md:text-lg lg:text-lg text-black py-0.5"
+                    />
+                  </div>
+                  <div className="order-1 sm:hidden w-1/2 p-2 md:p-3">
+                    <img
+                      src={phoneModel.image}
+                      alt={phoneModel.model}
+                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
                 </div>
               </div>
+            </Link>
+          ))}
+        </div>
+
+        {phoneModels.length === 0 && !isLoading && (
+          <div className="bg-gray-50 rounded-lg p-6 md:p-8 lg:p-10 text-center">
+            <p className="text-gray-500 text-sm md:text-base">No products found</p>
+          </div>
+        )}
+
+        {totalPages > 0 && !isLoading && (
+          <div className="mt-8 md:mt-9 lg:mt-10 flex flex-col items-center">
+            <div className="text-xs md:text-sm text-gray-500 mb-2 md:mb-2.5 lg:mb-3">
+              Page {currentPage} of {totalPages}
             </div>
-          </Link>
-        ))}
-      </div>
-
-      {phoneModels.length === 0 && !isLoading && (
-        <div className="bg-gray-50 rounded-lg p-10 text-center">
-          <p className="text-gray-500">No products found</p>
-        </div>
-      )}
-
-      {totalPages > 0 && !isLoading && (
-        <div className="mt-10 flex flex-col items-center">
-          <div className="text-sm text-gray-500 mb-3">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-1 ${
-                currentPage === 1
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-                  : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={currentPage === 1 ? "text-gray-400" : "text-gray-600"}
+            <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 md:px-3.5 lg:px-4 py-1.5 md:py-1.5 lg:py-2 rounded-md text-sm md:text-sm lg:text-base font-medium transition-all duration-200 flex items-center gap-1 ${
+                  currentPage === 1
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                    : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
+                }`}
               >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-              Previous
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={currentPage === 1 ? "text-gray-400" : "text-gray-600"}
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Previous
+              </button>
 
-            {renderPaginationButtons}
+              {renderPaginationButtons}
 
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-1 ${
-                currentPage === totalPages
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-                  : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
-              }`}
-            >
-              Next
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={currentPage === totalPages ? "text-gray-400" : "text-gray-600"}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 md:px-3.5 lg:px-4 py-1.5 md:py-1.5 lg:py-2 rounded-md text-sm md:text-sm lg:text-base font-medium transition-all duration-200 flex items-center gap-1 ${
+                  currentPage === totalPages
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                    : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
+                }`}
               >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </button>
+                Next
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={currentPage === totalPages ? "text-gray-400" : "text-gray-600"}
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="h-20"></div>
+        <div className="h-16 md:h-18 lg:h-20"></div>
 
-      {/* Simplified promotional banner section - no images, maintains layout on mobile */}
-      <div className="rounded-xl overflow-hidden bg-indigo-500 mb-8">
-        <div className="p-6 sm:p-8 md:p-10 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
-            <span className="text-white">Why do we call'em </span>
-            <span className="text-yellow-300">good deals?</span>
-          </h2>
-          <p className="text-white/90 mb-5 max-w-2xl mx-auto text-sm sm:text-base">
-            We usually don't see a price this low for this model, which means you get the best quality for the lowest price. Snag it while
-            you can.
-          </p>
+        {/* Simplified promotional banner section - no images, maintains layout on mobile */}
+        <div className="rounded-xl overflow-hidden bg-indigo-500 mb-6 md:mb-7 lg:mb-8">
+          <div className="p-5 md:p-6 lg:p-10 text-center">
+            <h2 className="text-xl md:text-2xl lg:text-4xl font-bold mb-2 md:mb-2.5 lg:mb-4">
+              <span className="text-white">Why do we call'em </span>
+              <span className="text-yellow-300">good deals?</span>
+            </h2>
+            <p className="text-white/90 mb-4 md:mb-4.5 lg:mb-5 max-w-2xl mx-auto text-xs md:text-sm lg:text-base">
+              We usually don't see a price this low for this model, which means you get the best quality for the lowest price. Snag it while
+              you can.
+            </p>
+          </div>
         </div>
       </div>
 
-      {id && <ReviewList modelId={id} />}
-    </div>
+      <div className="bg-gray-100 py-10 mt-12 w-full">
+        <div className="w-[95%] md:w-[70%] mx-auto">
+          <div className="border-b border-gray-300 pb-3 md:pb-3.5 lg:pb-4 mb-4 md:mb-5 lg:mb-6">
+            <h1 className="text-xl md:text-xl lg:text-2xl font-bold mb-0.5 md:mb-0.5 lg:mb-1">Customer Reviews</h1>
+            {title && (
+              <p className="text-sm md:text-lg lg:text-lg text-gray-600">
+                <span className="font-medium">{title}</span>
+              </p>
+            )}
+          </div>
+          <div className="w-[95%] md:w-[70%] mx-auto">{id && <ReviewList modelId={id} />}</div>
+        </div>
+      </div>
+    </>
   );
 }

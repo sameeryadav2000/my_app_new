@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/context/NotificationContext";
 
 // Type definitions
 interface DialogProps {
@@ -98,7 +100,7 @@ const socialLinks = [
   },
 ];
 
-// Dialog component with centered text and contact form
+// Dialog component with responsive design and context integration
 const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
   const [formData, setFormData] = useState<ContactFormData>({
     email: "",
@@ -115,10 +117,18 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
   });
 
   const [isContactForm, setIsContactForm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Access loading and notification contexts
+  const { isLoading, showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError } = useNotification();
+
+  // Set contact form state
   useEffect(() => {
-    setIsContactForm(title === "Contact");
+    if (title === "Contact") {
+      setIsContactForm(true);
+    } else {
+      setIsContactForm(false);
+    }
   }, [title]);
 
   // Validate form on data change
@@ -136,8 +146,10 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
       newErrors.email = "Invalid email format";
     }
 
-    // Validate phone - optional but must be valid if provided
-    if (formData.phone.trim() && !/^\d+$/.test(formData.phone)) {
+    // Validate phone - now required
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d+$/.test(formData.phone)) {
       newErrors.phone = "Phone must contain only numbers";
     }
 
@@ -190,11 +202,26 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
       return;
     }
 
-    setIsSubmitting(true);
+    // Show loading state
+    showLoading();
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Make API call to submit form
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        hideLoading();
+        showError("Form Submission Error", result.message || "Failed to submit your message. Please try again.");
+        return;
+      }
 
       // Reset form after successful submission
       setFormData({
@@ -209,46 +236,84 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
         message: false,
       });
 
-      alert("Your message has been submitted. We'll get back to you soon!");
+      // Show success notification
+      showSuccess("Message Sent", result.message || "Your message has been submitted. We'll get back to you soon!");
       onClose();
     } catch (error) {
-      alert("Error submitting form. Please try again.");
+      showError(
+        "Unexpected Error",
+        "An unexpected error occurred while submitting your message.",
+        error instanceof Error ? error.message : undefined
+      );
     } finally {
-      setIsSubmitting(false);
+      hideLoading();
     }
   };
+
+  // Lock body scroll when dialog is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div className="fixed inset-0 z-50 overflow-auto">
+      <div className="flex items-center justify-center min-h-screen p-4 text-center">
         {/* Background overlay */}
         <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose} aria-hidden="true"></div>
 
         {/* Center dialog */}
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-          &#8203;
-        </span>
-
         <div
-          className="inline-block overflow-hidden align-bottom bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle dialog-animation max-w-[90vw]"
-          style={{ width: "800px", height: isContactForm ? "auto" : "600px", maxHeight: "90vh" }}
+          className="relative inline-block overflow-auto text-left bg-white rounded-lg shadow-xl dialog-animation w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto"
+          style={{ maxHeight: "80vh" }}
         >
-          <div className="flex flex-col h-full">
-            <div className="px-8 pt-8 pb-6 bg-white flex-grow overflow-y-auto">
+          <div className="flex flex-col">
+            <div className="p-3 sm:p-4 md:p-6 bg-white overflow-y-auto">
               <div className="w-full text-center">
-                <h3 className="text-2xl font-medium leading-6 text-gray-900 mb-8">{title}</h3>
+                <h3 className="text-lg sm:text-xl font-medium leading-6 text-gray-900 mb-3 sm:mb-4">{title}</h3>
 
                 {isContactForm ? (
-                  <div className="mt-4 px-4 mx-auto max-w-2xl">
+                  <div className="mt-4 px-2 sm:px-4 mx-auto">
                     <div className="text-left mb-6">
-                      <p className="text-base text-gray-500 whitespace-pre-line">{content}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm sm:text-base text-gray-500">
+                            <strong>Contact Information:</strong>
+                            <br />
+                            Email: support@recell.com
+                            <br />
+                            Phone: (977) 01-1234567
+                            <br />
+                            Hours: Sunday-Friday, 10am-6pm NPT
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm sm:text-base text-gray-500">
+                            <strong>Visit our store:</strong>
+                            <br />
+                            New Road, Kathmandu
+                            <br />
+                            Nepal
+                            <br />
+                            <br />
+                            Please include your order number in all communications.
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6 text-left">
+                    <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 text-left">
                       <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-[#333333] mb-2">
+                        <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-[#333333] mb-1">
                           Email Address
                         </label>
                         <input
@@ -257,17 +322,17 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className={`w-full px-4 py-3 border ${
+                          className={`w-full px-3 py-2 text-sm border ${
                             touched.email && errors.email ? "border-red-500" : "border-[#e0e0e0]"
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
                           placeholder="your@email.com"
                           required
                         />
-                        {touched.email && errors.email && <p className="text-sm text-red-500 mt-2">{errors.email}</p>}
+                        {touched.email && errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-[#333333] mb-2">
+                        <label htmlFor="phone" className="block text-xs sm:text-sm font-medium text-[#333333] mb-1">
                           Phone Number
                         </label>
                         <input
@@ -276,16 +341,17 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
                           name="phone"
                           value={formData.phone}
                           onChange={handleInputChange}
-                          className={`w-full px-4 py-3 border ${
+                          className={`w-full px-3 py-2 text-sm border ${
                             touched.phone && errors.phone ? "border-red-500" : "border-[#e0e0e0]"
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
                           placeholder="Enter numbers only"
+                          required
                         />
-                        {touched.phone && errors.phone && <p className="text-sm text-red-500 mt-2">{errors.phone}</p>}
+                        {touched.phone && errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="message" className="block text-sm font-medium text-[#333333] mb-2">
+                        <label htmlFor="message" className="block text-xs sm:text-sm font-medium text-[#333333] mb-1">
                           Message or Feedback
                         </label>
                         <textarea
@@ -293,28 +359,28 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
                           name="message"
                           value={formData.message}
                           onChange={handleInputChange}
-                          rows={4}
-                          className={`w-full px-4 py-3 border ${
+                          rows={3}
+                          className={`w-full px-3 py-2 text-sm border ${
                             touched.message && errors.message ? "border-red-500" : "border-[#e0e0e0]"
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
                           placeholder="How can we help you?"
                           required
                         />
-                        {touched.message && errors.message && <p className="text-sm text-red-500 mt-2">{errors.message}</p>}
+                        {touched.message && errors.message && <p className="text-xs text-red-500 mt-1">{errors.message}</p>}
                       </div>
 
-                      <div className="flex justify-center gap-4 pt-2">
+                      <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4">
                         <button
                           type="submit"
-                          disabled={isSubmitting}
-                          className={`px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors duration-200 ${
-                            isSubmitting ? "opacity-75 cursor-not-allowed" : ""
+                          disabled={isLoading}
+                          className={`px-4 py-2 text-xs sm:text-sm bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors duration-200 order-2 sm:order-1 ${
+                            isLoading ? "opacity-75 cursor-not-allowed" : ""
                           }`}
                         >
-                          {isSubmitting ? (
+                          {isLoading ? (
                             <span className="flex items-center justify-center">
                               <svg
-                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white"
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"
@@ -335,7 +401,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
                         <button
                           type="button"
                           onClick={onClose}
-                          className="px-6 py-3 bg-white text-[#666666] border border-[#e0e0e0] rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
+                          className="px-4 py-2 text-xs sm:text-sm bg-white text-[#666666] border border-[#e0e0e0] rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 order-1 sm:order-2"
                         >
                           Cancel
                         </button>
@@ -343,18 +409,18 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
                     </form>
                   </div>
                 ) : (
-                  <div className="mt-4 px-4 mx-auto max-w-2xl">
-                    <p className="text-base text-gray-500 whitespace-pre-line">{content}</p>
+                  <div className="mt-4 px-2 sm:px-4 mx-auto">
+                    <p className="text-sm text-gray-500 whitespace-pre-line max-h-60 overflow-y-auto px-2">{content}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {!isContactForm && (
-              <div className="px-8 py-6 bg-gray-50 flex justify-center mt-auto">
+              <div className="px-3 sm:px-4 py-3 sm:py-4 bg-gray-50 flex justify-center">
                 <button
                   type="button"
-                  className="inline-flex justify-center px-8 py-3 text-sm font-medium text-white bg-black border border-transparent rounded-md shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
+                  className="inline-flex justify-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white bg-black border border-transparent rounded-md shadow-sm hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
                   onClick={onClose}
                 >
                   Close

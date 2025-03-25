@@ -40,45 +40,46 @@ export default function CartPage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-between w-[70%] mx-auto gap-8">
-      <div className="md:w-[60%] rounded-lg">
+    <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8">
+      <div className="xl:w-[60%] rounded-lg">
         {cart.items && cart.items.length > 0 ? (
           cart.items.map((item) => (
             <div
               key={item.id}
-              className="flex md:flex-row flex-col gap-6 border-b border-gray-200 py-6 transition-all duration-300 hover:bg-white hover:shadow-sm rounded-lg px-4"
+              className="flex flex-col xl:flex-row gap-4 xl:gap-6 border-b border-gray-200 py-4 xl:py-6 transition-all duration-300 hover:bg-gray-50 hover:shadow-sm rounded-lg px-3 xl:px-4"
             >
-              <div className="md:w-1/4 w-full flex justify-center">
+              <div className="w-full xl:w-1/4 flex justify-center">
                 <img
                   src={item.image}
                   alt={item.titleName}
-                  className="w-full max-h-[160px] object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
+                  className="w-full max-h-[120px] xl:max-h-[160px] object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
                 />
               </div>
 
-              <div className="flex-1 space-y-2">
-                <h2 className="text-lg font-medium text-gray-900 tracking-tight">{item.titleName}</h2>
-                <p className="text-sm text-gray-600">
+              <div className="flex-1 space-y-1.5 xl:space-y-2">
+                <h2 className="text-base xl:text-xl font-medium text-gray-900 tracking-tight">{item.titleName}</h2>
+                <p className="text-xs xl:text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Condition:</span> {item.condition}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs xl:text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Storage:</span> {item.storage}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs xl:text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Color:</span> {item.colorName}
                 </p>
-                <p className="text-lg font-medium text-gray-900">${item.price}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-base xl:text-lg font-medium text-gray-900">NPR {item.price}</p>
+                <p className="text-xs xl:text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Quantity:</span>
-                  <span className="ml-2 bg-gray-100 text-gray-800 px-3 py-1 rounded-md text-xs">{item.quantity}</span>
+                  <span className="ml-1.5 bg-gray-100 text-gray-800 px-2 xl:px-3 py-0.5 xl:py-1 rounded-md text-xs">{item.quantity}</span>
                 </p>
               </div>
 
-              <div className="flex md:flex-col flex-row justify-between items-center gap-4">
-                <span className="bg-gray-100 text-gray-800 text-center px-5 py-2 rounded-md font-medium text-sm w-16">{item.quantity}</span>
-
+              <div className="flex flex-row xl:flex-col justify-between xl:justify-center items-center gap-3 xl:gap-4">
+                <span className="bg-gray-100 text-gray-800 text-center px-3 xl:px-4 py-1 xl:py-1.5 rounded-md font-medium text-xs xl:text-sm w-12 xl:w-16">
+                  {item.quantity}
+                </span>
                 <button
-                  className="bg-black text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-800 transition-colors duration-300"
+                  className="bg-black text-white px-3 xl:px-5 py-1.5 xl:py-2 rounded-md font-medium text-xs xl:text-sm hover:bg-gray-800 transition-colors duration-300"
                   onClick={() => handleRemove(item.id)}
                 >
                   Remove
@@ -87,13 +88,12 @@ export default function CartPage() {
             </div>
           ))
         ) : (
-          <div className="text-center py-12 border border-gray-200 rounded-lg">
-            <p className="text-base font-medium text-gray-800">Your cart is empty.</p>
-            <p className="text-sm text-gray-500 mt-2">Explore our collection to find something you'll love.</p>
+          <div className="text-center py-8 xl:py-12 border border-gray-200 rounded-lg">
+            <p className="text-sm xl:text-base font-medium text-gray-800">Your cart is empty.</p>
+            <p className="text-xs xl:text-sm text-gray-500 mt-1.5 xl:mt-2">Explore our collection to find something you'll love.</p>
           </div>
         )}
       </div>
-
       <OrderSummary currentPage="cart_page" />
     </div>
   );

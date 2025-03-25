@@ -10,12 +10,18 @@ export default function LoadingScreen({ isLoading = true }: LoadingScreenProps) 
   if (!isLoading) return null;
 
   return (
-    <div className="fixed inset-0 flex justify-center items-center z-50" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+    <div
+      className="fixed inset-0 flex justify-center items-center z-50"
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        backdropFilter: "blur(4px)",
+      }}
+    >
       <style jsx>{`
         @keyframes pulse {
           0% {
             transform: scale(0.8);
-            opacity: 0.3;
+            opacity: 0.5;
           }
           50% {
             transform: scale(1);
@@ -23,7 +29,7 @@ export default function LoadingScreen({ isLoading = true }: LoadingScreenProps) 
           }
           100% {
             transform: scale(0.8);
-            opacity: 0.3;
+            opacity: 0.5;
           }
         }
 
@@ -47,7 +53,7 @@ export default function LoadingScreen({ isLoading = true }: LoadingScreenProps) 
           width: 60px;
           height: 60px;
           border: 3px solid transparent;
-          border-top-color: #ffffff;
+          border-top-color: #000000;
           border-radius: 50%;
           animation: rotate 1.5s linear infinite;
         }
@@ -59,7 +65,7 @@ export default function LoadingScreen({ isLoading = true }: LoadingScreenProps) 
           top: 7.5px;
           left: 7.5px;
           border: 3px solid transparent;
-          border-top-color: #f0f0f0;
+          border-top-color: #333333;
           border-radius: 50%;
           animation: rotate 1.2s linear infinite reverse;
         }
@@ -71,7 +77,7 @@ export default function LoadingScreen({ isLoading = true }: LoadingScreenProps) 
           top: 15px;
           left: 15px;
           border: 3px solid transparent;
-          border-top-color: #999999;
+          border-top-color: #666666;
           border-radius: 50%;
           animation: rotate 1s linear infinite;
         }
@@ -82,19 +88,19 @@ export default function LoadingScreen({ isLoading = true }: LoadingScreenProps) 
           height: 12px;
           top: 24px;
           left: 24px;
-          background-color: #ffffff;
+          background-color: #000000;
           border-radius: 50%;
           animation: pulse 1.5s ease-in-out infinite;
         }
       `}</style>
-      <div className="bg-black p-8 rounded-md shadow-lg flex flex-col items-center">
+      <div className="flex flex-col items-center">
         <div className="spinner-container">
           <div className="spinner-outer"></div>
           <div className="spinner-middle"></div>
           <div className="spinner-inner"></div>
           <div className="spinner-center"></div>
         </div>
-        <p className="mt-4 text-white font-medium">Loading...</p>
+        <p className="mt-4 text-gray-700 font-medium">Loading...</p>
       </div>
     </div>
   );

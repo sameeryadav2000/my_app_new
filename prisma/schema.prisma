@@ -242,3 +242,13 @@ model Seller {
   @@index([email])
   @@index([adminId])
 }
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  email     String   @db.VarChar(255)
+  phone     String   @db.VarChar(20)
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  @@index([email])
+}

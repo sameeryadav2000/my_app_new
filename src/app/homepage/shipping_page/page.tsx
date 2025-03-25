@@ -266,14 +266,14 @@ export default function ShippingPage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-between w-4/5 mx-auto gap-8">
-      <div className="flex items-center justify-between mb-6 md:hidden">
+    <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8">
+      <div className="flex items-center justify-between mb-6 xl:hidden">
         <h1 className="text-2xl font-bold text-black">Shipping Information</h1>
       </div>
 
-      <div className="md:w-[70%]">
+      <div className="xl:w-[70%]">
         <div className="bg-white border border-[#e0e0e0] rounded-xl shadow-md p-6 transition-all">
-          <div className="flex items-center justify-between mb-8 hidden md:flex">
+          <div className="flex items-center justify-between mb-8 hidden xl:flex">
             <h1 className="text-2xl font-bold text-black">Shipping Information</h1>
           </div>
 
@@ -359,7 +359,7 @@ export default function ShippingPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-[#333333] mb-2">First Name</label>
                   <input
@@ -392,7 +392,7 @@ export default function ShippingPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-[#333333] mb-2">Email</label>
                   <input
@@ -441,7 +441,7 @@ export default function ShippingPage() {
                 {touched.address && errors.address && <p className="text-sm text-red-500 mt-2">{errors.address}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-[#333333] mb-2">City</label>
                   <input

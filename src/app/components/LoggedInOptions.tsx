@@ -64,7 +64,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
               {/* Menu Items */}
               <div className="py-1">
                 <Link
-                  href=""
+                  href="/homepage/account"
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200"
                 >
                   <User className="w-4 h-4" />

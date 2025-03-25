@@ -36,31 +36,33 @@ const faqs = [
 ];
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const toggleFAQ = (index) => {
+  const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
   return (
-    <div className="w-full bg-white py-16">
+    <div className="w-full bg-white py-8 md:py-12 lg:py-16">
       <div className="w-[95%] md:w-[70%] mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-10">Frequently Asked Questions</h2>
+        <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-center mb-6 md:mb-8 lg:mb-10">Frequently Asked Questions</h2>
 
-        <div className="space-y-4">
+        <div className="space-y-2 md:space-y-3 lg:space-y-4">
           {faqs.map((faq, index) => (
             <div
               key={index}
               className="border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md"
             >
               <button
-                className="w-full px-6 py-4 text-left flex justify-between items-center bg-white hover:bg-gray-50 transition-colors duration-200"
+                className="w-full px-4 md:px-5 lg:px-6 py-3 md:py-3.5 lg:py-4 text-left flex justify-between items-center bg-white hover:bg-gray-50 transition-colors duration-200"
                 onClick={() => toggleFAQ(index)}
                 aria-expanded={openIndex === index}
               >
-                <span className="font-medium text-gray-900">{faq.question}</span>
+                <span className="font-medium text-sm md:text-base lg:text-base text-gray-900">{faq.question}</span>
                 <svg
-                  className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${openIndex === index ? "transform rotate-180" : ""}`}
+                  className={`w-4 h-4 md:w-5 md:h-5 text-gray-500 transition-transform duration-300 ${
+                    openIndex === index ? "transform rotate-180" : ""
+                  }`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -70,11 +72,11 @@ export default function FAQ() {
               </button>
 
               <div
-                className={`px-6 overflow-hidden transition-all duration-300 ${
-                  openIndex === index ? "max-h-96 py-4 border-t border-gray-200" : "max-h-0"
+                className={`px-4 md:px-5 lg:px-6 overflow-hidden transition-all duration-300 ${
+                  openIndex === index ? "max-h-96 py-3 md:py-3.5 lg:py-4 border-t border-gray-200" : "max-h-0"
                 }`}
               >
-                <p className="text-gray-600">{faq.answer}</p>
+                <p className="text-xs md:text-sm lg:text-base text-gray-600">{faq.answer}</p>
               </div>
             </div>
           ))}
