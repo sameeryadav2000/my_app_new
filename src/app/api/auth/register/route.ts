@@ -1,9 +1,9 @@
 // app/api/auth/register/route.js
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await request.json();
     const { email, firstName, lastName, password, confirmPassword } = body;
 
     // Validate required fields

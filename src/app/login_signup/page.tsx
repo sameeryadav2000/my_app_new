@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useNotification } from "@/context/NotificationContext"; // Adjust path as needed
-import { useLoading } from "@/context/LoadingContext"; // Adjust path as needed
-import RegistrationDialog from "@/app/components/RegistrationDialog"; // Adjust path as needed
+import { useNotification } from "@/context/NotificationContext";
+import { useLoading } from "@/context/LoadingContext";
+import RegistrationDialog from "@/app/components/RegistrationDialog";
+import ForgotPasswordDialog from "@/app/components/ForgotPasswordDialog";
 
 interface LoginData {
   email: string;
@@ -40,11 +41,13 @@ export default function LoginPage() {
   });
 
   // Registration dialog state
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState<boolean>(false);
 
   // Use the notification and loading contexts
   const { showError, showSuccess } = useNotification();
   const { showLoading, hideLoading, isLoading } = useLoading();
+
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   // Validate form on data change
   useEffect(() => {
@@ -164,16 +167,16 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-6 overflow-hidden transform transition-all">
         {/* Header */}
-        <div className="bg-black p-6">
-          <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
-          <p className="text-gray-300 text-sm mt-1">Log in to your account</p>
+        <div className="bg-black p-4 sm:p-5 md:p-6">
+          <h2 className="text-xl sm:text-xl md:text-2xl font-bold text-white">Welcome Back</h2>
+          <p className="text-xs sm:text-sm text-gray-300 mt-1">Log in to your account</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleDirectLogin} className="p-8 space-y-6">
+        <form onSubmit={handleDirectLogin} className="p-6 sm:p-7 md:p-8 space-y-4 sm:space-y-5 md:space-y-6">
           {/* Email */}
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-800">
+          <div className="space-y-1 sm:space-y-2">
+            <label htmlFor="email" className="block text-xs sm:text-sm font-semibold text-gray-800">
               Email Address *
             </label>
             <input
@@ -182,18 +185,18 @@ export default function LoginPage() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`w-full px-4 py-3 border ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border ${
                 touched.email && errors.email ? "border-red-500" : "border-gray-200"
-              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
               placeholder="example@email.com"
               disabled={isLoading}
             />
-            {touched.email && errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+            {touched.email && errors.email && <p className="text-xs sm:text-sm text-red-500">{errors.email}</p>}
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-800">
+          <div className="space-y-1 sm:space-y-2">
+            <label htmlFor="password" className="block text-xs sm:text-sm font-semibold text-gray-800">
               Password *
             </label>
             <input
@@ -202,28 +205,26 @@ export default function LoginPage() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`w-full px-4 py-3 border ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border ${
                 touched.password && errors.password ? "border-red-500" : "border-gray-200"
-              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
               placeholder="Enter your password"
               disabled={isLoading}
             />
-            {touched.password && errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+            {touched.password && errors.password && <p className="text-xs sm:text-sm text-red-500">{errors.password}</p>}
           </div>
 
           {/* Forgot Password Link */}
-          <div className="text-right">
-            <a href="/forgot-password" className="text-sm text-black hover:underline">
-              Forgot password?
-            </a>
-          </div>
+          <button type="button" onClick={() => setIsForgotPasswordOpen(true)} className="text-xs sm:text-sm text-black hover:underline">
+            Forgot password?
+          </button>
 
           {/* Action buttons */}
-          <div className="pt-6">
+          <div className="pt-4 sm:pt-5 md:pt-6">
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
+              className={`w-full py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
                 isFormValid && !isLoading ? "bg-black hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"
               }`}
             >
@@ -232,13 +233,13 @@ export default function LoginPage() {
           </div>
 
           {/* Create Account Section */}
-          <div className="text-center pt-4 border-t border-gray-200 mt-6">
-            <p className="text-gray-600 mb-4">Don't have an account?</p>
+          <div className="text-center pt-3 sm:pt-4 border-t border-gray-200 mt-4 sm:mt-5 md:mt-6">
+            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Don't have an account?</p>
             <button
               type="button"
               onClick={() => setIsRegistrationOpen(true)}
               disabled={isLoading}
-              className="w-full px-8 py-3 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
+              className="w-full px-6 sm:px-8 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
             >
               Create Account
             </button>
@@ -254,6 +255,8 @@ export default function LoginPage() {
           onSuccess={handleRegistrationSuccess}
         />
       )}
+
+      {isForgotPasswordOpen && <ForgotPasswordDialog isOpen={isForgotPasswordOpen} onClose={() => setIsForgotPasswordOpen(false)} />}
     </div>
   );
 }

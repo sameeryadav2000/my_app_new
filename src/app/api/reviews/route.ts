@@ -85,6 +85,8 @@ export async function GET(request: NextRequest) {
         rating: review.rating,
         title: review.title,
         comment: review.comment,
+        colorName: review.color?.color,
+        modelName: review.model.model,
         createdAt: review.createdAt,
         userName: review.user
           ? `${review.user.firstName ? review.user.firstName.charAt(0).toUpperCase() + review.user.firstName.slice(1) : ""} ${

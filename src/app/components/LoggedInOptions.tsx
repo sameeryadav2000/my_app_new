@@ -79,14 +79,6 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
                   Orders
                 </Link>
 
-                <Link
-                  href="/favorites"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200"
-                >
-                  <Heart className="w-4 h-4" />
-                  Favorites
-                </Link>
-
                 <button
                   onClick={() => {
                     onLogout();

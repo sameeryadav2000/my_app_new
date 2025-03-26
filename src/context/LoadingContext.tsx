@@ -18,7 +18,7 @@ interface LoadingProviderProps {
 
 export function LoadingProvider({
   children,
-  defaultTimeout = 30000, // Default 30 second safety timeout
+  defaultTimeout = 30000,
 }: LoadingProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);

@@ -202,28 +202,28 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-md">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-6 overflow-hidden transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-black p-7 flex justify-between items-center">
+        <div className="bg-black p-5 sm:p-6 md:p-7 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-white">Create Account</h2>
-            <p className="text-gray-300 text-sm mt-1">Sign up to get started</p>
+            <h2 className="text-xl sm:text-xl md:text-2xl font-bold text-white">Create Account</h2>
+            <p className="text-xs sm:text-sm text-gray-300 mt-1">Sign up to get started</p>
           </div>
           <button
             onClick={onClose}
             className="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white/10"
             aria-label="Close dialog"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <form onSubmit={handleSubmit} className="p-6 sm:p-7 md:p-8 space-y-4 sm:space-y-5 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             {/* First Name */}
-            <div className="space-y-2">
-              <label htmlFor="firstName" className="block text-sm font-semibold text-gray-800">
+            <div className="space-y-1 sm:space-y-2">
+              <label htmlFor="firstName" className="block text-xs sm:text-sm font-semibold text-gray-800">
                 First Name *
               </label>
               <input
@@ -232,18 +232,18 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className={`w-full px-4 py-3.5 border ${
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 border ${
                   touched.firstName && errors.firstName ? "border-red-500" : "border-gray-200"
-                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
                 placeholder="Enter first name"
                 disabled={isLoading}
               />
-              {touched.firstName && errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
+              {touched.firstName && errors.firstName && <p className="text-xs sm:text-sm text-red-500">{errors.firstName}</p>}
             </div>
 
             {/* Last Name */}
-            <div className="space-y-2">
-              <label htmlFor="lastName" className="block text-sm font-semibold text-gray-800">
+            <div className="space-y-1 sm:space-y-2">
+              <label htmlFor="lastName" className="block text-xs sm:text-sm font-semibold text-gray-800">
                 Last Name *
               </label>
               <input
@@ -252,19 +252,19 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className={`w-full px-4 py-3.5 border ${
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 border ${
                   touched.lastName && errors.lastName ? "border-red-500" : "border-gray-200"
-                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+                } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
                 placeholder="Enter last name"
                 disabled={isLoading}
               />
-              {touched.lastName && errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
+              {touched.lastName && errors.lastName && <p className="text-xs sm:text-sm text-red-500">{errors.lastName}</p>}
             </div>
           </div>
 
           {/* Email */}
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-800">
+          <div className="space-y-1 sm:space-y-2">
+            <label htmlFor="email" className="block text-xs sm:text-sm font-semibold text-gray-800">
               Email Address *
             </label>
             <input
@@ -273,18 +273,18 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`w-full px-4 py-3.5 border ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 border ${
                 touched.email && errors.email ? "border-red-500" : "border-gray-200"
-              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
               placeholder="example@email.com"
               disabled={isLoading}
             />
-            {touched.email && errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+            {touched.email && errors.email && <p className="text-xs sm:text-sm text-red-500">{errors.email}</p>}
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-800">
+          <div className="space-y-1 sm:space-y-2">
+            <label htmlFor="password" className="block text-xs sm:text-sm font-semibold text-gray-800">
               Password *
             </label>
             <input
@@ -293,18 +293,18 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`w-full px-4 py-3.5 border ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 border ${
                 touched.password && errors.password ? "border-red-500" : "border-gray-200"
-              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
               placeholder="Create password (min. 8 characters)"
               disabled={isLoading}
             />
-            {touched.password && errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+            {touched.password && errors.password && <p className="text-xs sm:text-sm text-red-500">{errors.password}</p>}
           </div>
 
           {/* Confirm Password */}
-          <div className="space-y-2">
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-800">
+          <div className="space-y-1 sm:space-y-2">
+            <label htmlFor="confirmPassword" className="block text-xs sm:text-sm font-semibold text-gray-800">
               Confirm Password *
             </label>
             <input
@@ -313,24 +313,28 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className={`w-full px-4 py-3.5 border ${
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 md:py-3.5 border ${
                 touched.confirmPassword && errors.confirmPassword ? "border-red-500" : "border-gray-200"
-              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm`}
+              } rounded-xl focus:ring-2 focus:ring-black focus:border-transparent shadow-sm text-xs sm:text-sm`}
               placeholder="Confirm your password"
               disabled={isLoading}
             />
-            {touched.confirmPassword && errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
+            {touched.confirmPassword && errors.confirmPassword && (
+              <p className="text-xs sm:text-sm text-red-500">{errors.confirmPassword}</p>
+            )}
           </div>
 
           {/* Terms and Conditions */}
-          <div className="text-sm text-gray-600 mt-2">By signing up, you agree to our Terms of Service and Privacy Policy.</div>
+          <div className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2">
+            By signing up, you agree to our Terms of Service and Privacy Policy.
+          </div>
 
           {/* Action buttons */}
-          <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+          <div className="flex justify-end gap-2 sm:gap-3 md:gap-4 pt-4 sm:pt-5 md:pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-8 py-3.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
+              className="px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 text-xs sm:text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
               disabled={isLoading}
             >
               Cancel
@@ -338,14 +342,14 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
             <button
               type="submit"
               disabled={isLoading}
-              className={`px-8 py-3.5 text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
+              className={`px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5 text-xs sm:text-sm font-semibold text-white rounded-xl transition-all shadow-md ${
                 isFormValid && !isLoading ? "bg-black hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"
               }`}
             >
               {isLoading ? (
                 <span className="flex items-center">
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    className="animate-spin -ml-1 mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -357,7 +361,7 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating Account...
+                  <span className="text-xs sm:text-sm">Creating Account...</span>
                 </span>
               ) : (
                 "Sign Up"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import LoginLogout from "../components/LoginLogout";
 import { useCart } from "@/context/CartContext";
+import Logo from "@/app/components/Logo";
 
 export default function Navbar() {
   const { cart } = useCart();
@@ -14,9 +15,7 @@ export default function Navbar() {
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold tracking-wider text-black">RECELL</span>
-            </Link>
+            <Logo />
 
             {/* Right Navigation */}
             <div className="flex items-center space-x-5">

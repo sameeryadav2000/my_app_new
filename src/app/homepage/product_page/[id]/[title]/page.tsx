@@ -402,7 +402,8 @@ export default function ProductListingPage() {
               </p>
             )}
           </div>
-          <div className="w-[95%] md:w-[70%] mx-auto">{id && <ReviewList modelId={id} />}</div>
+
+          <div>{id && <ReviewList modelId={id} />}</div>
         </div>
       </div>
     </>

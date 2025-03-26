@@ -219,11 +219,11 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
             <span className="ml-3 text-sm md:text-lg lg:text-lg text-gray-600">({reviews.length} total reviews)</span>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex flex-col md:flex-row gap-8 md:gap-12 lg:gap-16">
             {/* Filters - Left Side */}
             <div className="w-full md:w-1/3">
               <h3 className="text-base md:text-base lg:text-lg font-medium mb-4">Filter by stars</h3>
-              <div className="space-y-4 mb-8">
+              <div className="space-y-4 mb-12 md:mb-14 lg:mb-16">
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="radio"
@@ -302,7 +302,7 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
 
               {/* Model Filter */}
               {uniqueModels.length > 1 && (
-                <div className="mb-8">
+                <div className="mb-8 md:mb-10 lg:mb-12">
                   <h3 className="text-base md:text-base lg:text-lg font-medium mb-4">Filter by model</h3>
                   <div className="space-y-2">
                     <label className="flex items-center cursor-pointer">
@@ -440,7 +440,6 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
           </div>
         </>
       )}
-
       {reviews.length === 0 && !error && (
         <div className="text-center py-12 rounded-lg border border-gray-100">
           <div className="mx-auto w-16 h-16 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
