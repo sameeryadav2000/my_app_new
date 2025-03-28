@@ -71,7 +71,6 @@ export default function OrderConfirmationPage() {
           const { paymentIntent } = await stripe!.retrievePaymentIntent(paymentIntentClientSecret);
 
           if (paymentIntent?.status === "succeeded") {
-            debugger;
             const shippingData = sessionStorage.getItem("shippingInfo");
 
             if (cart.items.length && shippingData) {

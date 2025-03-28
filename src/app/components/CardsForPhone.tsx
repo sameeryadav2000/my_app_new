@@ -1,4 +1,5 @@
 import React from "react";
+import { formatNPR } from "@/utils/formatters";
 
 interface CardProps {
   title: string;
@@ -41,7 +42,7 @@ const CardsForPhone: React.FC<CardProps> = ({
 
         <p className={`${startingTextClassName}`}>{startingText}</p>
 
-        <div className={`${priceClassName}`}>NPR {price}</div>
+        <div className={priceClassName}>{formatNPR(price)}</div>
       </div>
     </div>
   );

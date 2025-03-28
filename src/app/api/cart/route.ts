@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         storage: item.storage,
         colorId: item.colorId,
         colorName: item.color.color,
+        sellerId: item.sellerId,
         price: item.price,
         quantity: item.quantity,
         image: item.image,
@@ -159,6 +160,7 @@ export async function POST(request: NextRequest) {
             condition: item.condition,
             storage: item.storage,
             colorId: parseInt(item.colorId),
+            sellerId: item.sellerId,
             price: item.price,
             quantity: isFullCart ? item.quantity : 1,
             image: item.image,
@@ -229,8 +231,17 @@ export async function PUT(request: NextRequest) {
           colorId: item.colorId,
           price: item.price,
           quantity: item.quantity,
+          sellerId: item.sellerId,
           image: item.image,
           orderId: orderNumber,
+        },
+      });
+
+      await prisma.phoneModelDetails.update({
+        where: { id: parseInt(item.id) },
+        data: {
+          purchased: true,
+          available: false,
         },
       });
     }

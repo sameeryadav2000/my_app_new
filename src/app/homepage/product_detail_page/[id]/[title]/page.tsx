@@ -11,6 +11,7 @@ import { CartItem, Cart } from "@/context/CartContext";
 import { useCart } from "@/context/CartContext";
 import StickyHeader from "@/app/components/StickyHeader";
 import ReviewList from "@/app/components/ReviewList";
+import { formatNPR } from "@/utils/formatters";
 
 interface ConditionOption {
   condition: string;
@@ -30,6 +31,8 @@ interface ColorOption {
   }[];
   price: number;
   phoneId: number;
+  sellerName: string;
+  sellerId: string;
   idForReview: number;
 }
 
@@ -51,7 +54,9 @@ export default function ProductPage() {
 
   const [priceSelected, setPriceSelected] = useState<number>(0);
   const [phoneId, setPhoneId] = useState<string>("");
+  const [sellerId, setSellerId] = useState<string>("");
   const [idForReview, setIdForReview] = useState<number>(0);
+  const [sellerName, setSellerName] = useState<string>("");
   const [colorId, setColorId] = useState<number>(0);
   const [modelImages, setModelImages] = useState<{ image: string; mainImage: boolean }[]>([]);
 
@@ -148,6 +153,8 @@ export default function ProductPage() {
         setColorId(option.colorId);
         setIdForReview(option.idForReview);
         setPriceSelected(option.price);
+        setSellerId(option.sellerId);
+        setSellerName(option.sellerName);
         setPhoneId(option.id.toString());
         setModelImages(option.images);
       }
@@ -193,14 +200,7 @@ export default function ProductPage() {
 
   const imageToUse =
     modelImages.find((img) => img.mainImage)?.image ||
-    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">
-      <rect width="200" height="200" fill="#F3F4F6"/>
-      <path d="M100 70C89.5075 70 81 78.5075 81 89C81 99.4925 89.5075 108 100 108C110.492 108 119 99.4925 119 89C119 78.5075 110.492 70 100 70Z" fill="#D1D5DB"/>
-      <path d="M140 140H60C60 118.909 77.9086 101 99 101H101C122.091 101 140 118.909 140 140Z" fill="#D1D5DB"/>
-      <path d="M160 40H40C37.7909 40 36 41.7909 36 44V156C36 158.209 37.7909 160 40 160H160C162.209 160 164 158.209 164 156V44C164 41.7909 162.209 40 160 40Z" stroke="#9CA3AF" stroke-width="4"/>
-    </svg>
-  `)}`;
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect fill='%23eee'/%3E%3C/svg%3E";
 
   const handleAddToCart = async () => {
     if (!phoneModelId || Array.isArray(phoneModelId)) {
@@ -214,6 +214,7 @@ export default function ProductPage() {
       storage: selectedStorage,
       colorId: colorId,
       price: priceSelected,
+      sellerId: sellerId,
       quantity: 1,
       image: imageToUse || "",
     };
@@ -226,7 +227,8 @@ export default function ProductPage() {
         item.id === newItem.id &&
         item.condition === newItem.condition &&
         item.storage === newItem.storage &&
-        item.colorId === newItem.colorId
+        item.colorId === newItem.colorId &&
+        item.sellerId === newItem.sellerId
     );
 
     let updatedCart: Cart;
@@ -445,7 +447,7 @@ export default function ProductPage() {
               <div className="mb-5">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-baseline">
-                    <span className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold tracking-tight">NPR {priceSelected}</span>
+                    <span className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold tracking-tight">{formatNPR(priceSelected)}</span>
                   </div>
 
                   <button
@@ -569,37 +571,61 @@ export default function ProductPage() {
               <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5">Select the condition</h2>
 
               <div className="grid grid-cols-2 gap-3 md:gap-3 lg:gap-4">
-                {conditionOptions.length > 0 ? (
-                  conditionOptions.map((option, index) => (
+                {["New", "Excellent", "Good", "Fair"].map((condition, index) => {
+                  const isAvailable = conditionOptions.some((option) => option.condition === condition);
+                  const isNew = condition === "New";
+
+                  return (
                     <label
                       key={index}
-                      className={`flex items-center gap-2 md:gap-3 lg:gap-4 p-1.5 md:p-1.5 lg:p-2 border rounded-lg cursor-pointer 
-          transition-all duration-200 ease-in-out
-          ${selectedCondition === option.condition ? "border-black bg-white" : "border-black hover:border-black"}`}
+                      className={`flex flex-col border rounded-lg overflow-hidden
+          transition-all duration-200 ease-in-out relative
+          ${!isAvailable ? "opacity-40 bg-gray-100 border-gray-300 cursor-not-allowed" : "cursor-pointer"}
+          ${selectedCondition === condition && isAvailable ? "border-black bg-white" : "border-black hover:border-black"}`}
                     >
-                      <input
-                        type="radio"
-                        name="condition"
-                        className="h-3 w-3 md:h-3.5 lg:h-4 md:w-3.5 lg:w-4 accent-black"
-                        value={option.condition}
-                        checked={selectedCondition === option.condition}
-                        onChange={handleConditionChange}
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm md:text-lg lg:text-base capitalize">{option.condition}</span>
-                        {selectedCondition === option.condition && selectedColor ? (
-                          <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1">
-                            NPR {colorOptions.find((opt) => opt.colorName === selectedColor)?.price || "—"}
+                      {isNew && isAvailable && (
+                        <div className="w-full bg-black text-white text-xs text-center py-0.5 font-medium">
+                          <span className="inline-block mr-1">✨</span>
+                          Brand New
+                          <span className="inline-block ml-1">✨</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 p-1.5 md:p-1.5 lg:p-2">
+                        <input
+                          type="radio"
+                          name="condition"
+                          className="h-3 w-3 md:h-3.5 lg:h-4 md:w-3.5 lg:w-4 accent-black"
+                          value={condition}
+                          checked={selectedCondition === condition}
+                          onChange={handleConditionChange}
+                          disabled={!isAvailable}
+                        />
+
+                        <div className="flex flex-col">
+                          <span className={`text-sm md:text-lg lg:text-base capitalize ${!isAvailable ? "line-through" : ""}`}>
+                            {condition}
                           </span>
-                        ) : (
-                          <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
-                        )}
+                          {selectedCondition === condition && selectedColor && isAvailable ? (
+                            <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1">
+                              {formatNPR(colorOptions.find((opt) => opt.colorName === selectedColor)?.price)}
+                            </span>
+                          ) : (
+                            <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
+                          )}
+                        </div>
                       </div>
+
+                      {!isAvailable && (
+                        <span className="absolute inset-0 bg-gray-200 bg-opacity-30 flex items-center justify-center">
+                          <span className="text-xs text-gray-500 font-medium px-1 py-0.5 rounded bg-white bg-opacity-80">
+                            Not Available
+                          </span>
+                        </span>
+                      )}
                     </label>
-                  ))
-                ) : (
-                  <p className="col-span-full text-black text-sm md:text-sm lg:text-base">No condition options available</p>
-                )}
+                  );
+                })}
               </div>
               <div className="h-4 md:h-5 lg:h-6"></div>
 
@@ -655,7 +681,7 @@ export default function ProductPage() {
                       </div>
                       {selectedStorage === option.storage && selectedColor ? (
                         <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1 tracking-tight">
-                          NPR {colorOptions.find((opt) => opt.colorName === selectedColor)?.price || "—"}
+                          {formatNPR(colorOptions.find((opt) => opt.colorName === selectedColor)?.price)}
                         </span>
                       ) : (
                         <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
@@ -697,7 +723,7 @@ export default function ProductPage() {
 
                       <div className="flex flex-col">
                         <span className="text-sm md:text-lg lg:text-base text-black capitalize">{option.colorName}</span>
-                        <span className="text-sm md:text-lg lg:text-lg text-black">NPR {option.price}</span>
+                        <span className="text-sm md:text-lg lg:text-lg text-black">{formatNPR(option.price)}</span>
                       </div>
                     </label>
                   ))
@@ -732,7 +758,7 @@ export default function ProductPage() {
                   </div>
 
                   <div className="flex items-baseline gap-1.5 md:gap-2">
-                    <h2 className="text-base md:text-lg lg:text-xl font-bold">NPR {priceSelected}</h2>
+                    <h2 className="text-base md:text-lg lg:text-xl font-bold">{formatNPR(priceSelected)}</h2>
                   </div>
                 </div>
 
@@ -770,11 +796,7 @@ export default function ProductPage() {
                 </div>
 
                 <div className="mt-2 md:mt-3 text-sm md:text-sm text-black">
-                  Proudly refurbished by{" "}
-                  <a href="#" className="font-medium">
-                    Go TechPro Global Inc
-                  </a>{" "}
-                  🇺🇸
+                  Proudly refurbished by <span className="font-medium">{sellerName}</span> 🇳🇵
                 </div>
               </div>
             </div>

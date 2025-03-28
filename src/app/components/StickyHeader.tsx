@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatNPR } from "@/utils/formatters";
 
 interface StickyHeaderProps {
   title: string;
@@ -51,7 +52,7 @@ export default function StickyHeader({ title, condition, storage, color, price, 
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end">
               <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">Price</span>
-              <span className="text-lg md:text-lg lg:text-xl">NPR {price}</span>
+              <span className="text-lg md:text-lg lg:text-xl">{formatNPR(price)}</span>
             </div>
 
             <button

@@ -9,6 +9,7 @@ export interface CartItem {
   titleName?: string;
   condition: string;
   orderId?: string;
+  sellerId: string;
   colorId: number;
   colorName?: string;
   storage: string;

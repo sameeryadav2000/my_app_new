@@ -4,6 +4,7 @@ import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useCart } from "@/context/CartContext";
 import OrderSummary from "@/app/components/OrderSummary";
+import { formatNPR } from "@/utils/formatters";
 
 export default function CartPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
@@ -67,7 +68,7 @@ export default function CartPage() {
                 <p className="text-xs xl:text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Color:</span> {item.colorName}
                 </p>
-                <p className="text-base xl:text-lg font-medium text-gray-900">NPR {item.price}</p>
+                <p className="text-base xl:text-lg font-medium text-gray-900">{formatNPR(item.price)}</p>
                 <p className="text-xs xl:text-sm text-gray-600">
                   <span className="font-medium text-gray-800">Quantity:</span>
                   <span className="ml-1.5 bg-gray-100 text-gray-800 px-2 xl:px-3 py-0.5 xl:py-1 rounded-md text-xs">{item.quantity}</span>

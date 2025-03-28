@@ -10,6 +10,7 @@ import Link from "next/link";
 import { CartItem } from "@/context/CartContext";
 import ReviewComponent from "@/app/components/ReviewForm";
 import { ReviewData } from "@/app/components/ReviewForm";
+import { formatNPR } from "@/utils/formatters";
 
 interface ReviewApiData extends ReviewData {
   productColorId: number;
@@ -140,14 +141,6 @@ export default function OrdersPage() {
     return reviewsMap;
   };
 
-  // Function to format price
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "NPR",
-    }).format(price);
-  };
-
   const handleReviewOrder = (item: PurchasedItem) => {
     setCurrentProduct(item);
     setShowReview(true);
@@ -247,7 +240,7 @@ export default function OrdersPage() {
                     <div className="h-6 border-l border-gray-300"></div>
                     <div>
                       <p className="text-xs md:text-sm text-gray-500">TOTAL</p>
-                      <p className="font-medium text-sm md:text-base">{formatPrice(order.totalPrice)}</p>
+                      <p className="font-medium text-sm md:text-base">{formatNPR(order.totalPrice)}</p>
                     </div>
                   </div>
 
@@ -255,7 +248,6 @@ export default function OrdersPage() {
                     <span className="mr-2 bg-gray-100 text-gray-800 text-xs md:text-sm font-medium px-2 md:px-3 py-0.5 md:py-1 rounded-full">
                       {order.totalItems} {order.totalItems === 1 ? "item" : "items"}
                     </span>
-                    <button className="text-blue-600 hover:text-blue-800 font-medium text-xs md:text-sm">Track Package</button>
                   </div>
                 </div>
               </div>
@@ -280,7 +272,7 @@ export default function OrdersPage() {
                         </div>
                         <div>
                           <p className="text-xs md:text-sm text-gray-500">Storage</p>
-                          <p className="font-medium text-sm md:text-base">{item.storage}GB</p>
+                          <p className="font-medium text-sm md:text-base">{item.storage}</p>
                         </div>
                         <div>
                           <p className="text-xs md:text-sm text-gray-500">Color</p>
@@ -293,7 +285,7 @@ export default function OrdersPage() {
                       </div>
 
                       <div className="flex justify-between items-end">
-                        <div className="text-gray-900 font-bold text-base md:text-lg">{formatPrice(item.price * item.quantity)}</div>
+                        <div className="text-gray-900 font-bold text-base md:text-lg">{formatNPR(item.price * item.quantity)}</div>
 
                         <div className="flex space-x-2">
                           {productReviews[item.id]?.hasReviewed ? (
@@ -328,9 +320,6 @@ export default function OrdersPage() {
                               Write a Review
                             </button>
                           )}
-                          <button className="text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg px-3 md:px-4 py-1 md:py-2 transition-colors text-xs md:text-sm">
-                            Buy Again
-                          </button>
                         </div>
                       </div>
                     </div>

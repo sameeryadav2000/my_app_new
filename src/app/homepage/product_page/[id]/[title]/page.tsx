@@ -293,11 +293,11 @@ export default function ProductListingPage() {
                       priceClassName="text-base md:text-lg lg:text-lg text-black py-0.5"
                     />
                   </div>
-                  <div className="order-1 sm:hidden w-1/2 p-2 md:p-3">
+                  <div className="order-1 sm:hidden w-1/3 p-2">
                     <img
                       src={phoneModel.image}
                       alt={phoneModel.model}
-                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                      className="w-full h-18 object-contain transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                 </div>

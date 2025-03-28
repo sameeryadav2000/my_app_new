@@ -39,7 +39,6 @@ model PhoneModel {
   @@index([phoneId])
 }
 
-
 model PhoneModelDetails {
   id        Int         @id @default(autoincrement())
   phoneId   Int     
@@ -49,7 +48,6 @@ model PhoneModelDetails {
 
   colorId   Int?      
   color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
-
   price     Float
   available Boolean     @default(true)
   purchased Boolean     @default(false)
@@ -58,7 +56,7 @@ model PhoneModelDetails {
   seller    Seller?     @relation(fields: [sellerId], references: [id])
 
   createdBy String
-  user      User        @relation(fields: [createdBy], references: [id])
+  admin     Admin       @relation(fields: [createdBy], references: [id])  // Changed from User to Admin
 
   createdAt DateTime?   @default(now())
   updatedAt DateTime?   @updatedAt
@@ -129,7 +127,6 @@ model User {
   avatar            String?        @db.Text   
   
   isActive          Boolean        @default(true)
-  admin             Boolean        @default(false)
   
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
@@ -139,8 +136,6 @@ model User {
   cartItems         CartItem[]
   purchasedItems    PurchasedItem[]
   reviews           Review[]  
-  managedSellers    Seller[]     
-  phoneModelDetails PhoneModelDetails[] @relation
 
   @@index([email])
   @@index([externalId])
@@ -174,70 +169,79 @@ model Review {
 
 
 model CartItem {
-  id         String     @id @default(uuid())
-  userId     String     // References User.id
-  itemId     String     
-  phoneModelId    Int        
-  colorId    Int        
-  condition  String     @db.VarChar(50)
-  storage    String     @db.VarChar(50)
-  price      Decimal    @db.Decimal(10, 2)
-  quantity   Int
-  image      String     @db.VarChar(255)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  userId       String     // References User.id
+  itemId       String     
+  phoneModelId Int        
+  colorId      Int        
+  sellerId     String?     // Added sellerId field
+  condition    String     @db.VarChar(50)
+  storage      String     @db.VarChar(50)
+  price        Decimal    @db.Decimal(10, 2)
+  quantity     Int
+  image        String     @db.VarChar(255)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phones     PhoneModel @relation(fields: [phoneModelId], references: [id])
-  color      Color      @relation(fields: [colorId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phones       PhoneModel @relation(fields: [phoneModelId], references: [id])
+  color        Color      @relation(fields: [colorId], references: [id])
+  seller       Seller?     @relation(fields: [sellerId], references: [id]) // Added relation to Seller
 
   @@index([userId])
   @@index([phoneModelId])
   @@index([colorId])
+  @@index([sellerId])    // Added index for sellerId
 }
 
 model PurchasedItem {
-  id         String   @id @default(uuid())
-  userId     String   
-  itemId     String
-  phoneModelId    Int  
-  colorId    Int        
-  condition  String   @db.VarChar(50)
-  storage    String   @db.VarChar(50)
-  price      Decimal  @db.Decimal(10, 2)
-  quantity   Int
-  image      String   @db.VarChar(255)
-  orderId    String   
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(uuid())
+  userId        String
+  itemId        String
+  phoneModelId  Int
+  colorId       Int
+  sellerId      String          // Added sellerId field
+  condition     String   @db.VarChar(50)
+  storage       String   @db.VarChar(50)
+  price         Decimal  @db.Decimal(10, 2)
+  quantity      Int
+  image         String   @db.VarChar(255)
+  orderId       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone      PhoneModel @relation(fields: [phoneModelId], references: [id])
-  color      Color      @relation(fields: [colorId], references: [id])
-  review     Review?
-
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone         PhoneModel @relation(fields: [phoneModelId], references: [id])
+  color         Color    @relation(fields: [colorId], references: [id])
+  seller        Seller   @relation(fields: [sellerId], references: [id])  // Added relation to Seller
+  review        Review?
+  
   @@index([userId])
   @@index([phoneModelId])
   @@index([orderId])
+  @@index([sellerId])                 // Added index for sellerId
 }
 
+
 model Seller {
-  id            String   @id @default(uuid())
-  businessName  String   @db.VarChar(255)
-  name          String   @db.VarChar(100)
-  email         String   @unique @db.VarChar(255)
-  phone         String   @db.VarChar(20)
-  address       String   @db.Text
-  taxId         String   @db.VarChar(50)
-  isActive      Boolean  @default(true)
+  id            String      @id @default(uuid())
+  businessName  String      @db.VarChar(255)
+  name          String      @db.VarChar(100)
+  email         String      @unique @db.VarChar(255)
+  phone         String      @db.VarChar(20)
+  address       String      @db.Text
+  taxId         String      @db.VarChar(50)
+  isActive      Boolean     @default(true)
   
   adminId       String
-  admin         User     @relation(fields: [adminId], references: [id])
+  admin         Admin       @relation(fields: [adminId], references: [id])
   
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
   phoneDetails  PhoneModelDetails[]
+  purchasedItems PurchasedItem[]
+  cartItems     CartItem[]  // Added relation to CartItem
   
   @@index([email])
   @@index([adminId])
@@ -251,4 +255,27 @@ model ContactMessage {
   createdAt DateTime @default(now())
   
   @@index([email])
+}
+
+model Admin {
+  id                String             @id @default(uuid())
+  externalId        String?            @unique  // Keycloak admin user ID
+  email             String             @unique
+  emailVerified     Boolean            @default(false)
+  
+  firstName         String?            @db.VarChar(50)
+  lastName          String?            @db.VarChar(50)
+  phoneNumber       String?            @db.VarChar(20)
+  avatar            String?            @db.Text   
+  
+  isActive          Boolean            @default(true)
+  
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  lastLoginAt       DateTime?
+
+  managedSellers    Seller[]
+  phoneModelDetails PhoneModelDetails[] // Added this relation
+  @@index([email])
+  @@index([externalId])
 }

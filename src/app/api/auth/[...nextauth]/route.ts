@@ -18,7 +18,6 @@ declare module "next-auth" {
       phoneNumber: string | null;
       avatar: string | null;
       isActive: boolean;
-      admin: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -48,7 +47,6 @@ interface ExtendedUser extends User {
   refreshToken?: string;
   expiresAt?: number;
   providerAccountId?: string;
-  admin?: boolean;
 }
 
 function requestRefreshOfAccessToken(token: JWT) {
@@ -166,8 +164,6 @@ export const authOptions: AuthOptions = {
           throw new Error("Unable to retrieve user ID (sub) from Keycloak userinfo");
         }
 
-        const isAdmin = Array.isArray(userInfo.roles) && userInfo.roles.includes("app_admin");
-
         return {
           id: userInfo.sub,
           email: userInfo.email || credentials.username,
@@ -178,7 +174,6 @@ export const authOptions: AuthOptions = {
           refreshToken: tokenData.refresh_token,
           idToken: tokenData.id_token || tokenData.access_token,
           expiresAt: Math.floor(Date.now() / 1000) + (tokenData.expires_in || 3600),
-          admin: isAdmin,
         };
       },
     }),
@@ -219,7 +214,6 @@ export const authOptions: AuthOptions = {
             email: user.email,
             firstName,
             lastName,
-            admin: user.admin,
             emailVerified: isEmailVerified,
             lastLoginAt: new Date(),
           },
@@ -227,7 +221,6 @@ export const authOptions: AuthOptions = {
             lastLoginAt: new Date(),
             email: user.email,
             emailVerified: isEmailVerified,
-            admin: user.admin,
             ...(firstName && { firstName }),
             ...(lastName && { lastName }),
           },
@@ -326,7 +319,6 @@ export const authOptions: AuthOptions = {
               lastName: true,
               email: true,
               emailVerified: true,
-              admin: true,
               phoneNumber: true,
               avatar: true,
               isActive: true,
@@ -338,7 +330,6 @@ export const authOptions: AuthOptions = {
             session.user.firstName = user.firstName;
             session.user.lastName = user.lastName;
             session.user.emailVerified = user.emailVerified;
-            session.user.admin = user.admin;
             session.user.phoneNumber = user.phoneNumber;
             session.user.avatar = user.avatar;
             session.user.isActive = user.isActive;

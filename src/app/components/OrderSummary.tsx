@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { formatNPR } from "@/utils/formatters";
 
 interface OrderSummaryProps {
   currentPage: "cart_page" | "shipping_page" | "payment_page";
@@ -58,7 +59,7 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
                 <div className="pl-3 xl:pl-4 flex-grow">
                   <div className="flex justify-between items-start">
                     <span className="font-medium text-gray-900 text-sm xl:text-base">{item.titleName}</span>
-                    <span className="font-medium text-sm xl:text-base">NPR {item.price}</span>
+                    <span className="font-medium text-sm xl:text-base">{formatNPR(item.price)}</span>
                   </div>
                   <div className="flex pt-1 xl:pt-2">
                     <span className="text-xs xl:text-sm text-gray-500">Qty:</span>
@@ -88,7 +89,7 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
         <div className="space-y-2 xl:space-y-3 border-t border-gray-200 pt-3 xl:pt-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-600 text-sm xl:text-base">Subtotal</span>
-            <span className="font-medium text-sm xl:text-base">NPR {cart.subTotalPrice}</span>
+            <span className="font-medium text-sm xl:text-base">{formatNPR(cart.subTotalPrice)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600 text-sm xl:text-base">Shipping Fee</span>
@@ -96,17 +97,17 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600 text-sm xl:text-base">Quality Assurance Fee</span>
-            <span className="text-sm xl:text-base">NPR {qualityAssuranceFee}</span>
+            <span className="text-sm xl:text-base">{formatNPR(qualityAssuranceFee)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600 text-sm xl:text-base">Estimated Tax ({tax}%)</span>
-            <span className="text-sm xl:text-base">NPR {taxAmount.toFixed(2)}</span>
+            <span className="text-sm xl:text-base">{formatNPR(taxAmount.toFixed(2))}</span>
           </div>
         </div>
 
         <div className="flex justify-between items-center py-3 xl:py-4 mt-3 xl:mt-4 border-t border-gray-200">
           <span className="font-semibold text-base xl:text-lg">Total</span>
-          <span className="font-semibold text-base xl:text-lg">NPR {Math.round(totalAmount)}</span>
+          <span className="font-semibold text-base xl:text-lg">{formatNPR(Math.round(totalAmount))}</span>
         </div>
 
         {currentPage === "cart_page" && (

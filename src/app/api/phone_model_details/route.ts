@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
     const baseQueryConfig = {
       where: {
         phoneId,
+        available: true,
+        purchased: false,
         ...(condition && { condition }),
         ...(storage && { storage }),
       },
@@ -65,8 +67,10 @@ export async function GET(request: NextRequest) {
         id: true,
         colorId: true,
         phoneId: true,
+        sellerId: true,
         price: true,
         color: true, // This will select all fields from the color model
+        seller: true,
         phone: {
           include: {
             phone: true, // This will include all fields from the nested phone relation
@@ -112,6 +116,8 @@ export async function GET(request: NextRequest) {
       phoneId: option.phoneId,
       idForReview: option.phoneId,
       price: option.price,
+      sellerName: option.seller?.businessName,
+      sellerId: option.sellerId,
       images: option.images,
     }));
 
