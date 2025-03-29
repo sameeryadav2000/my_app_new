@@ -9,33 +9,30 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-
 
 //TABLES
 
 model Phone {
-  id                  Int                 @id @default(autoincrement())
-  phone               String              @db.VarChar(255)
-  image               String?             @db.VarChar(255) 
-  modelDropdowns      PhoneModel[]
+  id             Int          @id @default(autoincrement())
+  phone          String       
+  image          String?      
+  modelDropdowns PhoneModel[]
 }
 
 model PhoneModel {
-  id              Int    @id @default(autoincrement())
-  model           String @db.VarChar(255)
+  id              Int                 @id @default(autoincrement())
+  model           String              
   phoneId         Int    
-  phone           Phone  @relation(fields: [phoneId], references: [id])
+  phone           Phone               @relation(fields: [phoneId], references: [id])
   details         PhoneModelDetails[]
   images          ModelImage[]
   cartItems       CartItem[]
   purchasedItems  PurchasedItem[]
-  reviews             Review[]  // Add this line for the new relation
+  reviews         Review[]  
 
-  
   @@index([phoneId])
 }
 
@@ -43,8 +40,8 @@ model PhoneModelDetails {
   id        Int         @id @default(autoincrement())
   phoneId   Int     
   phone     PhoneModel  @relation(fields: [phoneId], references: [id])
-  storage   String      @db.VarChar(50)
-  condition String      @db.VarChar(50)
+  storage   String      
+  condition String      
 
   colorId   Int?      
   color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
@@ -56,7 +53,7 @@ model PhoneModelDetails {
   seller    Seller?     @relation(fields: [sellerId], references: [id])
 
   createdBy String
-  admin     Admin       @relation(fields: [createdBy], references: [id])  // Changed from User to Admin
+  admin     Admin       @relation(fields: [createdBy], references: [id])
 
   createdAt DateTime?   @default(now())
   updatedAt DateTime?   @updatedAt
@@ -67,22 +64,21 @@ model PhoneModelDetails {
 }
 
 model Color {
-  id              Int      @id @default(autoincrement())
-  color           String   @db.VarChar(50)
+  id                Int                  @id @default(autoincrement())
+  color             String               
 
-  phoneModelDetails PhoneModelDetails[] @relation("ColorToPhoneModelDetails")
-  modelImages       ModelImage[]        @relation("ColorToModelImage")
+  phoneModelDetails PhoneModelDetails[]  @relation("ColorToPhoneModelDetails")
+  modelImages       ModelImage[]         @relation("ColorToModelImage")
   cartItems         CartItem[]
-  purchasedItems    PurchasedItem[]     // Fixed capitalization (was PurchasedItems)
-  reviews           Review[]            // Add this line for the new relation
+  purchasedItems    PurchasedItem[]
+  reviews           Review[]
 }
 
 
 model ModelImage {
   id           Int          @id @default(autoincrement())
-  image        String       @db.VarChar(255)
+  image        String       
   mainImage    Boolean      @default(false)
-
 
   colorId      Int?    
   color        Color?       @relation("ColorToModelImage", fields: [colorId], references: [id])
@@ -108,7 +104,7 @@ model ShippingInfo {
   updatedAt DateTime @updatedAt
   
   // Add user relation
-  userId    String   @unique // Foreign key
+  userId    String   @unique
   user      User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
@@ -121,10 +117,10 @@ model User {
   email             String         @unique
   emailVerified     Boolean        @default(false)
   
-  firstName         String?        @db.VarChar(50)
-  lastName          String?        @db.VarChar(50)
-  phoneNumber       String?        @db.VarChar(20)
-  avatar            String?        @db.Text   
+  firstName         String?        
+  lastName          String?        
+  phoneNumber       String?        
+  avatar            String?        
   
   isActive          Boolean        @default(true)
   
@@ -144,8 +140,8 @@ model User {
 model Review {
   id             String     @id @default(uuid())
   rating         Int               
-  title          String     @db.VarChar(255)
-  comment        String     @db.Text
+  title          String     
+  comment        String     
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   
@@ -153,45 +149,45 @@ model Review {
   user           User       @relation(fields: [userId], references: [id])
   
   modelId        Int
-  model          PhoneModel      @relation(fields: [modelId], references: [id])  // Changed from PhoneModelDetails to PhoneModel
+  model          PhoneModel @relation(fields: [modelId], references: [id])
   
-  colorId        Int?       // Added colorId field (optional with ?)
-  color          Color?     @relation(fields: [colorId], references: [id])  // Added relation to Color
+  colorId        Int?
+  color          Color?     @relation(fields: [colorId], references: [id])
 
   purchasedItemId String?   @unique
   purchasedItem   PurchasedItem? @relation(fields: [purchasedItemId], references: [id])
 
   @@index([userId])
   @@index([modelId])
-  @@index([colorId])      // Added index for colorId
+  @@index([colorId])
   @@index([purchasedItemId]) 
 }
 
 
 model CartItem {
   id           String     @id @default(uuid())
-  userId       String     // References User.id
+  userId       String
   itemId       String     
   phoneModelId Int        
   colorId      Int        
-  sellerId     String?     // Added sellerId field
-  condition    String     @db.VarChar(50)
-  storage      String     @db.VarChar(50)
-  price        Decimal    @db.Decimal(10, 2)
+  sellerId     String?
+  condition    String     
+  storage      String     
+  price        Decimal    
   quantity     Int
-  image        String     @db.VarChar(255)
+  image        String     
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   phones       PhoneModel @relation(fields: [phoneModelId], references: [id])
   color        Color      @relation(fields: [colorId], references: [id])
-  seller       Seller?     @relation(fields: [sellerId], references: [id]) // Added relation to Seller
+  seller       Seller?    @relation(fields: [sellerId], references: [id])
 
   @@index([userId])
   @@index([phoneModelId])
   @@index([colorId])
-  @@index([sellerId])    // Added index for sellerId
+  @@index([sellerId])
 }
 
 model PurchasedItem {
@@ -200,12 +196,12 @@ model PurchasedItem {
   itemId        String
   phoneModelId  Int
   colorId       Int
-  sellerId      String          // Added sellerId field
-  condition     String   @db.VarChar(50)
-  storage       String   @db.VarChar(50)
-  price         Decimal  @db.Decimal(10, 2)
+  sellerId      String
+  condition     String
+  storage       String
+  price         Decimal
   quantity      Int
-  image         String   @db.VarChar(255)
+  image         String
   orderId       String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -213,24 +209,24 @@ model PurchasedItem {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   phone         PhoneModel @relation(fields: [phoneModelId], references: [id])
   color         Color    @relation(fields: [colorId], references: [id])
-  seller        Seller   @relation(fields: [sellerId], references: [id])  // Added relation to Seller
+  seller        Seller   @relation(fields: [sellerId], references: [id])
   review        Review?
   
   @@index([userId])
   @@index([phoneModelId])
   @@index([orderId])
-  @@index([sellerId])                 // Added index for sellerId
+  @@index([sellerId])
 }
 
 
 model Seller {
   id            String      @id @default(uuid())
-  businessName  String      @db.VarChar(255)
-  name          String      @db.VarChar(100)
-  email         String      @unique @db.VarChar(255)
-  phone         String      @db.VarChar(20)
-  address       String      @db.Text
-  taxId         String      @db.VarChar(50)
+  businessName  String
+  name          String
+  email         String      @unique
+  phone         String
+  address       String
+  taxId         String
   isActive      Boolean     @default(true)
   
   adminId       String
@@ -241,7 +237,7 @@ model Seller {
   
   phoneDetails  PhoneModelDetails[]
   purchasedItems PurchasedItem[]
-  cartItems     CartItem[]  // Added relation to CartItem
+  cartItems     CartItem[]
   
   @@index([email])
   @@index([adminId])
@@ -249,9 +245,9 @@ model Seller {
 
 model ContactMessage {
   id        String   @id @default(uuid())
-  email     String   @db.VarChar(255)
-  phone     String   @db.VarChar(20)
-  message   String   @db.Text
+  email     String
+  phone     String
+  message   String
   createdAt DateTime @default(now())
   
   @@index([email])
@@ -263,10 +259,10 @@ model Admin {
   email             String             @unique
   emailVerified     Boolean            @default(false)
   
-  firstName         String?            @db.VarChar(50)
-  lastName          String?            @db.VarChar(50)
-  phoneNumber       String?            @db.VarChar(20)
-  avatar            String?            @db.Text   
+  firstName         String?
+  lastName          String?
+  phoneNumber       String?
+  avatar            String?
   
   isActive          Boolean            @default(true)
   
@@ -275,7 +271,8 @@ model Admin {
   lastLoginAt       DateTime?
 
   managedSellers    Seller[]
-  phoneModelDetails PhoneModelDetails[] // Added this relation
+  phoneModelDetails PhoneModelDetails[]
+  
   @@index([email])
   @@index([externalId])
 }

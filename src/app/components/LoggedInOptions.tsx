@@ -48,17 +48,6 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
               {/* User Info */}
               <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                 <div className="text-sm font-medium text-black capitalize">{session?.user?.name}</div>
-                {session?.user?.admin && (
-                  <Link
-                    href="/dashboard"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-black font-medium hover:bg-gray-100 flex items-center gap-1 px-2 py-1 border border-gray-200 rounded transition-colors duration-200"
-                  >
-                    <LayoutDashboard className="w-3.5 h-3.5" />
-                    Dashboard
-                  </Link>
-                )}
               </div>
 
               {/* Menu Items */}

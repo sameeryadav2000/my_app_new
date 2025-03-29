@@ -5,49 +5,73 @@ import prisma from "../../../../lib/prisma";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = Number(searchParams.get("page"));
-    const limit = Number(searchParams.get("limit"));
+    const page = Number(searchParams.get("page")) || 1;
+    const limit = Number(searchParams.get("limit")) || 10;
     const id = Number(searchParams.get("id"));
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: "Phone ID is required" }, { status: 400 });
+    }
 
     const offset = (page - 1) * limit;
 
-    const phoneModelsCount = await prisma.$queryRaw<{ count: bigint }[]>`
-        SELECT COUNT(DISTINCT pmd.phoneId) as count
-        FROM PhoneModelDetails pmd
-        JOIN PhoneModel pm ON pmd.phoneId = pm.id
-        WHERE pm.phoneId = ${id}
-    `;
+    // Count total available phone models for this phone
+    const totalCount = await prisma.phoneModel.count({
+      where: {
+        phoneId: id,
+        details: {
+          some: {
+            available: true,
+          },
+        },
+      },
+    });
 
-    const totalCount = Number(phoneModelsCount[0]?.count || 0);
+    // Fetch phone models with details and images in a single query
+    const phoneModels = await prisma.phoneModel.findMany({
+      where: {
+        phoneId: id,
+        details: {
+          some: {
+            available: true,
+          },
+        },
+      },
+      include: {
+        details: {
+          where: {
+            available: true,
+          },
+          orderBy: {
+            price: "asc",
+          },
+        },
+        images: {
+          where: {
+            mainImage: true,
+          },
+        },
+      },
+      orderBy: {
+        id: "asc",
+      },
+      skip: offset,
+      take: limit,
+    });
 
-    const phoneModels = await prisma.$queryRaw`
-        SELECT 
-        pm.*,
-        (SELECT MIN(pmd.price) 
-        FROM PhoneModelDetails pmd 
-        WHERE pmd.phoneId = pm.id
-        AND pmd.available = true) as startingPrice,
-        (SELECT mi.image
-        FROM ModelImage mi
-        WHERE mi.phoneId = pm.id
-        AND mi.mainImage = true
-        LIMIT 1) as image
-      FROM PhoneModel pm
-      WHERE pm.phoneId = ${id}
-      AND EXISTS (
-        SELECT 1 
-        FROM PhoneModelDetails pmd 
-        WHERE pmd.phoneId = pm.id
-        AND pmd.available = true
-      )
-      GROUP BY pm.id
-      ORDER BY pm.id ASC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+    // Transform the result to match your expected format
+    const formattedPhoneModels = phoneModels.map((model) => ({
+      ...model,
+      startingPrice: model.details.length > 0 ? model.details[0].price : null,
+      image: model.images.length > 0 ? model.images[0].image : null,
+      // Remove nested relations from the response
+      details: undefined,
+      images: undefined,
+    }));
 
     return NextResponse.json({
       success: true,
-      data: phoneModels,
+      data: formattedPhoneModels,
       total: totalCount,
       page,
       limit,

@@ -34,9 +34,9 @@ export default function Logo() {
   return (
     <Link href="/" className="flex items-center" onMouseEnter={handleMouseEnter}>
       <span className="text-2xl font-bold tracking-wider text-black relative">
-        {"MoboZen".split("").map((letter, index) => (
+        {"RingVio".split("").map((letter, index) => (
           <span
-            key={`mobozen-${index}`}
+            key={`ringvio-${index}`}
             className="inline-block transition-all"
             style={{
               opacity: hasAnimated ? 1 : 0,

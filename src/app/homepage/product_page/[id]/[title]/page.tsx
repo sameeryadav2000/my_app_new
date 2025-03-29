@@ -184,6 +184,8 @@ export default function ProductListingPage() {
     return buttons;
   }, [currentPage, totalPages, handlePageChange]);
 
+  const fallbackImageSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d3d3d3'/%3E%3Cg fill='white'%3E%3Cpath d='M30,30 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Cpath d='M40,40 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='65' cy='50' r='4'/%3E%3Cpolygon points='50,60 60,50 70,60'/%3E%3C/g%3E%3C/svg%3E`;
+
   return (
     <>
       <div className="w-[95%] md:w-[70%] mx-auto py-6 md:py-7 lg:py-8">
@@ -281,7 +283,7 @@ export default function ProductListingPage() {
                   <div className="order-2 sm:order-1 flex-1">
                     <CardsForPhone
                       title={`${phoneModel.model}`}
-                      image={phoneModel.image}
+                      image={phoneModel.image || fallbackImageSVG}
                       startingText="Starting at"
                       price={phoneModel.startingPrice}
                       className="flex flex-col h-full"
@@ -295,7 +297,7 @@ export default function ProductListingPage() {
                   </div>
                   <div className="order-1 sm:hidden w-1/3 p-2">
                     <img
-                      src={phoneModel.image}
+                      src={phoneModel.image || fallbackImageSVG}
                       alt={phoneModel.model}
                       className="w-full h-18 object-contain transition-transform duration-300 group-hover:scale-105"
                     />
