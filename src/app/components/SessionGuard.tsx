@@ -35,11 +35,15 @@ export default function SessionGuard({ children }: { children: ReactNode }) {
         setIsRedirecting(true);
 
         // Use your existing federated logout utility
-        federatedLogout().catch(() => {
-          // If federated logout fails, just do a normal sign out
-          signOut({ redirect: false }).then(() => {
-            router.push("/login_signup");
-          });
+        // federatedLogout().catch(() => {
+        //   // If federated logout fails, just do a normal sign out
+        //   signOut({ redirect: false }).then(() => {
+        //     router.push("/login_signup");
+        //   });
+        // });
+
+        signOut({ redirect: false }).then(() => {
+          router.push("/login_signup");
         });
       }
     } else {

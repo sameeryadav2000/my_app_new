@@ -110,12 +110,12 @@ model ShippingInfo {
   @@index([userId])
 }
 
-
 model User {
   id                String         @id @default(uuid())
-  externalId        String?        @unique  // Keycloak user ID
+  externalId        String?        @unique  // Keycloak user ID or our own ID for local users
   email             String         @unique
   emailVerified     Boolean        @default(false)
+  passwordHash      String?        // Add this field for storing hashed passwords
   
   firstName         String?        
   lastName          String?        
@@ -132,6 +132,8 @@ model User {
   cartItems         CartItem[]
   purchasedItems    PurchasedItem[]
   reviews           Review[]  
+  verificationTokens VerificationToken[]
+  passwordReset     PasswordReset?
 
   @@index([email])
   @@index([externalId])
@@ -275,4 +277,25 @@ model Admin {
   
   @@index([email])
   @@index([externalId])
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

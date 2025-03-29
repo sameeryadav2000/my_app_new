@@ -7,14 +7,19 @@ import federatedLogout from "@/utils/federatedLogout";
 import { User, Loader2 } from "lucide-react";
 import LoggedInOptions from "./LoggedInOptions";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 export default function LoginLogout() {
   const { data: session } = useSession();
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    federatedLogout();
+  // const handleLogout = () => {
+  //   federatedLogout();
+  // };
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/" });
   };
 
   const handleClick = () => {
