@@ -6,18 +6,14 @@
       "type": "node-terminal",
       "request": "launch",
       "command": "npm run dev",
-      "skipFiles": ["<node_internals>/**"],
-      "serverReadyAction": {
-        "pattern": "started server on .+, url: (https?://.+)",
-        "uriFormat": "%s",
-        "action": "debugWithChrome"
-      }
+      "skipFiles": ["<node_internals>/**"]
     },
     {
       "name": "Next.js: debug client-side",
-      "type": "firefox",
+      "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:3000"
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}"
     }
   ],
   "compounds": [

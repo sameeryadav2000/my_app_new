@@ -1,6 +1,6 @@
 // src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { AuthOptions, User, Account, DefaultSession } from "next-auth";
-import KeycloakProvider from "next-auth/providers/keycloak";
+// import KeycloakProvider from "next-auth/providers/keycloak";
 import { JWT } from "next-auth/jwt";
 import prisma from "../../../../../lib/prisma";
 import bcrypt from "bcryptjs";

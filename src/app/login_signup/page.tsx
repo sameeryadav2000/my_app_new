@@ -122,7 +122,6 @@ export default function LoginPage() {
         callbackUrl: callbackUrl,
       });
 
-      debugger;
 
       if (result?.error) {
         console.log("Login failed with error:", result.error);
