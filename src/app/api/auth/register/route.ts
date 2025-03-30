@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 13. Create verification URL
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXTAUTH_URL;
     const verificationUrl = `${baseUrl}/api/auth/verify_email?token=${result.token}`;
 
     // 14. Send verification email

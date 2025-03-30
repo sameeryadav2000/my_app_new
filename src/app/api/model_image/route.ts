@@ -10,21 +10,15 @@ export async function GET(req: NextRequest) {
     const colorId = searchParams.get("colorId");
 
     if (!iphoneId || isNaN(Number(iphoneId))) {
-      return NextResponse.json(
-        { message: "Invalid or missing iphoneModelId parameter" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Invalid or missing iphoneModelId parameter" }, { status: 400 });
     }
     if (!colorId || isNaN(Number(colorId))) {
-      return NextResponse.json(
-        { message: "Invalid or missing colorId parameter" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Invalid or missing colorId parameter" }, { status: 400 });
     }
 
     const modelImages = await prisma.modelImage.findMany({
       where: {
-        iphoneId: parseInt(iphoneId),
+        phoneId: parseInt(iphoneId),
         colorId: parseInt(colorId),
       },
     });
@@ -32,9 +26,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ result: modelImages });
   } catch (error) {
     console.error("Error fetching model images:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch model images" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Failed to fetch model images" }, { status: 500 });
   }
 }

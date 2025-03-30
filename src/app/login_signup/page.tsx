@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -8,6 +9,7 @@ import { useLoading } from "@/context/LoadingContext";
 import RegistrationDialog from "@/app/components/RegistrationDialog";
 import ForgotPasswordDialog from "@/app/components/ForgotPasswordDialog";
 
+// Types
 interface LoginData {
   email: string;
   password: string;
@@ -23,7 +25,19 @@ interface TouchedFields {
   password: boolean;
 }
 
-export default function LoginPage() {
+// Fallback component that shows while params are loading
+function LoginLoadingFallback() {
+  const { showLoading } = useLoading();
+  
+  // Show global loading when component is in loading state
+  showLoading();
+  
+  // Return a minimal fallback since the global loading context will handle the UI
+  return null;
+}
+
+// Main login content that uses useSearchParams
+function LoginPageContent() {
   // Get callback URL from search parameters
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/homepage";
@@ -48,6 +62,10 @@ export default function LoginPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
 
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+
+  // Hide loading once the component is rendered
+  // This ensures any loading shown during navigation is hidden
+  hideLoading();
 
   // Validate form on data change
   useEffect(() => {
@@ -305,5 +323,14 @@ export default function LoginPage() {
 
       {isForgotPasswordOpen && <ForgotPasswordDialog isOpen={isForgotPasswordOpen} onClose={() => setIsForgotPasswordOpen(false)} />}
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoadingFallback />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

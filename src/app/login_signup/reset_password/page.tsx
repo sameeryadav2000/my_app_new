@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useNotification } from "@/context/NotificationContext";
 import { useLoading } from "@/context/LoadingContext";
@@ -20,7 +20,19 @@ interface TouchedFields {
   confirmPassword: boolean;
 }
 
-export default function ResetPasswordPage() {
+// Fallback component that shows while params are loading
+function ResetPasswordLoadingFallback() {
+  const { showLoading } = useLoading();
+
+  // Show global loading when component is in loading state
+  showLoading();
+
+  // Return a minimal fallback since the global loading context will handle the UI
+  return null;
+}
+
+// Main content component that uses useSearchParams
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -39,6 +51,9 @@ export default function ResetPasswordPage() {
 
   const { showError, showSuccess } = useNotification();
   const { showLoading, hideLoading, isLoading } = useLoading();
+
+  // Hide loading once the component is rendered
+  hideLoading();
 
   // Check if token exists on mount
   useEffect(() => {
@@ -228,5 +243,14 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordLoadingFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

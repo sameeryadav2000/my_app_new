@@ -2,7 +2,7 @@
 "use client";
 
 import { useLoading } from "@/context/LoadingContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart, CartItem } from "@/context/CartContext";
 import Link from "next/link";
@@ -20,7 +20,22 @@ interface OrderDetails {
   shippingInfo: ShippingData;
 }
 
-export default function OrderConfirmationPage() {
+// Loading component to display while order is being verified
+function OrderLoading() {
+  return (
+    <div className="w-4/5 mx-auto py-12">
+      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border p-8">
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin mb-4"></div>
+          <p className="text-lg text-gray-600">Verifying your order...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main component that uses search params
+function OrderConfirmationContent() {
   const { showLoading, hideLoading } = useLoading();
   const { cart, setCart, isLoading: isCartLoading } = useCart();
   const [hasError, setHasError] = useState(false);
@@ -45,6 +60,7 @@ export default function OrderConfirmationPage() {
     },
   });
 
+  // This is the hook that needs to be in the Suspense boundary
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -335,5 +351,14 @@ export default function OrderConfirmationPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// Main component that wraps everything with Suspense
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={<OrderLoading />}>
+      <OrderConfirmationContent />
+    </Suspense>
   );
 }

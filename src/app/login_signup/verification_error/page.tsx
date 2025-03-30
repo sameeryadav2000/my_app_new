@@ -1,13 +1,19 @@
-// app/auth/verification-error/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useLoading } from "@/context/LoadingContext";
 
-export default function VerificationError() {
+// Component that uses useSearchParams
+function VerificationErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const { hideLoading } = useLoading();
+
+  // Hide the global loading indicator once the component is rendered
+  // This is useful if you were showing loading during navigation
+  hideLoading();
 
   // Get error message based on error code
   const getErrorMessage = () => {
@@ -47,5 +53,25 @@ export default function VerificationError() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Fallback component that shows while params are loading
+function VerificationLoadingFallback() {
+  const { showLoading } = useLoading();
+
+  // Show global loading when component is in loading state
+  showLoading();
+
+  // Return a minimal fallback since the global loading context will handle the UI
+  return null;
+}
+
+// Main component with Suspense boundary
+export default function VerificationError() {
+  return (
+    <Suspense fallback={<VerificationLoadingFallback />}>
+      <VerificationErrorContent />
+    </Suspense>
   );
 }

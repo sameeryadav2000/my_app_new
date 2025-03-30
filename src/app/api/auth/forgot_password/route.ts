@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create reset URL
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXTAUTH_URL;
     const resetUrl = `${baseUrl}/login_signup/reset_password?token=${resetToken}`;
 
     // Email template
