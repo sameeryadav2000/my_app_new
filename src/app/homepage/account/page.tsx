@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import PersonalInfoDialog from "@/app/components/PersonalInfoDialog";
 import ShippingInfoDialog from "@/app/components/ShippingInfoDialog";
-import { useNotification } from "@/context/NotificationContext";
 import { useLoading } from "@/context/LoadingContext";
 
 export interface ShippingData {
@@ -20,7 +19,6 @@ export interface ShippingData {
 
 export default function Account() {
   const { data: session } = useSession();
-  const { showSuccess, showError } = useNotification();
   const { showLoading, hideLoading } = useLoading();
 
   const [isPersonalInfoDialogOpen, setIsPersonalInfoDialogOpen] = useState(false);

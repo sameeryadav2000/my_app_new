@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Image from "next/image";
 
 export interface ReviewProps {
   productId: string;
@@ -56,8 +57,8 @@ export default function ReviewComponent({ productId, productTitleName, productIm
 
       <div className="flex items-center mb-6 pb-6 border-b border-gray-200">
         {productImage && (
-          <div className="w-16 h-16 bg-gray-100 rounded mr-4 flex-shrink-0">
-            <img src={productImage} alt={productTitleName} className="w-full h-full object-contain" />
+          <div className="w-16 h-16 bg-gray-100 rounded mr-4 flex-shrink-0 relative">
+            <Image src={productImage} alt={productTitleName} fill className="object-contain" />
           </div>
         )}
         <h3 className="text-lg font-medium text-gray-900">{productTitleName}</h3>

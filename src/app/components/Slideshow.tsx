@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 export default function Slideshow() {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -38,7 +39,9 @@ export default function Slideshow() {
               </div>
             </div>
             <div className="iphone-banner-image">
-              <img className="iphone-image" src="/slideshow_images/iphone.png" alt="Premium iPhone" />
+              <div className="relative iphone-image">
+                <Image src="/slideshow_images/iphone.png" alt="Premium iPhone" fill priority={true} />
+              </div>
             </div>
           </div>
         </div>
@@ -78,7 +81,9 @@ export default function Slideshow() {
               <div className="eco-impact">Reduce your carbon footprint with every purchase</div>
             </div>
             <div className="refurb-market-image">
-              <img className="devices-image" src="/slideshow_images/refurbished.png" alt="Refurbished Electronics Devices" />
+              <div className="relative devices-image">
+                <Image src="/slideshow_images/refurbished.png" alt="Refurbished Electronics Devices" fill priority={true} />
+              </div>
             </div>
           </div>
         </div>
@@ -149,18 +154,7 @@ export default function Slideshow() {
               index === currentIndex ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
           >
-            {slide.content ? (
-              slide.content
-            ) : (
-              <div className="w-full h-full">
-                <img
-                  src={slide.image}
-                  alt={`Slide ${index + 1}`}
-                  className="w-full h-full object-cover md:block hidden"
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-              </div>
-            )}
+            {slide.content && slide.content}
           </div>
         ))}
       </div>

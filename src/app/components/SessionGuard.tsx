@@ -2,7 +2,7 @@
 import { signOut, useSession } from "next-auth/react";
 import { ReactNode, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import federatedLogout from "@/utils/federatedLogout";
+// import federatedLogout from "@/utils/federatedLogout";
 
 // Define the inactivity timeout threshold to match Keycloak's SSO Session Max (24 hours)
 const EXTENDED_INACTIVITY_THRESHOLD = 24 * 60 * 60 * 1000; // 24 hours

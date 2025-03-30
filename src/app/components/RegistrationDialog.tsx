@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNotification } from "@/context/NotificationContext"; // Adjust import path as needed
 import { useLoading } from "@/context/LoadingContext"; // Adjust import path as needed
 
@@ -57,11 +57,6 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
   const { showError, showSuccess } = useNotification();
   const { showLoading, hideLoading, isLoading } = useLoading();
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
   // Close dialog with escape key
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
@@ -86,7 +81,7 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
     };
   }, [isOpen]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Validate firstName
@@ -122,7 +117,12 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [formData]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -192,6 +192,7 @@ export default function RegistrationDialog({ isOpen, onClose, onSuccess }: Regis
         onClose();
       }, 2000);
     } catch (error) {
+      console.error("An error occurred during registration: ", error);
       showError("Registration Failed", "An error occurred during registration. Please try again later.");
     } finally {
       hideLoading();

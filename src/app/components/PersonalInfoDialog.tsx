@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useNotification } from "@/context/NotificationContext";
 import { useLoading } from "@/context/LoadingContext";
@@ -55,12 +55,7 @@ export default function PersonalInfoDialog({ isOpen, onClose }: PersonalInfoDial
     }
   }, [session]);
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Basic phone number validation
@@ -70,7 +65,12 @@ export default function PersonalInfoDialog({ isOpen, onClose }: PersonalInfoDial
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [formData]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

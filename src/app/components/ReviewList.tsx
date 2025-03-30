@@ -3,7 +3,7 @@
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState } from "react";
-import { Star, MessageSquare, Shield, Check, Tag } from "lucide-react";
+import { Star, MessageSquare, Check, Tag } from "lucide-react";
 
 interface Review {
   id: number;
@@ -23,8 +23,8 @@ interface ReviewListProps {
 }
 
 export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoaded }: ReviewListProps) {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { showInfo } = useNotification();
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string>("");
@@ -80,6 +80,7 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
           }
         }
       } catch (error) {
+        console.error("Error fetching reviews: ", error);
         setError("Error fetching reviews. Please check your connection and try again.");
         showInfo("Error", "Error fetching reviews. Please check your connection and try again.");
       } finally {
@@ -139,7 +140,6 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
   };
 
   const ratingDistribution = generateRatingDistribution();
-  const maxCount = Math.max(...ratingDistribution, 1);
 
   // Apply all active filters
   const filteredReviews = reviews.filter((review) => {

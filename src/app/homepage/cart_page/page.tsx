@@ -5,10 +5,11 @@ import { useNotification } from "@/context/NotificationContext";
 import { useCart } from "@/context/CartContext";
 import OrderSummary from "@/app/components/OrderSummary";
 import { formatNPR } from "@/utils/formatters";
+import Image from "next/image";
 
 export default function CartPage() {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError } = useNotification();
   const { cart, syncCart } = useCart();
 
   const fallbackImageSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d3d3d3'/%3E%3Cg fill='white'%3E%3Cpath d='M30,30 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Cpath d='M40,40 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='65' cy='50' r='4'/%3E%3Cpolygon points='50,60 60,50 70,60'/%3E%3C/g%3E%3C/svg%3E`;
@@ -36,6 +37,7 @@ export default function CartPage() {
 
       await syncCart();
     } catch (error) {
+      console.error("Failed to delete cart item: ", error);
       showError("Error", "Failed to delete cart item. Please check your connection and try again.");
     } finally {
       hideLoading();
@@ -52,11 +54,14 @@ export default function CartPage() {
               className="flex flex-col xl:flex-row gap-4 xl:gap-6 border-b border-gray-200 py-4 xl:py-6 transition-all duration-300 hover:bg-gray-50 hover:shadow-sm rounded-lg px-3 xl:px-4"
             >
               <div className="w-full xl:w-1/4 flex justify-center">
-                <img
-                  src={item.image || fallbackImageSVG}
-                  alt={item.titleName}
-                  className="w-full max-h-[120px] xl:max-h-[160px] object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
-                />
+                <div className="relative w-full h-[120px] xl:h-[160px]">
+                  <Image
+                    src={item.image || fallbackImageSVG}
+                    alt={item.titleName || "Product Image"}
+                    fill
+                    className="object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
+                  />
+                </div>
               </div>
 
               <div className="flex-1 space-y-1.5 xl:space-y-2">

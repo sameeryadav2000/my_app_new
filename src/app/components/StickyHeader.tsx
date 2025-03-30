@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatNPR } from "@/utils/formatters";
+import Image from "next/image";
 
 interface StickyHeaderProps {
   title: string;
@@ -39,7 +40,7 @@ export default function StickyHeader({ title, condition, storage, color, price, 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gray-50 rounded-lg p-1 flex items-center justify-center hidden md:flex">
-              <img src={image} alt={title} className="w-11 h-11 object-contain" />
+              <Image src={image} alt={title} width={44} height={44} className="object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">{title}</span>
