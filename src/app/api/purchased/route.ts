@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import prisma from "../../../../lib/prisma";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
       orders[item.orderId].totalPrice += parseFloat(item.price.toString()) * item.quantity;
 
       return orders;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }, {} as Record<string, any>);
 
     // Convert to array and sort by createdAt date (newest first)

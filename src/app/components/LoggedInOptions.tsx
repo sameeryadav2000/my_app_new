@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Session } from "next-auth";
-import { LogOut, User, Package, Heart, LayoutDashboard } from "lucide-react";
+import { LogOut, User, Package } from "lucide-react";
 
 interface AccountDropdownProps {
   session: Session | null;

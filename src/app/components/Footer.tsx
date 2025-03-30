@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 
@@ -131,12 +131,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
     }
   }, [title]);
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: ContactFormErrors = {};
 
     // Validate email
@@ -162,7 +157,12 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [formData]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

@@ -217,7 +217,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               onClick={(e) => {
                 // Close when clicking the backdrop
                 if (e.target === e.currentTarget) {
-                  styles.showConfirmCancel ? handleCancel() : hideNotification();
+                  if (styles.showConfirmCancel) {
+                    handleCancel();
+                  } else {
+                    hideNotification();
+                  }
                 }
               }}
             >

@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const review = await prisma.review.create({
+    await prisma.review.create({
       data: {
         rating,
         title,

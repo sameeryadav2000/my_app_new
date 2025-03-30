@@ -14,7 +14,7 @@ import { ShippingData } from "@/app/homepage/shipping_page/page";
 
 export default function PaymentPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showError } = useNotification();
 
   const router = useRouter();
   const { cart, isLoading: isCartLoading } = useCart();
@@ -30,7 +30,6 @@ export default function PaymentPage() {
     zipCode: "",
   });
   const [isInitialCheckDone, setIsInitialCheckDone] = useState<boolean>(false);
-  const [paymentError, setPaymentError] = useState<string>("");
   const [retryCount, setRetryCount] = useState<number>(0);
 
   const tax = 10;
@@ -114,6 +113,7 @@ export default function PaymentPage() {
 
       setClientSecret(result.clientSecret);
     } catch (error) {
+      console.error("Unable to initialize payment: ", error);
       showError("Error", "Unable to initialize payment. Please try again.");
     } finally {
       hideLoading();

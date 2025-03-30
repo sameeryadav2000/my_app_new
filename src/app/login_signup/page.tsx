@@ -28,10 +28,10 @@ interface TouchedFields {
 // Fallback component that shows while params are loading
 function LoginLoadingFallback() {
   const { showLoading } = useLoading();
-  
+
   // Show global loading when component is in loading state
   showLoading();
-  
+
   // Return a minimal fallback since the global loading context will handle the UI
   return null;
 }
@@ -58,7 +58,7 @@ function LoginPageContent() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState<boolean>(false);
 
   // Use the notification and loading contexts
-  const { showError, showSuccess } = useNotification();
+  const { showError } = useNotification();
   const { showLoading, hideLoading, isLoading } = useLoading();
 
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
@@ -139,7 +139,6 @@ function LoginPageContent() {
         password: formData.password,
         callbackUrl: callbackUrl,
       });
-
 
       if (result?.error) {
         console.log("Login failed with error:", result.error);
@@ -264,7 +263,7 @@ function LoginPageContent() {
 
           {/* Create Account Section */}
           <div className="text-center pt-3 sm:pt-4 border-t border-gray-200 mt-4 sm:mt-5 md:mt-6">
-            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Don't have an account?</p>
+            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Do not have an account?</p>
             <button
               type="button"
               onClick={() => setIsRegistrationOpen(true)}

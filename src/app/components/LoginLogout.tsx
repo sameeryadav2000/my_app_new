@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
-import federatedLogout from "@/utils/federatedLogout";
+// import federatedLogout from "@/utils/federatedLogout";
 import { User, Loader2 } from "lucide-react";
 import LoggedInOptions from "./LoggedInOptions";
 import { usePathname } from "next/navigation";

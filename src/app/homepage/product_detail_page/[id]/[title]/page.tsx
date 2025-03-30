@@ -6,12 +6,13 @@ import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { CartItem, Cart } from "@/context/CartContext";
 import { useCart } from "@/context/CartContext";
 import StickyHeader from "@/app/components/StickyHeader";
 import ReviewList from "@/app/components/ReviewList";
 import { formatNPR } from "@/utils/formatters";
+import Image from "next/image";
 
 interface ConditionOption {
   condition: string;
@@ -37,8 +38,8 @@ interface ColorOption {
 }
 
 export default function ProductPage() {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError } = useNotification();
 
   const params = useParams();
   const phoneModelId = Number(params.id);
@@ -115,6 +116,8 @@ export default function ProductPage() {
           setColorOptions(result.data);
         }
       } catch (error) {
+        console.error("Failed to load phone model details: ", error);
+
         showError("Error", "Failed to load phone model details. Please check your connection and try again.");
       } finally {
         hideLoading();
@@ -283,6 +286,8 @@ export default function ProductPage() {
           showError("Error", syncCartResult.message);
         }
       } catch (error) {
+        console.error("Failed to save cart: ", error);
+
         showError("Error", "Failed to save cart. Please check your connection and try again.");
       } finally {
         hideLoading();
@@ -343,11 +348,15 @@ export default function ProductPage() {
               <div className="h-auto flex flex-col justify-center py-4">
                 <div className="relative h-[250px] md:h-[400px] w-full mb-4">
                   {modelImages.length > 0 ? (
-                    <img
-                      src={modelImages[currentImageIndex].image}
-                      alt={`${selectedColor} iPhone - View ${currentImageIndex + 1}`}
-                      className="absolute inset-0 h-full w-full object-contain rounded-lg"
-                    />
+                    <div className="absolute inset-0">
+                      <Image
+                        src={modelImages[currentImageIndex].image}
+                        alt={`${selectedColor} iPhone - View ${currentImageIndex + 1}`}
+                        fill
+                        style={{ objectFit: "contain" }}
+                        className="rounded-lg"
+                      />
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-black">No Images</div>
                   )}
@@ -380,9 +389,11 @@ export default function ProductPage() {
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden border-2
-              ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
+        ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
                       >
-                        <img src={imageObj.image} alt={`Thumbnail ${index + 1}`} className="h-full w-full object-cover" />
+                        <div className="relative h-full w-full">
+                          <Image src={imageObj.image} alt={`Thumbnail ${index + 1}`} fill style={{ objectFit: "cover" }} />
+                        </div>
                       </button>
                     ))}
                   </div>

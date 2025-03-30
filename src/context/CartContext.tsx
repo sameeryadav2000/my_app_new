@@ -151,6 +151,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 };
               }
             } catch (error) {
+              console.error("Cart parsing error:", error);
+
               setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
               setIsLoading(false);
               return {

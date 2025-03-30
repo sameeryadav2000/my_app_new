@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useNotification } from "@/context/NotificationContext";
 import { useLoading } from "@/context/LoadingContext";
@@ -63,12 +63,7 @@ function ResetPasswordContent() {
     }
   }, [token, router, showError]);
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Validate password
@@ -87,7 +82,12 @@ function ResetPasswordContent() {
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [formData]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

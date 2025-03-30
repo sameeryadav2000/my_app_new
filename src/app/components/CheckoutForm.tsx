@@ -3,8 +3,6 @@
 
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { FaLock } from "react-icons/fa";
 import { ShippingData } from "@/app/homepage/shipping_page/page";
@@ -15,8 +13,8 @@ interface CheckoutFormProps {
 }
 
 export default function CheckoutForm({ totalAmount, shippingInfo }: CheckoutFormProps) {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { isLoading } = useLoading();
+  const { showError } = useNotification();
 
   const stripe = useStripe();
   const elements = useElements();
@@ -55,6 +53,7 @@ export default function CheckoutForm({ totalAmount, shippingInfo }: CheckoutForm
       if (error) {
         showError("Error", error.message || "Something went wrong with your payment");
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       showError("Error", error.message);
     } finally {

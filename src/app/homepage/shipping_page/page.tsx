@@ -2,7 +2,7 @@
 
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import OrderSummary from "@/app/components/OrderSummary";
 
 export interface ShippingData {
@@ -106,6 +106,8 @@ export default function ShippingPage() {
         setSavedShippingInfo(result.shippingInfo);
         sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
       } catch (error) {
+        console.error("Shipping info fetch error:", error);
+
         showError("Error", "Failed to fetch shipping info. Please check your connection and try again.");
       } finally {
         hideLoading();
@@ -126,12 +128,7 @@ export default function ShippingPage() {
     }
   }, [isEditing, savedShippingInfo]);
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [shippingInfo]);
-
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Validate first name
@@ -180,7 +177,11 @@ export default function ShippingPage() {
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [shippingInfo]);
+
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -254,6 +255,7 @@ export default function ShippingPage() {
       sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
       setIsEditing(false);
     } catch (error) {
+      console.error("Error saving shipping info:", error);
       showError("Error", "Error saving shipping information. Please check your connection and try again.");
     } finally {
       hideLoading();
@@ -350,7 +352,7 @@ export default function ShippingPage() {
               {isEditing ? (
                 <div className="bg-gray-50 rounded-xl p-4 mb-6 border-l-4 border-black">
                   <p className="text-lg font-medium text-black">Editing Shipping Information</p>
-                  <p className="text-sm text-[#666666] mt-1">Make your changes and save when you're ready</p>
+                  <p className="text-sm text-[#666666] mt-1">Make your changes and save when you are ready</p>
                 </div>
               ) : (
                 <div className="bg-gray-50 rounded-xl p-4 mb-6 border-l-4 border-black">

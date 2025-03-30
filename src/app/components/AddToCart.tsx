@@ -6,7 +6,7 @@ interface AddToCartButtonProps {
 }
 
 export default function AddToCartButton({ onClick, className }: AddToCartButtonProps) {
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     if (onClick) {
       onClick();
     }

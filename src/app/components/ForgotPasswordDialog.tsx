@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNotification } from "@/context/NotificationContext"; // Adjust import path as needed
 import { useLoading } from "@/context/LoadingContext"; // Adjust import path as needed
 
@@ -37,11 +37,6 @@ export default function ForgotPasswordDialog({ isOpen, onClose }: ForgotPassword
   const { showError, showSuccess } = useNotification();
   const { showLoading, hideLoading, isLoading } = useLoading();
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
   // Close dialog with escape key
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
@@ -66,7 +61,7 @@ export default function ForgotPasswordDialog({ isOpen, onClose }: ForgotPassword
     };
   }, [isOpen]);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Validate email
@@ -78,7 +73,11 @@ export default function ForgotPasswordDialog({ isOpen, onClose }: ForgotPassword
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [formData]);
+
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -134,7 +133,10 @@ export default function ForgotPasswordDialog({ isOpen, onClose }: ForgotPassword
 
       setIsSubmitted(true);
       showSuccess("Email Sent", "If an account exists with this email, you will receive password reset instructions.");
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "An error occurred";
+      console.error("Password reset request failed:", errorMessage);
+
       showError("Request Failed", "An error occurred while processing your request. Please try again later.");
     } finally {
       hideLoading();
@@ -197,7 +199,7 @@ export default function ForgotPasswordDialog({ isOpen, onClose }: ForgotPassword
               </div>
 
               <p className="text-xs sm:text-sm text-gray-600 mt-2">
-                Enter your email address and we'll send you instructions to reset your password.
+                Enter your email address and we will send you instructions to reset your password.
               </p>
 
               {/* Action buttons */}

@@ -4,8 +4,9 @@ import { useLoading } from "@/context/LoadingContext";
 import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { formatNPR } from "@/utils/formatters";
+import Image from "next/image";
 
 interface OrderSummaryProps {
   currentPage: "cart_page" | "shipping_page" | "payment_page";
@@ -55,7 +56,15 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
             {cart.items.map((item) => (
               <div key={item.id} className="flex items-start py-2 xl:py-3 border-b border-gray-200 last:border-b-0">
                 <div className="bg-gray-100 rounded-md p-1.5 xl:p-2 flex-shrink-0">
-                  <img src={item.image || fallbackImageSVG} alt={item.titleName} className="w-12 h-12 xl:w-14 xl:h-14 object-contain" />
+                  <div className="relative w-12 h-12 xl:w-14 xl:h-14">
+                    <Image
+                      src={item.image || fallbackImageSVG}
+                      alt={item.titleName || "Product image"}
+                      fill
+                      sizes="(max-width: 1280px) 48px, 56px"
+                      className="object-contain"
+                    />
+                  </div>
                 </div>
 
                 <div className="pl-3 xl:pl-4 flex-grow">

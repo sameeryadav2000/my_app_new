@@ -4,6 +4,7 @@
 
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
+import Image from "next/image";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import slugify from "slugify";
 import Link from "next/link";
@@ -23,7 +24,7 @@ const ITEMS_PER_PAGE = 4;
 
 export default function ProductListingPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showError } = useNotification();
 
   const searchParams = useSearchParams();
   const currentPage = Number(searchParams.get("page") || 1);
@@ -65,6 +66,8 @@ export default function ProductListingPage() {
           setTotalPages(totalPages);
         }
       } catch (error) {
+        console.error("Failed to load phone models: ", error);
+
         showError("Error", "Failed to load phone models. Please check your connection and try again.");
       } finally {
         hideLoading();
@@ -288,18 +291,22 @@ export default function ProductListingPage() {
                       price={phoneModel.startingPrice}
                       className="flex flex-col h-full"
                       imageContainerClassName="hidden sm:block w-full h-36 md:h-40 lg:h-44 overflow-hidden relative"
-                      imageClassName="w-full h-full object-contain p-2 md:p-3 transition-transform duration-300 group-hover:scale-105"
+                      imageClassName="md:p-3 transition-transform duration-300 group-hover:scale-105"
                       contentClassName="flex-1 p-3 md:p-4 lg:p-5 border-t sm:border-t border-gray-100"
                       titleClassName="text-black line-clamp-2 text-sm md:text-base lg:text-base mb-0.5 md:mb-1 lg:mb-1.5"
                       startingTextClassName="text-gray-500 text-xs md:text-xs lg:text-xs py-0.5"
                       priceClassName="text-base md:text-lg lg:text-lg text-black py-0.5"
+                      priority={phoneModel.id === phoneModels[0]?.id}
                     />
                   </div>
-                  <div className="order-1 sm:hidden w-1/3 p-2">
-                    <img
+                  <div className="order-1 sm:hidden w-1/3 p-2 relative">
+                    <Image
                       src={phoneModel.image || fallbackImageSVG}
                       alt={phoneModel.model}
+                      width={100}
+                      height={72}
                       className="w-full h-18 object-contain transition-transform duration-300 group-hover:scale-105"
+                      priority={phoneModel.id === phoneModels[0]?.id}
                     />
                   </div>
                 </div>
@@ -383,12 +390,12 @@ export default function ProductListingPage() {
         <div className="rounded-xl overflow-hidden bg-indigo-500 mb-6 md:mb-7 lg:mb-8">
           <div className="p-5 md:p-6 lg:p-10 text-center">
             <h2 className="text-xl md:text-2xl lg:text-4xl font-bold mb-2 md:mb-2.5 lg:mb-4">
-              <span className="text-white">Why do we call'em </span>
+              <span className="text-white">Why do we call them </span>
               <span className="text-yellow-300">good deals?</span>
             </h2>
             <p className="text-white/90 mb-4 md:mb-4.5 lg:mb-5 max-w-2xl mx-auto text-xs md:text-sm lg:text-base">
-              We usually don't see a price this low for this model, which means you get the best quality for the lowest price. Snag it while
-              you can.
+              We usually do not see a price this low for this model, which means you get the best quality for the lowest price. Snag it
+              while you can.
             </p>
           </div>
         </div>

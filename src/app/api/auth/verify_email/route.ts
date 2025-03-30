@@ -1,6 +1,5 @@
 // app/api/auth/verify-email/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import prisma from "../../../../../lib/prisma";
 
 export async function GET(request: NextRequest) {

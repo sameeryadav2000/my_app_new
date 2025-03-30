@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNotification } from "@/context/NotificationContext";
 import { useLoading } from "@/context/LoadingContext";
 import { ShippingData } from "@/app/homepage/account/page";
@@ -69,12 +69,10 @@ export default function ShippingInfoDialog({ isOpen, onClose, onSuccess, initial
     }
   }, [initialData]);
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [shippingInfo]);
+  // Earlier in your component...
 
-  const validateForm = () => {
+  // Use useCallback to memoize the validateForm function
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Validate first name
@@ -123,7 +121,12 @@ export default function ShippingInfoDialog({ isOpen, onClose, onSuccess, initial
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [shippingInfo]); // Include shippingInfo in the dependency array
+
+  // Update the useEffect to depend on validateForm
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]); // Include validateForm in the dependency array
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -191,6 +194,7 @@ export default function ShippingInfoDialog({ isOpen, onClose, onSuccess, initial
       showSuccess("Success", result.message || "Shipping information saved successfully");
       onSuccess(result.shippingInfo);
     } catch (error) {
+      console.error("Error saving shipping information: ", error);
       showError("Error", "Error saving shipping information. Please check your connection and try again.");
     } finally {
       hideLoading();

@@ -6,7 +6,7 @@ import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import CardsForHomepage from "@/app/components/CardForHomepage";
 import { useEffect, useState } from "react";
-import RecentlyViewed from "@/app/components/RecentlyViewed";
+// import RecentlyViewed from "@/app/components/RecentlyViewed";
 import FAQ from "@/app/components/FAQ";
 
 interface Phone {
@@ -17,7 +17,7 @@ interface Phone {
 
 export default function HomePage() {
   const { showLoading, hideLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showError } = useNotification();
   const [phones, setPhones] = useState<Phone[]>([]);
 
   useEffect(() => {
@@ -43,6 +43,7 @@ export default function HomePage() {
           setPhones(result.phones);
         }
       } catch (error) {
+        console.error("Failed to load phones: ", error);
         showError("Error", "Failed to load phones. Please check your connection and try again.");
       } finally {
         hideLoading();
@@ -51,6 +52,8 @@ export default function HomePage() {
 
     fetchPhones();
   }, [showLoading, hideLoading, showError]);
+
+  const fallbackImageSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d3d3d3'/%3E%3Cg fill='white'%3E%3Cpath d='M30,30 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Cpath d='M40,40 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='65' cy='50' r='4'/%3E%3Cpolygon points='50,60 60,50 70,60'/%3E%3C/g%3E%3C/svg%3E`;
 
   return (
     <div className="bg-white">
@@ -192,20 +195,15 @@ export default function HomePage() {
             phones.map((phone) => (
               <div key={phone.id} className="group transition-transform duration-300 hover:translate-y-[-4px]">
                 <Link href={`/homepage/product_page/${encodeURIComponent(phone.id)}/${encodeURIComponent(phone.phone)}`}>
-                  <div
-                    className="h-full bg-white rounded-lg overflow-hidden
-              transform transition-all duration-300
-              border border-gray-300 hover:border-gray-400
-              shadow-sm hover:shadow-md"
-                  >
+                  <div className="h-full bg-white rounded-lg overflow-hidden transform transition-all duration-300 border border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md">
                     <CardsForHomepage
                       title={phone.phone}
-                      image={phone.image}
+                      image={phone.image || fallbackImageSVG}
                       className="flex flex-col h-full"
                       imageContainerClassName="relative h-32 sm:h-36 md:h-40 lg:h-44 flex items-center justify-center"
-                      imageClassName="max-w-full max-h-full object-contain"
                       contentClassName="px-3 py-2 md:px-3 md:py-2.5 lg:px-4 lg:py-3 flex-grow border-t border-gray-200"
                       titleClassName="font-medium text-xs sm:text-sm md:text-sm lg:text-base text-black"
+                      priority={phone.id === phones[0].id}
                     />
                   </div>
                 </Link>

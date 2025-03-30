@@ -2,12 +2,7 @@
 
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Spacer from "@/app/components/Spacer";
-import Link from "next/link";
-import { CartItem } from "@/context/CartContext";
 import ReviewComponent from "@/app/components/ReviewForm";
 import { ReviewData } from "@/app/components/ReviewForm";
 import { formatNPR } from "@/utils/formatters";
@@ -39,11 +34,11 @@ interface Order {
   createdAt: string;
 }
 
-interface PurchaseHistory {
-  purchases: Order[];
-  totalOrders: number;
-  totalSpent: number;
-}
+// interface PurchaseHistory {
+//   purchases: Order[];
+//   totalOrders: number;
+//   totalSpent: number;
+// }
 
 interface ReviewInfo {
   hasReviewed: boolean;
@@ -61,8 +56,8 @@ interface ReviewsMap {
 }
 
 export default function OrdersPage() {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError, showInfo } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError } = useNotification();
   const [orders, setOrders] = useState<Order[]>([]);
   const [productReviews, setProductReviews] = useState<Record<string, ReviewInfo>>({});
   const [currentProduct, setCurrentProduct] = useState<PurchasedItem>();
