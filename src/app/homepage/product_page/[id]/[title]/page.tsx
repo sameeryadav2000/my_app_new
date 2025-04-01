@@ -4,13 +4,13 @@
 
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import Image from "next/image";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import slugify from "slugify";
 import Link from "next/link";
 import CardsForPhone from "@/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ReviewList from "@/app/components/ReviewList";
+import LoadingScreen from "@/app/components/LoadingScreen";
 
 interface PhoneModel {
   id: number;
@@ -20,7 +20,9 @@ interface PhoneModel {
   image: string;
 }
 
-const ITEMS_PER_PAGE = 4;
+const PHONE_MODELS_CACHE_KEY_PREFIX = "phone_models_cache_";
+const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
+const ITEMS_PER_PAGE = 10; // Assuming this is defined elsewhere
 
 export default function ProductListingPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
@@ -37,12 +39,47 @@ export default function ProductListingPage() {
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
 
+  // Generate a cache key specific to this query
+  const getCacheKey = useCallback(() => {
+    return `${PHONE_MODELS_CACHE_KEY_PREFIX}${id}_page${currentPage}_limit${ITEMS_PER_PAGE}`;
+  }, [id, currentPage]);
+
   const fetchCards = useCallback(() => {
+    let isMounted = true;
     showLoading();
 
     const fetchPhoneModels = async () => {
       try {
-        const response = await fetch(`/api/phone_models?page=${currentPage}&limit=${ITEMS_PER_PAGE}&id=${id}`, {
+        // Check for cached data first
+        const cacheKey = getCacheKey();
+        try {
+          const cachedData = localStorage.getItem(cacheKey);
+
+          if (cachedData) {
+            const { data, total, totalPages, timestamp } = JSON.parse(cachedData);
+            const now = new Date().getTime();
+
+            // Use cache if it's still valid
+            if (now - timestamp < CACHE_EXPIRY) {
+              console.log(`Using cached phone models data for ${cacheKey}`);
+              if (isMounted) {
+                setPhoneModels(data);
+                setTotalItems(total);
+                setTotalPages(totalPages);
+                hideLoading();
+                return;
+              }
+            } else {
+              console.log(`Cache expired for ${cacheKey}, fetching fresh data`);
+            }
+          }
+        } catch (error) {
+          console.warn("Failed to access localStorage:", error);
+          // Continue with fetch if localStorage fails
+        }
+
+        // Fetch fresh data if no cache or cache expired
+        const response = await fetch(`/api/phone_model?page=${currentPage}&limit=${ITEMS_PER_PAGE}&id=${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -50,6 +87,8 @@ export default function ProductListingPage() {
         });
 
         const result = await response.json();
+
+        if (!isMounted) return;
 
         if (!result.success) {
           showError("Error", result.message);
@@ -64,25 +103,41 @@ export default function ProductListingPage() {
           setPhoneModels(data);
           setTotalItems(totalItems);
           setTotalPages(totalPages);
+
+          // Save to cache with timestamp
+          try {
+            const cacheData = {
+              data,
+              total: totalItems,
+              totalPages,
+              timestamp: new Date().getTime(),
+            };
+            localStorage.setItem(getCacheKey(), JSON.stringify(cacheData));
+          } catch (error) {
+            console.warn("Failed to store in localStorage:", error);
+          }
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error("Failed to load phone models: ", error);
-
         showError("Error", "Failed to load phone models. Please check your connection and try again.");
       } finally {
-        hideLoading();
+        if (isMounted) {
+          hideLoading();
+        }
       }
     };
 
     fetchPhoneModels();
 
-    // Return an empty cleanup function to avoid the TypeScript error
-    return () => {};
-  }, [currentPage, title, id]);
+    // Return cleanup function to handle component unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, id, showError, hideLoading, showLoading, getCacheKey]);
 
   useEffect(() => {
     const cleanup = fetchCards();
-
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     return cleanup;
@@ -90,11 +145,14 @@ export default function ProductListingPage() {
 
   const router = useRouter();
 
-  const handlePageChange = (pageNumber: number) => {
-    router.replace(`/homepage/product_page/${id}/${title}?page=${pageNumber}`, {
-      scroll: false,
-    });
-  };
+  const handlePageChange = useCallback(
+    (pageNumber: number) => {
+      router.replace(`/homepage/product_page/${id}/${title}?page=${pageNumber}`, {
+        scroll: false,
+      });
+    },
+    [router, id, title]
+  );
 
   const renderPaginationButtons = useMemo(() => {
     const buttons = [];
@@ -187,8 +245,6 @@ export default function ProductListingPage() {
     return buttons;
   }, [currentPage, totalPages, handlePageChange]);
 
-  const fallbackImageSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d3d3d3'/%3E%3Cg fill='white'%3E%3Cpath d='M30,30 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Cpath d='M40,40 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='65' cy='50' r='4'/%3E%3Cpolygon points='50,60 60,50 70,60'/%3E%3C/g%3E%3C/svg%3E`;
-
   return (
     <>
       <div className="w-[95%] md:w-[70%] mx-auto py-6 md:py-7 lg:py-8">
@@ -270,121 +326,101 @@ export default function ProductListingPage() {
           <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-black">Verified Refurbished {title}</h1>
         </div>
 
-        <div className="text-xs md:text-sm text-gray-500 mb-4 md:mb-5 lg:mb-6">
-          {!isLoading ? <span>{totalItems} products</span> : <span>Loading models...</span>}
-        </div>
+        {/* When loading is true, show the loading screen */}
+        {isLoading ? (
+          <LoadingScreen />
+        ) : (
+          <>
+            {/* Only show these sections when not loading */}
+            {totalItems > 0 && (
+              <div className="text-xs md:text-sm text-gray-500 mb-4 md:mb-5 lg:mb-6">
+                <span>{totalItems} products</span>
+              </div>
+            )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">
-          {phoneModels.map((phoneModel) => (
-            <Link
-              key={phoneModel.id}
-              href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
-              className="group block h-full transition-all duration-300"
-            >
-              <div className="h-full bg-white border rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300 group-hover:translate-y-[-4px]">
-                <div className="flex flex-row items-center h-full">
-                  <div className="order-2 sm:order-1 flex-1">
-                    <CardsForPhone
-                      title={`${phoneModel.model}`}
-                      image={phoneModel.image || fallbackImageSVG}
-                      startingText="Starting at"
-                      price={phoneModel.startingPrice}
-                      className="flex flex-col h-full"
-                      imageContainerClassName="hidden sm:block w-full h-36 md:h-40 lg:h-44 overflow-hidden relative"
-                      imageClassName="md:p-3 transition-transform duration-300 group-hover:scale-105"
-                      contentClassName="flex-1 p-3 md:p-4 lg:p-5 border-t sm:border-t border-gray-100"
-                      titleClassName="text-black line-clamp-2 text-sm md:text-base lg:text-base mb-0.5 md:mb-1 lg:mb-1.5"
-                      startingTextClassName="text-gray-500 text-xs md:text-xs lg:text-xs py-0.5"
-                      priceClassName="text-base md:text-lg lg:text-lg text-black py-0.5"
-                      priority={phoneModel.id === phoneModels[0]?.id}
-                    />
-                  </div>
-                  <div className="order-1 sm:hidden w-1/3 p-2 relative">
-                    <Image
-                      src={phoneModel.image || fallbackImageSVG}
-                      alt={phoneModel.model}
-                      width={100}
-                      height={72}
-                      className="w-full h-18 object-contain transition-transform duration-300 group-hover:scale-105"
-                      priority={phoneModel.id === phoneModels[0]?.id}
-                    />
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">
+              {phoneModels.map((phoneModel) => (
+                <Link
+                  key={phoneModel.id}
+                  href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
+                  className="group block h-full transition-all duration-300"
+                >
+                  <CardsForPhone
+                    title={phoneModel.model}
+                    image={"/homepage_images/iphone.jpg"}
+                    startingText="Starting at"
+                    price={phoneModel.startingPrice}
+                  />
+                </Link>
+              ))}
+            </div>
+
+            {totalPages > 0 && (
+              <div className="mt-8 md:mt-9 lg:mt-10 flex flex-col items-center">
+                <div className="text-xs md:text-sm text-gray-500 mb-2 md:mb-2.5 lg:mb-3">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-3 md:px-3.5 lg:px-4 py-1.5 md:py-1.5 lg:py-2 rounded-md text-sm md:text-sm lg:text-base font-medium transition-all duration-200 flex items-center gap-1 ${
+                      currentPage === 1
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                        : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
+                    }`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={currentPage === 1 ? "text-gray-400" : "text-gray-600"}
+                    >
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    Previous
+                  </button>
+
+                  {renderPaginationButtons}
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 md:px-3.5 lg:px-4 py-1.5 md:py-1.5 lg:py-2 rounded-md text-sm md:text-sm lg:text-base font-medium transition-all duration-200 flex items-center gap-1 ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
+                        : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
+                    }`}
+                  >
+                    Next
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={currentPage === totalPages ? "text-gray-400" : "text-gray-600"}
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
                 </div>
               </div>
-            </Link>
-          ))}
-        </div>
-
-        {phoneModels.length === 0 && !isLoading && (
-          <div className="bg-gray-50 rounded-lg p-6 md:p-8 lg:p-10 text-center">
-            <p className="text-gray-500 text-sm md:text-base">No products found</p>
-          </div>
+            )}
+          </>
         )}
 
-        {totalPages > 0 && !isLoading && (
-          <div className="mt-8 md:mt-9 lg:mt-10 flex flex-col items-center">
-            <div className="text-xs md:text-sm text-gray-500 mb-2 md:mb-2.5 lg:mb-3">
-              Page {currentPage} of {totalPages}
-            </div>
-            <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={`px-3 md:px-3.5 lg:px-4 py-1.5 md:py-1.5 lg:py-2 rounded-md text-sm md:text-sm lg:text-base font-medium transition-all duration-200 flex items-center gap-1 ${
-                  currentPage === 1
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-                    : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
-                }`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={currentPage === 1 ? "text-gray-400" : "text-gray-600"}
-                >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-                Previous
-              </button>
-
-              {renderPaginationButtons}
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={`px-3 md:px-3.5 lg:px-4 py-1.5 md:py-1.5 lg:py-2 rounded-md text-sm md:text-sm lg:text-base font-medium transition-all duration-200 flex items-center gap-1 ${
-                  currentPage === totalPages
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-                    : "bg-white border border-gray-200 text-black hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm"
-                }`}
-              >
-                Next
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={currentPage === totalPages ? "text-gray-400" : "text-gray-600"}
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="h-16 md:h-18 lg:h-20"></div>
+        <div className="h-10"></div>
 
         {/* Simplified promotional banner section - no images, maintains layout on mobile */}
         <div className="rounded-xl overflow-hidden bg-indigo-500 mb-6 md:mb-7 lg:mb-8">

@@ -49,13 +49,13 @@ const footerSections: Record<string, FooterLink[]> = {
       title: "About Us",
       id: "about-us",
       content:
-        "Ringvio is Nepal's premier marketplace for high-quality refurbished devices. Based in Kathmandu, we're proud to be one of the best places in Nepal to purchase reliable used phones. Our expert technicians thoroughly inspect, clean, and refurbish each device to ensure optimal performance.\n\nWe specialize in restoring smartphones to like-new condition, replacing worn components, updating software, and rigorously testing functionality. By extending the lifecycle of electronics, we're reducing e-waste while providing affordable options for Nepali consumers. Since 2020, we've helped thousands of customers find premium pre-owned devices at a fraction of retail prices.",
+        "MobileLoom is Nepal's premier marketplace for high-quality refurbished devices. Based in Kathmandu, we're proud to be one of the best places in Nepal to purchase reliable used phones. Our expert technicians thoroughly inspect, clean, and refurbish each device to ensure optimal performance.\n\nWe specialize in restoring smartphones to like-new condition, replacing worn components, updating software, and rigorously testing functionality. By extending the lifecycle of electronics, we're reducing e-waste while providing affordable options for Nepali consumers. Since 2020, we've helped thousands of customers find premium pre-owned devices at a fraction of retail prices.",
     },
     {
       title: "Contact",
       id: "contact",
       content:
-        "Email: support@ringvio.com\nPhone: (977) 01-1234567\nHours: Sunday-Friday, 10am-6pm NPT\n\nVisit our store:\nNew Road, Kathmandu\nNepal\n\nFor customer support inquiries, please include your order number in all communications.",
+        "Email: support@mobileloom.com\nPhone: (977) 01-1234567\nHours: Sunday-Friday, 10am-6pm NPT\n\nVisit our store:\nNew Road, Kathmandu\nNepal\n\nFor customer support inquiries, please include your order number in all communications.",
     },
   ],
   Support: [
@@ -288,7 +288,7 @@ const Dialog: React.FC<DialogProps> = ({ isOpen, onClose, title, content }) => {
                           <p className="text-sm sm:text-base text-gray-500">
                             <strong>Contact Information:</strong>
                             <br />
-                            Email: support@ringvio.com
+                            Email: support@mobileloom.com
                             <br />
                             Phone: 2693662076
                             <br />
@@ -484,7 +484,7 @@ export default function Footer() {
               {/* Brand section */}
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <span className="text-2xl font-bold tracking-wider text-black">RingVio</span>
+                  <span className="text-2xl font-bold tracking-wider text-black">MobileLoom</span>
                 </div>
                 <p className="text-gray-600 text-sm max-w-xs">
                   Buying and selling refurbished devices made simple. Quality guaranteed with every purchase.
@@ -528,13 +528,13 @@ export default function Footer() {
           <div className="border-t border-gray-200 bg-gray-50">
             <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-                <p className="text-xs text-gray-500">© {currentYear} RingVio. All rights reserved.</p>
+                <p className="text-xs text-gray-500">© {currentYear} MobileLoom. All rights reserved.</p>
                 <div className="flex space-x-6">
                   <button
                     onClick={() =>
                       openDialog(
                         "Privacy Policy",
-                        "This privacy policy outlines how RingVio collects, uses, and protects your personal information. We respect your privacy and are committed to maintaining the confidentiality of your personal data.\n\nWe collect basic information necessary to process your orders, including name, address, email, and payment details. Your data is secured using industry-standard encryption protocols and is never shared with unauthorized third parties.\n\nFor complete details about our privacy practices, you may request a copy of our full privacy policy by contacting our customer service team."
+                        "This privacy policy outlines how MobileLoom collects, uses, and protects your personal information. We respect your privacy and are committed to maintaining the confidentiality of your personal data.\n\nWe collect basic information necessary to process your orders, including name, address, email, and payment details. Your data is secured using industry-standard encryption protocols and is never shared with unauthorized third parties.\n\nFor complete details about our privacy practices, you may request a copy of our full privacy policy by contacting our customer service team."
                       )
                     }
                     className="text-xs text-gray-500 hover:text-black transition-colors duration-200"
@@ -545,7 +545,7 @@ export default function Footer() {
                     onClick={() =>
                       openDialog(
                         "Terms of Service",
-                        "By using the RingVio website and services, you agree to these Terms of Service. These terms outline the rules for using our platform, purchasing policies, and your rights and responsibilities as a user.\n\nAll products sold by RingVio are guaranteed to be fully functional and in the condition described. We verify the authenticity and quality of all devices before listing them for sale.\n\nPayment must be made in full before delivery of any product. We accept various payment methods including cash on delivery within Kathmandu Valley, bank transfers, and digital payment services like eSewa and Khalti."
+                        "By using the MobileLOOm website and services, you agree to these Terms of Service. These terms outline the rules for using our platform, purchasing policies, and your rights and responsibilities as a user.\n\nAll products sold by MobileLOOm are guaranteed to be fully functional and in the condition described. We verify the authenticity and quality of all devices before listing them for sale.\n\nPayment must be made in full before delivery of any product. We accept various payment methods including cash on delivery within Kathmandu Valley, bank transfers, and digital payment services like eSewa and Khalti."
                       )
                     }
                     className="text-xs text-gray-500 hover:text-black transition-colors duration-200"

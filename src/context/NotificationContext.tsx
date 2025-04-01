@@ -226,7 +226,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
               }}
             >
               <div
-                className="rounded-md shadow-lg max-w-md w-full mx-4 border-l-4"
+                className="rounded-md shadow-lg max-w-md w-full mx-4 border-l-4 sm:max-w-xs md:max-w-md"
                 style={{
                   backgroundColor: styles.bg,
                   borderLeftColor: styles.border,
@@ -235,7 +235,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center p-4 border-b" style={{ borderBottomColor: "#e0e0e0" }}>
-                  <h2 className="text-lg font-semibold flex items-center" style={{ color: styles.title }}>
+                  <h2 className="text-base md:text-lg font-semibold flex items-center" style={{ color: styles.title }}>
                     <span
                       className="h-6 w-6 rounded-full flex items-center justify-center text-sm font-bold mr-3"
                       style={{
@@ -245,7 +245,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                     >
                       {styles.icon}
                     </span>
-                    {notification.title}
+                    <span className="truncate">{notification.title}</span>
                   </h2>
                   <button
                     onClick={styles.showConfirmCancel ? handleCancel : hideNotification}
@@ -263,11 +263,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                 </div>
 
                 <div className="px-6 py-4">
-                  <p className="text-sm" style={{ color: "#333333" }}>
+                  <p className="text-xs md:text-sm" style={{ color: "#333333" }}>
                     {notification.message}
                   </p>
                   {notification.details && (
-                    <div className="mt-3 p-3 rounded text-sm overflow-auto max-h-40" style={{ backgroundColor: "#f7f7f7" }}>
+                    <div className="mt-3 p-3 rounded text-xs md:text-sm overflow-auto max-h-40" style={{ backgroundColor: "#f7f7f7" }}>
                       <pre className="whitespace-pre-wrap" style={{ color: "#333333" }}>
                         {notification.details}
                       </pre>
@@ -280,7 +280,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                     <>
                       <button
                         onClick={handleCancel}
-                        className="px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none mr-2"
+                        className="px-4 py-2 rounded text-xs md:text-sm font-medium transition-colors duration-200 focus:outline-none mr-2"
                         style={{
                           backgroundColor: styles.cancelButton || "#e0e0e0",
                           color: styles.cancelTextColor || "#555555",
@@ -296,7 +296,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                       </button>
                       <button
                         onClick={handleConfirm}
-                        className="px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none"
+                        className="px-4 py-2 rounded text-xs md:text-sm font-medium transition-colors duration-200 focus:outline-none"
                         style={{
                           backgroundColor: styles.button,
                           color: "#ffffff",
@@ -314,7 +314,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
                   ) : (
                     <button
                       onClick={hideNotification}
-                      className="px-4 py-2 rounded text-sm font-medium transition-colors duration-200 focus:outline-none"
+                      className="px-4 py-2 rounded text-xs md:text-sm font-medium transition-colors duration-200 focus:outline-none"
                       style={{
                         backgroundColor: styles.button,
                         color: "#ffffff",
@@ -346,16 +346,3 @@ export const useNotification = (): NotificationContextType => {
   }
   return context;
 };
-
-// Add these styles to your global CSS or use them inline
-const styles = `
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { transform: translateY(-20px); }
-  to { transform: translateY(0); }
-}
-`;

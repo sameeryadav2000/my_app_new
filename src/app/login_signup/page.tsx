@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useNotification } from "@/context/NotificationContext";
@@ -67,12 +67,7 @@ function LoginPageContent() {
   // This ensures any loading shown during navigation is hidden
   hideLoading();
 
-  // Validate form on data change
-  useEffect(() => {
-    validateForm();
-  }, [formData]);
-
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
 
     // Validate email
@@ -91,7 +86,12 @@ function LoginPageContent() {
 
     setErrors(newErrors);
     setIsFormValid(Object.keys(newErrors).length === 0);
-  };
+  }, [formData]);
+
+  // Validate form on data change
+  useEffect(() => {
+    validateForm();
+  }, [validateForm]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -92,6 +92,7 @@ export default function OrdersPage() {
           setProductReviews(reviewsData);
         }
       } catch (error) {
+        console.error("Error fetching orders: ", error);
         showError("Error", "Error fetching orders. Please check your connection and try again.");
       } finally {
         hideLoading();
@@ -99,7 +100,7 @@ export default function OrdersPage() {
     };
 
     fetchPurchasedItems();
-  }, []);
+  }, [hideLoading, showError, showLoading]);
 
   const fetchReviewsForProducts = async (items: PurchasedItem[]) => {
     const reviewsMap: ReviewsMap = {};
@@ -128,6 +129,8 @@ export default function OrdersPage() {
         };
       }
     } catch (error) {
+      console.error("Error fetching reviews: ", error);
+
       showError("Error", "Error fetching reviews:. Please check your connection and try again.");
     } finally {
       hideLoading();
@@ -188,6 +191,7 @@ export default function OrdersPage() {
       setShowReview(false);
       showSuccess("Success", "Review Submitted");
     } catch (error) {
+      console.error("Review could not be submitted: ", error);
       showError("Error", "Review could not be submitted. Please check your connection and try again.");
     } finally {
       hideLoading();
@@ -211,7 +215,7 @@ export default function OrdersPage() {
             </svg>
           </div>
           <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-          <p className="text-xs md:text-sm text-gray-500 mb-6">Looks like you haven't placed any orders yet.</p>
+          <p className="text-xs md:text-sm text-gray-500 mb-6">Looks like you have not placed any orders yet.</p>
           <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 md:py-2 px-4 md:px-6 rounded-lg transition-colors text-xs md:text-sm">
             Browse Products
           </button>

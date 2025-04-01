@@ -119,7 +119,7 @@ export default function ShippingPage() {
     return () => {
       abortController.abort();
     };
-  }, []);
+  }, [hideLoading, showError, showLoading]);
 
   // Set form data when editing existing shipping info
   useEffect(() => {

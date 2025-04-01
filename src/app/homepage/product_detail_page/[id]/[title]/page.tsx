@@ -2,9 +2,10 @@
 
 "use client";
 
+import LoadingScreen from "@/app/components/LoadingScreen";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { CartItem, Cart } from "@/context/CartContext";
@@ -14,62 +15,39 @@ import ReviewList from "@/app/components/ReviewList";
 import { formatNPR } from "@/utils/formatters";
 import Image from "next/image";
 
-interface ConditionOption {
-  condition: string;
-}
-
-interface StorageOption {
-  storage: string;
-}
-
-interface ColorOption {
+interface Products {
   id: number;
-  colorName: string;
-  colorId: number;
-  images: {
-    image: string;
-    mainImage: boolean;
-  }[];
-  price: number;
   phoneId: number;
-  sellerName: string;
-  sellerId: string;
-  idForReview: number;
+  condition: string;
+  storage: string;
+  colorId: number | null;
+  colorName: string;
+  price: number;
+  sellerId: string | null;
+  sellerName: string | null;
+  phoneName: string;
+  phoneModel: string;
+  images: ProductImage[];
+}
+
+interface ProductImage {
+  image: string;
+  mainImage: boolean;
 }
 
 export default function ProductPage() {
-  const { showLoading, hideLoading } = useLoading();
+  const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError } = useNotification();
 
   const params = useParams();
   const phoneModelId = Number(params.id);
-  const phoneModelName = (params.title as string).replace(/-/g, " ");
 
-  const [selectedCondition, setSelectedCondition] = useState<string>("");
-  const [selectedStorage, setSelectedStorage] = useState<string>("");
-  const [selectedColor, setSelectedColor] = useState<string>("");
-
-  const [conditionOptions, setConditionOptions] = useState<ConditionOption[]>([]);
-  const [storageOptions, setStorageOptions] = useState<StorageOption[]>([]);
-  const [colorOptions, setColorOptions] = useState<ColorOption[]>([]);
-
-  const [priceSelected, setPriceSelected] = useState<number>(0);
-  const [phoneId, setPhoneId] = useState<string>("");
-  const [sellerId, setSellerId] = useState<string>("");
-  const [idForReview, setIdForReview] = useState<number>(0);
-  const [sellerName, setSellerName] = useState<string>("");
-  const [colorId, setColorId] = useState<number>(0);
-  const [modelImages, setModelImages] = useState<{ image: string; mainImage: boolean }[]>([]);
-
-  const [prevSelectedCondition, setPrevSelectedCondition] = useState<string>("");
-  const [prevSelectedStorage, setPrevSelectedStorage] = useState<string>("");
-  const [prevSelectedColor, setPrevSelectedColor] = useState<string>("");
-
-  const [reviewData, setReviewData] = useState({ averageRating: 0, reviewCount: 0 });
-
-  const isFirstRender = useRef(true);
+  const [products, setProducts] = useState<Products[]>([]);
+  const [selectedVariationId, setSelectedVariationId] = useState<number | null>(null);
 
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+
+  const [reviewData, setReviewData] = useState({ averageRating: 0, reviewCount: 0 });
 
   const colors: Record<string, string> = {
     Black: "bg-black",
@@ -86,20 +64,18 @@ export default function ProductPage() {
     Orange: "bg-orange-400",
   };
 
+  // In your component file
   useEffect(() => {
-    const fetchIphoneModels = async () => {
+    const fetchAllProducts = async () => {
       showLoading();
 
       try {
-        const response = await fetch(
-          `/api/phone_model_details?id=${phoneModelId}&condition=${selectedCondition}&storage=${selectedStorage}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const response = await fetch(`/api/phone_model_details?id=${phoneModelId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
 
         const result = await response.json();
 
@@ -108,67 +84,56 @@ export default function ProductPage() {
           return;
         }
 
-        if (!selectedCondition) {
-          setConditionOptions(result.data);
-        } else if (!selectedStorage && selectedCondition) {
-          setStorageOptions(result.data);
-        } else if (!selectedColor && selectedCondition) {
-          setColorOptions(result.data);
+        setProducts(result.data);
+
+        // Auto-select first variation
+        if (result.data.length > 0) {
+          setSelectedVariationId(result.data[0].id);
         }
       } catch (error) {
-        console.error("Failed to load phone model details: ", error);
-
-        showError("Error", "Failed to load phone model details. Please check your connection and try again.");
+        console.error("Failed to load phone variations:", error);
+        showError("Error", "Failed to load product details. Please check your connection and try again.");
       } finally {
         hideLoading();
       }
     };
 
-    fetchIphoneModels();
-  }, [selectedCondition, selectedStorage]);
+    fetchAllProducts();
+  }, [phoneModelId, showError, hideLoading, showLoading]);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+  const selectedVariation = useMemo(() => {
+    if (!selectedVariationId) return null;
+    return products.find((p) => p.id === selectedVariationId) || null;
+  }, [products, selectedVariationId]);
 
-    if (conditionOptions.length > 0 && selectedCondition === "") {
-      if (conditionOptions.some((option) => option.condition === prevSelectedCondition)) {
-        setSelectedCondition(prevSelectedCondition);
-      } else {
-        setSelectedCondition(conditionOptions[0].condition);
-      }
-    } else if (storageOptions.length > 0 && selectedStorage === "") {
-      if (storageOptions.some((option) => option.storage === prevSelectedStorage)) {
-        setSelectedStorage(prevSelectedStorage);
-      } else {
-        setSelectedStorage(storageOptions[0].storage);
-      }
-    } else if (colorOptions.length > 0 && selectedColor === "") {
-      if (colorOptions.some((option) => option.colorName === prevSelectedColor)) {
-        setSelectedColor(prevSelectedColor);
-      } else {
-        setSelectedColor(colorOptions[0].colorName);
-      }
-    }
-  }, [conditionOptions, storageOptions, colorOptions]);
+  const modelImages = useMemo(() => {
+    return selectedVariation?.images || [];
+  }, [selectedVariation]);
 
-  useEffect(() => {
-    if (selectedColor) {
-      const option = colorOptions.find((opt) => opt.colorName === selectedColor);
+  const availableConditions = useMemo(() => {
+    const conditions = [...new Set(products.map((p) => p.condition))];
+    return conditions;
+  }, [products]);
 
-      if (option) {
-        setColorId(option.colorId);
-        setIdForReview(option.idForReview);
-        setPriceSelected(option.price);
-        setSellerId(option.sellerId);
-        setSellerName(option.sellerName);
-        setPhoneId(option.id.toString());
-        setModelImages(option.images);
-      }
-    }
-  }, [selectedColor]);
+  const availableStorageOptions = useMemo(() => {
+    if (!selectedVariation) return [];
+    const condition = selectedVariation.condition;
+    return [...new Set(products.filter((p) => p.condition === condition).map((p) => p.storage))];
+  }, [products, selectedVariation]);
+
+  const availableColorOptions = useMemo(() => {
+    if (!selectedVariation) return [];
+    const condition = selectedVariation.condition;
+    const storage = selectedVariation.storage;
+    return products
+      .filter((p) => p.condition === condition && p.storage === storage)
+      .map((p) => ({
+        id: p.id,
+        colorId: p.colorId,
+        colorName: p.colorName,
+        price: p.price,
+      }));
+  }, [products, selectedVariation]);
 
   const nextImage = () => {
     if (modelImages.length === 0) return;
@@ -180,50 +145,55 @@ export default function ProductPage() {
     setCurrentImageIndex((prev) => (prev - 1 + modelImages.length) % modelImages.length);
   };
 
-  const handleConditionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPrevSelectedStorage(selectedStorage);
-    setPrevSelectedColor(selectedColor);
-
-    setSelectedStorage("");
-    setSelectedColor("");
-
-    setSelectedCondition(event.target.value);
+  const handleConditionChange = (condition: string) => {
+    // Find first variation with this condition
+    const firstMatchingVariation = products.find((p) => p.condition === condition);
+    if (firstMatchingVariation) {
+      setSelectedVariationId(firstMatchingVariation.id);
+      setCurrentImageIndex(0); // Reset image index
+    }
   };
 
-  const handleStorageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPrevSelectedCondition(selectedCondition);
-    setPrevSelectedColor(selectedColor);
-
-    setSelectedCondition("");
-    setSelectedColor("");
-
-    setSelectedStorage(event.target.value);
+  // Handle storage change
+  const handleStorageChange = (storage: string) => {
+    if (!selectedVariation) return;
+    // Find first variation with current condition and new storage
+    const firstMatchingVariation = products.find((p) => p.condition === selectedVariation.condition && p.storage === storage);
+    if (firstMatchingVariation) {
+      setSelectedVariationId(firstMatchingVariation.id);
+      setCurrentImageIndex(0); // Reset image index
+    }
   };
 
-  const handleColorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedColor(event.target.value);
+  // Handle color change
+  const handleColorChange = (variationId: number) => {
+    setSelectedVariationId(variationId);
+    setCurrentImageIndex(0); // Reset image index
   };
 
   const { data: session } = useSession();
   const { syncCart } = useCart();
 
-  const fallbackImageSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d3d3d3'/%3E%3Cg fill='white'%3E%3Cpath d='M30,30 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Cpath d='M40,40 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='65' cy='50' r='4'/%3E%3Cpolygon points='50,60 60,50 70,60'/%3E%3C/g%3E%3C/svg%3E`;
-
-  const imageToUse = modelImages.find((img) => img.mainImage)?.image;
+  const imageToUse = useMemo(() => {
+    if (!modelImages || modelImages.length === 0) return "";
+    const mainImage = modelImages.find((img) => img.mainImage);
+    return mainImage ? mainImage.image : modelImages[0].image; // Fallback to first image if no main image
+  }, [modelImages]);
 
   const handleAddToCart = async () => {
-    if (!phoneModelId || Array.isArray(phoneModelId)) {
-      return;
-    }
+    if (!selectedVariation) return;
 
+    // Ensure all required fields are available
     const newItem: CartItem = {
-      id: phoneId,
+      id: selectedVariation.id,
       titleId: phoneModelId,
-      condition: selectedCondition.charAt(0).toUpperCase() + selectedCondition.slice(1),
-      storage: selectedStorage,
-      colorId: colorId,
-      price: priceSelected,
-      sellerId: sellerId,
+      condition: selectedVariation.condition
+        ? selectedVariation.condition.charAt(0).toUpperCase() + selectedVariation.condition.slice(1)
+        : "",
+      storage: selectedVariation.storage || "",
+      colorId: selectedVariation.colorId || 0,
+      price: selectedVariation.price || 0,
+      sellerId: selectedVariation.sellerId || "",
       quantity: 1,
       image: imageToUse || "",
     };
@@ -324,17 +294,17 @@ export default function ProductPage() {
   useEffect(() => {
     // Reset when a new color is selected
     setReviewData({ averageRating: 0, reviewCount: 0 });
-  }, [colorId, idForReview]);
+  }, [selectedVariation?.colorId, phoneModelId]);
 
   return (
     <div>
       <StickyHeader
-        title={phoneModelName}
-        condition={selectedCondition}
-        storage={selectedStorage}
-        color={selectedColor}
-        price={priceSelected}
-        image={imageToUse || fallbackImageSVG}
+        title={selectedVariation?.phoneName || ""}
+        condition={selectedVariation?.condition || ""}
+        storage={selectedVariation?.storage || ""}
+        color={selectedVariation?.colorName || ""}
+        price={selectedVariation?.price || 0}
+        image={imageToUse}
         onAddToCart={handleAddToCart}
       />
 
@@ -346,91 +316,110 @@ export default function ProductPage() {
           <div className="w-full md:w-1/2 bg-white rounded-lg">
             <div className="md:w-full md:h-auto md:sticky md:top-20 max-w-lg mx-auto">
               <div className="h-auto flex flex-col justify-center py-4">
-                <div className="relative h-[250px] md:h-[400px] w-full mb-4">
-                  {modelImages.length > 0 ? (
-                    <div className="absolute inset-0">
-                      <Image
-                        src={modelImages[currentImageIndex].image}
-                        alt={`${selectedColor} iPhone - View ${currentImageIndex + 1}`}
-                        fill
-                        style={{ objectFit: "contain" }}
-                        className="rounded-lg"
-                      />
-                    </div>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-black">No Images</div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-center">
-                  <button
-                    onClick={prevImage}
-                    disabled={modelImages.length <= 1}
-                    className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
-                    aria-label="Previous thumbnail"
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M15 18l-6-6 6-6" />
-                    </svg>
-                  </button>
-
-                  <div className="flex gap-2 overflow-x-auto max-w-[80%]">
-                    {modelImages.map((imageObj, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden border-2
-        ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
-                      >
-                        <div className="relative h-full w-full">
-                          <Image src={imageObj.image} alt={`Thumbnail ${index + 1}`} fill style={{ objectFit: "cover" }} />
+                {isLoading || !modelImages ? (
+                  <LoadingScreen />
+                ) : (
+                  <>
+                    <div className="relative h-[250px] md:h-[400px] w-full mb-4">
+                      {modelImages && modelImages.length > 0 ? (
+                        <div className="absolute inset-0">
+                          <Image
+                            src="/homepage_images/iphone.jpg"
+                            // src={modelImages[currentImageIndex].image}
+                            alt={`${selectedVariation?.colorName || ""} ${selectedVariation?.phoneModel || ""} - View ${
+                              currentImageIndex + 1
+                            }`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            style={{ objectFit: "contain" }}
+                            className="rounded-lg"
+                            priority={true} // Only the main image should be priority
+                          />
                         </div>
-                      </button>
-                    ))}
-                  </div>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-black">No Images</div>
+                      )}
+                    </div>
 
-                  <button
-                    onClick={nextImage}
-                    disabled={modelImages.length <= 1}
-                    className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
-                    aria-label="Next thumbnail"
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M9 18l6-6-6-6" />
-                    </svg>
-                  </button>
-                </div>
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={prevImage}
+                        disabled={!modelImages || modelImages.length <= 1}
+                        className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
+                        aria-label="Previous thumbnail"
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                      </button>
+
+                      <div className="flex gap-2 overflow-x-auto max-w-[80%]">
+                        {modelImages &&
+                          modelImages.map((imageObj, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentImageIndex(index)}
+                              className={`h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden border-2
+                ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
+                            >
+                              <div className="relative h-full w-full">
+                                <Image
+                                  src={imageObj.image}
+                                  alt={`Thumbnail ${index + 1}`}
+                                  fill
+                                  sizes="64px"
+                                  style={{ objectFit: "cover" }}
+                                  // No priority for thumbnails
+                                />
+                              </div>
+                            </button>
+                          ))}
+                      </div>
+
+                      <button
+                        onClick={nextImage}
+                        disabled={!modelImages || modelImages.length <= 1}
+                        className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
+                        aria-label="Next thumbnail"
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           {/* Right side container box */}
-          <div className="w-full md:w-1/2 bg-white rounded-lg">
+          <div className="w-full md:w-1/2">
             {/* Info First Section */}
             <div className="md:w-full md:h-[60vh] flex pb-5 flex-col justify-center">
               <h1 className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold mb-4 text-black tracking-tight">
-                {phoneModelName} {selectedStorage} - {selectedColor}
+                {selectedVariation?.phoneModel} {selectedVariation?.storage} - {selectedVariation?.colorName}
               </h1>
 
-              {/* Rating Display */}
+              {/* Rating Display - Kept as is */}
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex">
                   {Array.from({ length: 5 }, (_, i) => (
@@ -464,11 +453,14 @@ export default function ProductPage() {
               <div className="mb-5">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-baseline">
-                    <span className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold tracking-tight">{formatNPR(priceSelected)}</span>
+                    <span className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold tracking-tight">
+                      {selectedVariation && formatNPR(selectedVariation.price)}
+                    </span>
                   </div>
 
                   <button
                     onClick={handleAddToCart}
+                    disabled={isLoading}
                     className="bg-black hover:bg-black text-white px-4 py-2 md:px-5 lg:px-6 md:py-2.5 lg:py-3 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 shadow-sm text-sm md:text-sm lg:text-base"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:h-5 lg:w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -583,22 +575,23 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Condition Section */}
+            {/* Condition Selection */}
             <div className="md:w-full md:h-[60vh] flex pb-8 flex-col justify-center tracking-tight">
               <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5">Select the condition</h2>
 
               <div className="grid grid-cols-2 gap-3 md:gap-3 lg:gap-4">
                 {["New", "Excellent", "Good", "Fair"].map((condition, index) => {
-                  const isAvailable = conditionOptions.some((option) => option.condition === condition);
+                  const isAvailable = availableConditions.includes(condition);
                   const isNew = condition === "New";
+                  const isSelected = selectedVariation?.condition === condition;
 
                   return (
                     <label
                       key={index}
                       className={`flex flex-col border rounded-lg overflow-hidden
-          transition-all duration-200 ease-in-out relative
-          ${!isAvailable ? "opacity-40 bg-gray-100 border-gray-300 cursor-not-allowed" : "cursor-pointer"}
-          ${selectedCondition === condition && isAvailable ? "border-black bg-white" : "border-black hover:border-black"}`}
+                      transition-all duration-200 ease-in-out relative
+                      ${!isAvailable ? "opacity-40 bg-gray-100 border-gray-300 cursor-not-allowed" : "cursor-pointer"}
+                      ${isSelected && isAvailable ? "border-black bg-white" : "border-black hover:border-black"}`}
                     >
                       {isNew && isAvailable && (
                         <div className="w-full bg-black text-white text-xs text-center py-0.5 font-medium">
@@ -614,8 +607,8 @@ export default function ProductPage() {
                           name="condition"
                           className="h-3 w-3 md:h-3.5 lg:h-4 md:w-3.5 lg:w-4 accent-black"
                           value={condition}
-                          checked={selectedCondition === condition}
-                          onChange={handleConditionChange}
+                          checked={isSelected}
+                          onChange={() => handleConditionChange(condition)}
                           disabled={!isAvailable}
                         />
 
@@ -623,9 +616,9 @@ export default function ProductPage() {
                           <span className={`text-sm md:text-lg lg:text-base capitalize ${!isAvailable ? "line-through" : ""}`}>
                             {condition}
                           </span>
-                          {selectedCondition === condition && selectedColor && isAvailable ? (
+                          {isSelected && isAvailable ? (
                             <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1">
-                              {formatNPR(colorOptions.find((opt) => opt.colorName === selectedColor)?.price)}
+                              {formatNPR(selectedVariation.price)}
                             </span>
                           ) : (
                             <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
@@ -672,33 +665,32 @@ export default function ProductPage() {
                 </div>
               </div>
             </div>
-
             {/* Storage Section */}
             <div className="md:w-full md:h-[60vh] flex pb-8 flex-col justify-center">
               <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5 tracking-tight">Select storage</h2>
 
               <div className="flex flex-col gap-3 md:gap-3 lg:gap-4">
-                {storageOptions.length > 0 ? (
-                  storageOptions.map((option, index) => (
+                {availableStorageOptions.length > 0 ? (
+                  availableStorageOptions.map((storage, index) => (
                     <label
                       key={index}
                       className={`flex items-center justify-between p-2.5 md:p-3 lg:p-4 border rounded-lg cursor-pointer transition-all duration-200 tracking-tight
-          ${selectedStorage === option.storage ? "border-black bg-white" : "border-black hover:border-black"}`}
+            ${selectedVariation?.storage === storage ? "border-black bg-white" : "border-black hover:border-black"}`}
                     >
                       <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
                         <input
                           type="radio"
                           name="storage"
                           className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 accent-black"
-                          value={option.storage}
-                          checked={selectedStorage === option.storage}
-                          onChange={handleStorageChange}
+                          value={storage}
+                          checked={selectedVariation?.storage === storage}
+                          onChange={() => handleStorageChange(storage)}
                         />
-                        <span className="text-sm md:text-lg lg:text-base tracking-tight">{option.storage}</span>
+                        <span className="text-sm md:text-lg lg:text-base tracking-tight">{storage}</span>
                       </div>
-                      {selectedStorage === option.storage && selectedColor ? (
+                      {selectedVariation?.storage === storage ? (
                         <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1 tracking-tight">
-                          {formatNPR(colorOptions.find((opt) => opt.colorName === selectedColor)?.price)}
+                          {formatNPR(selectedVariation.price)}
                         </span>
                       ) : (
                         <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
@@ -716,69 +708,67 @@ export default function ProductPage() {
               <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5 tracking-tight">Select the color</h2>
 
               <div className="grid grid-cols-2 gap-1.5 md:gap-2 lg:gap-2 w-full">
-                {colorOptions.length > 0 ? (
-                  colorOptions.map((option, index) => (
-                    <label
-                      key={index}
-                      className={`flex items-center gap-2 md:gap-3 lg:gap-4 p-1.5 md:p-2 lg:p-2 border rounded-lg cursor-pointer
-                   transition-all duration-200 ease-in-out
-                  ${selectedColor === option.colorName ? "border-black bg-white" : "border-black hover:border-black"}`}
-                    >
-                      <input
-                        type="radio"
-                        name="color"
-                        className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 accent-black"
-                        value={option.colorName}
-                        checked={selectedColor === option.colorName}
-                        onChange={handleColorChange}
-                      />
-                      <div
-                        className={`w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 rounded-full ${
-                          Object.keys(colors).includes(option.colorName) ? colors[option.colorName] : "bg-white"
-                        }`}
-                      ></div>
+                {availableColorOptions.length > 0 ? (
+                  availableColorOptions.map((colorOption, index) => {
+                    const colorClass = colors[colorOption.colorName] || "bg-gray-200";
+                    const isSelected = selectedVariation?.id === colorOption.id;
 
-                      <div className="flex flex-col">
-                        <span className="text-sm md:text-lg lg:text-base text-black capitalize">{option.colorName}</span>
-                        <span className="text-sm md:text-lg lg:text-lg text-black">{formatNPR(option.price)}</span>
-                      </div>
-                    </label>
-                  ))
+                    return (
+                      <label
+                        key={index}
+                        className={`flex items-center gap-2 md:gap-3 lg:gap-4 p-1.5 md:p-2 lg:p-2 border rounded-lg cursor-pointer
+              transition-all duration-200 ease-in-out
+              ${isSelected ? "border-black bg-white" : "border-black hover:border-black"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="color"
+                          className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 accent-black"
+                          value={colorOption.id}
+                          checked={isSelected}
+                          onChange={() => handleColorChange(colorOption.id)}
+                        />
+                        <div className={`w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 rounded-full ${colorClass}`}></div>
+
+                        <div className="flex flex-col">
+                          <span className="text-sm md:text-lg lg:text-base text-black capitalize">{colorOption.colorName}</span>
+                          <span className="text-sm md:text-lg lg:text-lg text-black">{formatNPR(colorOption.price)}</span>
+                        </div>
+                      </label>
+                    );
+                  })
                 ) : (
-                  <p className="col-span-full text-black text-sm md:text-sm lg:text-base">No condition options available</p>
+                  <p className="col-span-full text-black text-sm md:text-sm lg:text-base">No color options available</p>
                 )}
               </div>
             </div>
-
             {/* Last Section */}
             <div className="md:w-full md:h-[60vh] flex flex-col justify-center tracking-tight">
               <div className="max-w-2xl">
                 <div className="flex justify-between items-start mb-4 lg:mb-5">
                   <h1 className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold">Your Dream Device</h1>
                 </div>
-
                 <div className="border rounded-lg p-4 md:p-5 lg:p-6 mb-3 md:mb-4 bg-white shadow-sm">
                   <div className="flex items-center gap-1.5 md:gap-2 mb-3 md:mb-4">
-                    <h2 className="text-lg md:text-base lg:text-xl">{phoneModelName}</h2>
+                    <h2 className="text-lg md:text-base lg:text-xl">{selectedVariation?.phoneModel}</h2>
                   </div>
 
                   <div className="flex gap-1.5 md:gap-2 mb-3 md:mb-4">
                     <span className="px-2 md:px-2.5 lg:px-3 py-0.5 md:py-0.5 lg:py-1 text-sm md:text-lg lg:text-lg border capitalize bg-white rounded-md">
-                      {selectedCondition}
+                      {selectedVariation?.condition}
                     </span>
                     <span className="px-2 md:px-2.5 lg:px-3 py-0.5 md:py-0.5 lg:py-1 text-sm md:text-lg lg:text-lg border bg-white rounded-md">
-                      {selectedStorage}
+                      {selectedVariation?.storage}
                     </span>
                     <span className="px-2 md:px-2.5 lg:px-3 py-0.5 md:py-0.5 lg:py-1 text-sm md:text-lg lg:text-lg border bg-white rounded-md">
-                      {selectedColor}
+                      {selectedVariation?.colorName}
                     </span>
                   </div>
 
                   <div className="flex items-baseline gap-1.5 md:gap-2">
-                    <h2 className="text-base md:text-lg lg:text-xl font-bold">{formatNPR(priceSelected)}</h2>
+                    <h2 className="text-base md:text-lg lg:text-xl font-bold">{formatNPR(selectedVariation?.price)}</h2>
                   </div>
                 </div>
-
                 <button
                   onClick={handleAddToCart}
                   className="w-full bg-black hover:bg-black text-white px-4 md:px-5 lg:px-6 py-2 md:py-2.5 lg:py-3 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm text-sm md:text-sm lg:text-base"
@@ -794,7 +784,6 @@ export default function ProductPage() {
                   </svg>
                   Add to cart
                 </button>
-
                 <div className="mb-3 md:mb-4 mt-3 md:mt-4">
                   <div className="flex items-center p-2 md:p-2.5 lg:p-3 bg-blue-50 rounded-lg mb-1.5 md:mb-2 text-sm md:text-sm lg:text-sm">
                     <span className="mr-2 md:mr-3">🚚</span>
@@ -811,9 +800,8 @@ export default function ProductPage() {
                     <span>6-month warranty</span>
                   </div>
                 </div>
-
                 <div className="mt-2 md:mt-3 text-sm md:text-sm text-black">
-                  Proudly refurbished by <span className="font-medium">{sellerName}</span> 🇳🇵
+                  Proudly refurbished by <span className="font-medium">{selectedVariation?.sellerName}</span> 🇳🇵
                 </div>
               </div>
             </div>
@@ -825,15 +813,17 @@ export default function ProductPage() {
         <div className="w-[95%] md:w-[70%] mx-auto">
           <div className="border-b border-gray-300 pb-3 md:pb-3.5 lg:pb-4 mb-4 md:mb-5 lg:mb-6">
             <h1 className="text-xl md:text-xl lg:text-2xl font-bold mb-0.5 md:mb-0.5 lg:mb-1">Customer Reviews</h1>
-            {phoneModelName && selectedStorage && selectedColor && (
+            {selectedVariation?.phoneModel && selectedVariation?.storage && selectedVariation?.colorName && (
               <p className="text-sm md:text-lg lg:text-lg text-gray-600">
-                <span className="font-medium">{phoneModelName}</span> • {selectedStorage} •{" "}
-                <span className="capitalize">{selectedColor}</span>
+                <span className="font-medium">{selectedVariation?.phoneModel}</span> • {selectedVariation?.storage} •{" "}
+                <span className="capitalize">{selectedVariation?.colorName}</span>
               </p>
             )}
           </div>
 
-          {colorId && <ReviewList modelId={idForReview} colorId={colorId} onReviewDataLoaded={setReviewData} />}
+          {selectedVariation?.colorId && (
+            <ReviewList modelId={phoneModelId} colorId={selectedVariation?.colorId} onReviewDataLoaded={setReviewData} />
+          )}
         </div>
       </div>
     </div>

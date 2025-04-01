@@ -11,7 +11,7 @@ interface AccountDropdownProps {
 }
 
 export default function LoggedInOptions({ session, onLogout }: AccountDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const firstName = session?.user?.firstName;
@@ -28,7 +28,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+  }, [isOpen, dropdownRef]);
 
   return (
     <div className="relative dropdown" ref={dropdownRef}>
@@ -37,7 +37,9 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
         className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 focus:outline-none"
         aria-label="Account menu"
       >
-        <div className="w-7 h-7 bg-black text-white flex items-center justify-center rounded-full text-sm font-medium">{firstLetter}</div>
+        <div className="w-5 h-5 md:w-6 md:h-6 bg-black text-white flex items-center justify-center rounded-full text-sm font-medium">
+          {firstLetter}
+        </div>
       </button>
 
       {/* Dropdown Menu */}
@@ -56,7 +58,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
                   href="/homepage/account"
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200"
                 >
-                  <User className="w-4 h-4" />
+                  <User className="w-4 h-4 md:w-5 md:h-5" />
                   Account
                 </Link>
 
@@ -64,7 +66,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
                   href="/homepage/orders"
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200"
                 >
-                  <Package className="w-4 h-4" />
+                  <Package className="w-4 h-4 md:w-5 md:h-5" />
                   Orders
                 </Link>
 
@@ -75,7 +77,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
                   }}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200 w-full text-left"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4 md:w-5 md:h-5" />
                   Log out
                 </button>
               </div>

@@ -18,49 +18,55 @@ datasource db {
 model Phone {
   id             Int          @id @default(autoincrement())
   phone          String       
-  image          String?      
-  modelDropdowns PhoneModel[]
+  image          String
+
+  phoneModels PhoneModel[]
 }
 
 model PhoneModel {
-  id              Int                 @id @default(autoincrement())
-  model           String              
-  phoneId         Int    
-  phone           Phone               @relation(fields: [phoneId], references: [id])
-  details         PhoneModelDetails[]
-  images          ModelImage[]
-  cartItems       CartItem[]
-  purchasedItems  PurchasedItem[]
-  reviews         Review[]  
+  id                    Int                 @id @default(autoincrement())
+  model                 String              @unique
+  phoneId               Int    
+  phone                 Phone               @relation(fields: [phoneId], references: [id])
+
+  phoneModelDetails     PhoneModelDetails[]
+  images                ModelImage[]
+  cartItems             CartItem[]
+  purchasedItems        PurchasedItem[]
+  reviews               Review[]  
 
   @@index([phoneId])
 }
 
 model PhoneModelDetails {
-  id        Int         @id @default(autoincrement())
-  phoneId   Int     
-  phone     PhoneModel  @relation(fields: [phoneId], references: [id])
-  storage   String      
-  condition String      
+  id              Int         @id @default(autoincrement())
 
-  colorId   Int?      
-  color     Color?      @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
-  price     Float
-  available Boolean     @default(true)
-  purchased Boolean     @default(false)
+  phoneModelId    Int     
+  phoneModels     PhoneModel  @relation(fields: [phoneModelId], references: [id])
 
-  sellerId  String?
-  seller    Seller?     @relation(fields: [sellerId], references: [id])
-
-  createdBy String
-  admin     Admin       @relation(fields: [createdBy], references: [id])
-
-  createdAt DateTime?   @default(now())
-  updatedAt DateTime?   @updatedAt
-
-  @@index([phoneId])
+  storage         String      
+  condition       String      
+      
+  colorId         Int      
+  color           Color       @relation("ColorToPhoneModelDetails", fields: [colorId], references: [id])
+      
+  price           Float
+        
+  available       Boolean     @default(true)
+  purchased       Boolean     @default(false)
+      
+  sellerId        String
+  seller          Seller      @relation(fields: [sellerId], references: [id])
+      
+  adminId         String
+  admin           Admin       @relation(fields: [adminId], references: [id])
+      
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now()) @updatedAt
+      
+  @@index([phoneModelId])
   @@index([colorId])
-  @@index([createdBy])
+  @@index([adminId])
 }
 
 model Color {

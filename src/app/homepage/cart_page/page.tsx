@@ -98,7 +98,7 @@ export default function CartPage() {
         ) : (
           <div className="text-center py-8 xl:py-12 border border-gray-200 rounded-lg">
             <p className="text-sm xl:text-base font-medium text-gray-800">Your cart is empty.</p>
-            <p className="text-xs xl:text-sm text-gray-500 mt-1.5 xl:mt-2">Explore our collection to find something you'll love.</p>
+            <p className="text-xs xl:text-sm text-gray-500 mt-1.5 xl:mt-2">Explore our collection to find something you will love.</p>
           </div>
         )}
       </div>

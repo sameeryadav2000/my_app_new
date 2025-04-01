@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { formatNPR } from "@/utils/formatters";
 import Image from "next/image";
+import { useLoading } from "@/context/LoadingContext";
+import LoadingScreen from "@/app/components/LoadingScreen";
 
 interface StickyHeaderProps {
   title: string;
@@ -15,6 +17,7 @@ interface StickyHeaderProps {
 }
 
 export default function StickyHeader({ title, condition, storage, color, price, image, onAddToCart }: StickyHeaderProps) {
+  const { isLoading } = useLoading();
   const [isVisible, setIsVisible] = useState<boolean>(false);
 
   useEffect(() => {
@@ -38,17 +41,25 @@ export default function StickyHeader({ title, condition, storage, color, price, 
     >
       <div className="container mx-auto px-4 md:px-8 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gray-50 rounded-lg p-1 flex items-center justify-center hidden md:flex">
-              <Image src={image} alt={title} width={44} height={44} className="object-contain" />
+          {isLoading ? (
+            <LoadingScreen />
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gray-50 rounded-lg p-1 flex items-center justify-center hidden md:flex">
+                {image ? (
+                  <Image src={image} alt={title} width={44} height={44} className="object-contain" />
+                ) : (
+                  <div className="text-gray-400 text-xs text-center">No Image</div>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">{title}</span>
+                <span className="text-sm md:text-lg lg:text-lg capitalize">
+                  {condition} · {storage} · {color}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">{title}</span>
-              <span className="text-sm md:text-lg lg:text-lg capitalize">
-                {condition} · {storage} · {color}
-              </span>
-            </div>
-          </div>
+          )}
 
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end">

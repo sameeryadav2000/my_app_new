@@ -1,23 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useLoading } from "@/context/LoadingContext";
 
 export default function Logo() {
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const { isLoading } = useLoading();
+  const [hasAnimated, setHasAnimated] = useState<boolean>(false);
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
   useEffect(() => {
     // Initial animation when page loads
-    if (!isLoading && !hasAnimated) {
-      const timer = setTimeout(() => {
-        setHasAnimated(true);
-      }, 100);
+    const timer = setTimeout(() => {
+      setHasAnimated(true);
+    }, 100);
 
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, hasAnimated]);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Handle hover animation
   const handleMouseEnter = () => {
@@ -27,14 +23,14 @@ export default function Logo() {
       // Reset animation state after animation completes
       setTimeout(() => {
         setIsAnimating(false);
-      }, 350); // Animation duration + some buffer
+      }, 600); // Animation duration + some buffer
     }
   };
 
   return (
     <Link href="/" className="flex items-center" onMouseEnter={handleMouseEnter}>
-      <span className="text-2xl font-bold tracking-wider text-black relative">
-        {"RingVio".split("").map((letter, index) => (
+      <span className="text-xl md:text-2xl font-bold tracking-wider text-black relative">
+        {"MobileLoom".split("").map((letter, index) => (
           <span
             key={`ringvio-${index}`}
             className="inline-block transition-all"

@@ -87,7 +87,7 @@ function ResetPasswordContent() {
   // Validate form on data change
   useEffect(() => {
     validateForm();
-  }, [formData]);
+  }, [validateForm]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

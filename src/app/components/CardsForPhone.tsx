@@ -2,61 +2,39 @@ import React from "react";
 import { formatNPR } from "@/utils/formatters";
 import Image from "next/image";
 
-interface CardProps {
+interface PhoneCardProps {
   title: string;
   image: string;
   startingText: string;
-  price: string | number;
-
-  className: string;
-  imageContainerClassName: string;
-  imageClassName: string;
-  contentClassName: string;
-  titleClassName: string;
-  startingTextClassName: string;
-  priceClassName: string;
-  priority: boolean;
+  price: number | string;
 }
 
-const CardsForPhone: React.FC<CardProps> = ({
-  title,
-  image,
-  price,
-  startingText,
-
-  className = "",
-  imageContainerClassName = "",
-  imageClassName = "",
-  contentClassName = "",
-  titleClassName = "",
-  startingTextClassName = "",
-  priceClassName = "",
-  priority = false,
-}) => {
+export default function CardsForPhone({ title, image, startingText, price }: PhoneCardProps) {
   return (
-    <div className={`${className}`}>
-      {/* Image container */}
-      <div className={`${imageContainerClassName} relative`}>
-        <Image
-          className={`${imageClassName}`}
-          src={image}
-          alt={title}
-          fill
-          sizes="(max-width: 768px) 100vw, 300px"
-          style={{ objectFit: "contain" }}
-          priority={priority}
-        />
+    <div className="h-full border rounded-xl overflow-hidden group-hover:shadow-lg transition-all">
+      {/* For medium screens and up: vertical layout (original) */}
+      <div className="hidden md:block h-full">
+        <div className="relative h-32">
+          <Image src={image} alt={title} fill sizes="(min-width: 768px) 25vw, 100vw" style={{ objectFit: "contain" }} />
+        </div>
+        <div className="p-3">
+          <h2 className="font-medium">{title}</h2>
+          <p className="text-sm text-gray-500">{startingText}</p>
+          <div className="font-bold mt-1">{formatNPR(price)}</div>
+        </div>
       </div>
-      {/* Title container */}
-      <div className={`${contentClassName}`}>
-        <h2 className={`${titleClassName}`}>{title}</h2>
 
-        <p className={`${startingTextClassName}`}>{startingText}</p>
-
-        <div className={priceClassName}>{formatNPR(price)}</div>
+      {/* For small screens: horizontal layout (image left, text right) */}
+      <div className="flex md:hidden flex-row items-center h-full">
+        <div className="w-1/3 p-2 relative aspect-square">
+          <Image src={image} alt={title} fill sizes="(max-width: 767px) 33vw, 100vw" style={{ objectFit: "contain" }} />
+        </div>
+        <div className="w-2/3 p-3">
+          <h2 className="font-medium">{title}</h2>
+          <p className="text-sm text-gray-500">{startingText}</p>
+          <div className="font-bold mt-1">{formatNPR(price)}</div>
+        </div>
       </div>
     </div>
   );
-};
-
-export default CardsForPhone;
+}

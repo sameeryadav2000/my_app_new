@@ -30,7 +30,7 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
     return () => {
       hideLoading();
     };
-  }, []);
+  }, [hideLoading]);
 
   const handleCheckout = () => {
     showLoading();

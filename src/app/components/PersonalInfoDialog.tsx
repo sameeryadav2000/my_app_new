@@ -135,6 +135,7 @@ export default function PersonalInfoDialog({ isOpen, onClose }: PersonalInfoDial
 
       onClose();
     } catch (error) {
+      console.error("Error updating phone number: ", error);
       showError("Error", "Error updating phone number. Please check your connection and try again.");
     } finally {
       hideLoading();

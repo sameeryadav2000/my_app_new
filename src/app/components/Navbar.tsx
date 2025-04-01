@@ -24,7 +24,7 @@ export default function Navbar() {
 
               {/* Cart */}
               <Link href="/homepage/cart_page" className="relative p-1.5 text-gray-700 hover:text-black">
-                <ShoppingBag size={20} />
+                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
                 {cart.totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-black text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                     {cart.totalItems}

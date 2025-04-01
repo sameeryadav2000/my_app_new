@@ -6,8 +6,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    const condition = searchParams.get("condition");
-    const storage = searchParams.get("storage");
 
     if (!id || isNaN(Number(id))) {
       return NextResponse.json(
@@ -21,109 +19,75 @@ export async function GET(request: NextRequest) {
 
     const phoneId = parseInt(id);
 
-    const baseQueryConfig = {
+    // Fetch all phone model details for this phone ID
+    const allPhoneDetails = await prisma.phoneModelDetails.findMany({
       where: {
         phoneId,
         available: true,
         purchased: false,
-        ...(condition && { condition }),
-        ...(storage && { storage }),
       },
-    };
-
-    if (!condition) {
-      const conditions = await prisma.phoneModelDetails.findMany({
-        ...baseQueryConfig,
-        distinct: ["condition"],
-        select: {
-          condition: true,
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: conditions,
-      });
-    }
-
-    if (condition && !storage) {
-      const storageOptions = await prisma.phoneModelDetails.findMany({
-        ...baseQueryConfig,
-        distinct: ["storage"],
-        select: {
-          storage: true,
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: storageOptions,
-      });
-    }
-
-    const colorOptions = await prisma.phoneModelDetails.findMany({
-      ...baseQueryConfig,
       select: {
         id: true,
-        colorId: true,
         phoneId: true,
-        sellerId: true,
+        storage: true,
+        condition: true,
+        colorId: true,
         price: true,
-        color: true, // This will select all fields from the color model
+        sellerId: true,
+        // Include all relations
+        color: true,
         seller: true,
         phone: {
           include: {
-            phone: true, // This will include all fields from the nested phone relation
+            phone: true,
           },
         },
       },
     });
 
-    const colorOptionsWithImages = await Promise.all(
-      colorOptions.map(async (option) => {
-        if (option.colorId) {
-          const images = await prisma.modelImage.findMany({
-            where: {
-              phoneId: phoneId,
-              colorId: option.colorId,
-            },
-            select: {
-              image: true,
-              mainImage: true, // Added mainImage field selection
-            },
-          });
+    // Get all images for all color variations
+    const allColorIds = [...new Set(allPhoneDetails.filter((item) => item.colorId !== null).map((item) => item.colorId))];
 
-          return {
-            ...option,
-            // Include both image and mainImage in the returned objects
-            images: images.map((img) => ({
-              image: img.image,
-              mainImage: img.mainImage,
-            })),
-          };
-        }
-        return {
-          ...option,
-          images: [],
-        };
-      })
-    );
+    const allImages = await prisma.modelImage.findMany({
+      where: {
+        phoneId: phoneId,
+        colorId: {
+          in: allColorIds as number[],
+        },
+      },
+      select: {
+        colorId: true,
+        image: true,
+        mainImage: true,
+      },
+    });
 
-    const selectedData = colorOptionsWithImages.map((option) => ({
-      id: option.id,
-      colorName: option.color?.color,
-      colorId: option.colorId,
-      phoneId: option.phoneId,
-      idForReview: option.phoneId,
-      price: option.price,
-      sellerName: option.seller?.businessName,
-      sellerId: option.sellerId,
-      images: option.images,
-    }));
+    // Combine the phone details with their corresponding images
+    const fullData = allPhoneDetails.map((detail) => {
+      const detailImages = allImages.filter((img) => img.colorId === detail.colorId);
+
+      return {
+        id: detail.id,
+        phoneId: detail.phoneId,
+        condition: detail.condition,
+        storage: detail.storage,
+        colorId: detail.colorId,
+        colorName: detail.color?.color,
+        price: detail.price,
+        sellerId: detail.sellerId,
+        sellerName: detail.seller?.businessName,
+        phoneName: detail.phone?.phone?.phone,
+        phoneModel: detail.phone?.model,
+        images: detailImages.map((img) => ({
+          image: img.image,
+          mainImage: img.mainImage,
+        })),
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      data: selectedData,
+      data: fullData,
     });
   } catch (error) {
     console.error("Error fetching phone model details:", error);

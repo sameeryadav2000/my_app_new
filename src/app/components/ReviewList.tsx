@@ -89,7 +89,7 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
     };
 
     fetchReviews();
-  }, [modelId, colorId, onReviewDataLoaded]);
+  }, [modelId, colorId, onReviewDataLoaded, hideLoading, showLoading, showInfo]);
 
   // Get unique model names for filtering (with explicit type assertion)
   const uniqueModels = [
@@ -126,20 +126,19 @@ export default function EnhancedReviewList({ modelId, colorId, onReviewDataLoade
     });
   };
 
-  const generateRatingDistribution = () => {
-    const distribution = [0, 0, 0, 0, 0];
+  // const generateRatingDistribution = () => {
+  //   const distribution = [0, 0, 0, 0, 0];
 
-    reviews.forEach((review) => {
-      const index = 5 - review.rating;
-      if (index >= 0 && index < 5) {
-        distribution[index]++;
-      }
-    });
+  //   reviews.forEach((review) => {
+  //     const index = 5 - review.rating;
+  //     if (index >= 0 && index < 5) {
+  //       distribution[index]++;
+  //     }
+  //   });
 
-    return distribution;
-  };
+  //   return distribution;
+  // };
 
-  const ratingDistribution = generateRatingDistribution();
 
   // Apply all active filters
   const filteredReviews = reviews.filter((review) => {

@@ -4,10 +4,10 @@ import Link from "next/link";
 import Slideshow from "@/app/components/Slideshow";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
-import CardsForHomepage from "@/app/components/CardForHomepage";
+import Card from "@/app/components/Card";
 import { useEffect, useState } from "react";
-// import RecentlyViewed from "@/app/components/RecentlyViewed";
 import FAQ from "@/app/components/FAQ";
+import LoadingScreen from "@/app/components/LoadingScreen";
 
 interface Phone {
   id: number;
@@ -15,17 +15,45 @@ interface Phone {
   image: string;
 }
 
+// Cache configuration
+const CACHE_KEY = "homepage_phones_cache";
+const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
+
 export default function HomePage() {
-  const { showLoading, hideLoading } = useLoading();
+  const { showLoading, hideLoading, isLoading } = useLoading();
   const { showError } = useNotification();
   const [phones, setPhones] = useState<Phone[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPhones = async () => {
       try {
         showLoading();
 
-        const response = await fetch("/api/phones", {
+        // Check if we have cached data
+        const cachedData = localStorage.getItem(CACHE_KEY);
+
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const now = new Date().getTime();
+
+          // Use cache if it's still valid (not expired)
+          if (now - timestamp < CACHE_EXPIRY) {
+            console.log("Using cached phone data");
+            if (isMounted) {
+              setPhones(data);
+              hideLoading();
+              return;
+            }
+          } else {
+            console.log("Cache expired, fetching fresh data");
+            // Cache expired, continue to fetch fresh data
+          }
+        }
+
+        // Fetch fresh data
+        const response = await fetch("/api/phone", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -34,6 +62,8 @@ export default function HomePage() {
 
         const result = await response.json();
 
+        if (!isMounted) return;
+
         if (!result.success) {
           showError("Error", result.message);
           return;
@@ -41,22 +71,34 @@ export default function HomePage() {
 
         if (result.success && result.phones) {
           setPhones(result.phones);
+
+          // Save to cache with timestamp
+          const cacheData = {
+            data: result.phones,
+            timestamp: new Date().getTime(),
+          };
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error("Failed to load phones: ", error);
         showError("Error", "Failed to load phones. Please check your connection and try again.");
       } finally {
-        hideLoading();
+        if (isMounted) {
+          hideLoading();
+        }
       }
     };
 
     fetchPhones();
+
+    return () => {
+      isMounted = false;
+    };
   }, [showLoading, hideLoading, showError]);
 
-  const fallbackImageSVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23d3d3d3'/%3E%3Cg fill='white'%3E%3Cpath d='M30,30 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Cpath d='M40,40 h40 v30 h-40 z' stroke='white' stroke-width='2' fill='none'/%3E%3Ccircle cx='65' cy='50' r='4'/%3E%3Cpolygon points='50,60 60,50 70,60'/%3E%3C/g%3E%3C/svg%3E`;
-
   return (
-    <div className="bg-white">
+    <div>
       <div>
         <Slideshow />
       </div>
@@ -129,6 +171,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
       <div className="h-6"></div>
       <div className="h-6"></div>
 
@@ -187,32 +230,22 @@ export default function HomePage() {
 
       {/* Shop Most Wanted Section */}
       <div className="w-[95%] md:w-[70%] mx-auto">
-        <h2 className="text-xl md:text-xl lg:text-2xl font-bold text-black tracking-wide">Shop Most Wanted</h2>
-        <div className="h-4 md:h-5 lg:h-6"></div>
-
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-5">
-          {phones.length > 0 ? (
+          {isLoading ? (
+            <div className="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-4 flex justify-center items-center py-20">
+              <LoadingScreen />
+            </div>
+          ) : (
+            phones.length > 0 &&
             phones.map((phone) => (
               <div key={phone.id} className="group transition-transform duration-300 hover:translate-y-[-4px]">
                 <Link href={`/homepage/product_page/${encodeURIComponent(phone.id)}/${encodeURIComponent(phone.phone)}`}>
                   <div className="h-full bg-white rounded-lg overflow-hidden transform transition-all duration-300 border border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md">
-                    <CardsForHomepage
-                      title={phone.phone}
-                      image={phone.image || fallbackImageSVG}
-                      className="flex flex-col h-full"
-                      imageContainerClassName="relative h-32 sm:h-36 md:h-40 lg:h-44 flex items-center justify-center"
-                      contentClassName="px-3 py-2 md:px-3 md:py-2.5 lg:px-4 lg:py-3 flex-grow border-t border-gray-200"
-                      titleClassName="font-medium text-xs sm:text-sm md:text-sm lg:text-base text-black"
-                      priority={phone.id === phones[0].id}
-                    />
+                    <Card title={phone.phone} image={phone.image} alt={`${phone.phone} image`} />
                   </div>
                 </Link>
               </div>
             ))
-          ) : (
-            <div className="col-span-2 md:col-span-3 lg:col-span-4 text-center py-6 md:py-7 lg:py-8 bg-gray-100 rounded-lg border border-gray-300">
-              <p className="text-gray-700 text-sm md:text-base">No products available right now</p>
-            </div>
           )}
         </div>
       </div>

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const totalCount = await prisma.phoneModel.count({
       where: {
         phoneId: id,
-        details: {
+        phoneModelDetails: {
           some: {
             available: true,
           },
@@ -31,14 +31,14 @@ export async function GET(request: NextRequest) {
     const phoneModels = await prisma.phoneModel.findMany({
       where: {
         phoneId: id,
-        details: {
+        phoneModelDetails: {
           some: {
             available: true,
           },
         },
       },
       include: {
-        details: {
+        phoneModelDetails: {
           where: {
             available: true,
           },
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     // Transform the result to match your expected format
     const formattedPhoneModels = phoneModels.map((model) => ({
       ...model,
-      startingPrice: model.details.length > 0 ? model.details[0].price : null,
+      startingPrice: model.phoneModelDetails.length > 0 ? model.phoneModelDetails[0].price : null,
       image: model.images.length > 0 ? model.images[0].image : null,
       // Remove nested relations from the response
       details: undefined,

@@ -64,7 +64,7 @@ export default function Account() {
     };
 
     fetchShippingInfo();
-  }, []);
+  }, [hideLoading, showLoading]);
 
   const openPersonalInfoDialog = () => setIsPersonalInfoDialogOpen(true);
   const closePersonalInfoDialog = () => setIsPersonalInfoDialogOpen(false);

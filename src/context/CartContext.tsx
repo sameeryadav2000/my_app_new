@@ -4,7 +4,7 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import { useSession } from "next-auth/react";
 
 export interface CartItem {
-  id: string;
+  id: number;
   titleId: number;
   titleName?: string;
   condition: string;
