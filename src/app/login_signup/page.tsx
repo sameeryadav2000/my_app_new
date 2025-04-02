@@ -8,6 +8,7 @@ import { useNotification } from "@/context/NotificationContext";
 import { useLoading } from "@/context/LoadingContext";
 import RegistrationDialog from "@/app/components/RegistrationDialog";
 import ForgotPasswordDialog from "@/app/components/ForgotPasswordDialog";
+import FullScreenLoader from "@/app/components/FullScreenLoader";
 
 // Types
 interface LoginData {
@@ -27,13 +28,15 @@ interface TouchedFields {
 
 // Fallback component that shows while params are loading
 function LoginLoadingFallback() {
-  const { showLoading } = useLoading();
+  // Log to help debugging
+  console.log("LoginLoadingFallback rendered");
 
-  // Show global loading when component is in loading state
+  // Still call showLoading for state management
+  const { showLoading } = useLoading();
   showLoading();
 
-  // Return a minimal fallback since the global loading context will handle the UI
-  return null;
+  // Simply return the FullScreenLoader directly
+  return <FullScreenLoader />;
 }
 
 // Main login content that uses useSearchParams
@@ -61,11 +64,13 @@ function LoginPageContent() {
   const { showError } = useNotification();
   const { showLoading, hideLoading, isLoading } = useLoading();
 
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState<boolean>(false);
 
   // Hide loading once the component is rendered
   // This ensures any loading shown during navigation is hidden
-  hideLoading();
+  useEffect(() => {
+    hideLoading(); // Now safely called after render
+  }, [hideLoading]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
@@ -194,6 +199,9 @@ function LoginPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      {/* Show manual loading screen during login actions */}
+      {isLoading && <FullScreenLoader />}
+
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-6 overflow-hidden transform transition-all">
         {/* Header */}
         <div className="bg-black p-4 sm:p-5 md:p-6">

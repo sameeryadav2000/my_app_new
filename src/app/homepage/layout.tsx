@@ -26,13 +26,13 @@ export default function RootLayout({
         <AuthProvider>
           <SessionGuard>
             <LoadingProvider>
-              <CartProvider>
-                <NotificationProvider>
+              <NotificationProvider>
+                <CartProvider>
                   <Navbar />
                   <div className="min-h-screen">{children}</div>
                   <Footer />
-                </NotificationProvider>
-              </CartProvider>
+                </CartProvider>
+              </NotificationProvider>
             </LoadingProvider>
           </SessionGuard>
         </AuthProvider>

@@ -2,7 +2,7 @@
 
 "use client";
 
-import LoadingScreen from "@/app/components/LoadingScreen";
+import FullScreenLoader from "@/app/components/FullScreenLoader";
 import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState, useMemo } from "react";
@@ -17,7 +17,7 @@ import Image from "next/image";
 
 interface Products {
   id: number;
-  phoneId: number;
+  phoneModelId: number;
   condition: string;
   storage: string;
   colorId: number | null;
@@ -66,6 +66,8 @@ export default function ProductPage() {
 
   // In your component file
   useEffect(() => {
+    let isMounted = true;
+
     const fetchAllProducts = async () => {
       showLoading();
 
@@ -79,6 +81,8 @@ export default function ProductPage() {
 
         const result = await response.json();
 
+        if (!isMounted) return;
+
         if (!result.success) {
           showError("Error", result.message);
           return;
@@ -91,14 +95,22 @@ export default function ProductPage() {
           setSelectedVariationId(result.data[0].id);
         }
       } catch (error) {
+        if (!isMounted) return;
         console.error("Failed to load phone variations:", error);
         showError("Error", "Failed to load product details. Please check your connection and try again.");
       } finally {
-        hideLoading();
+        if (isMounted) {
+          hideLoading();
+        }
       }
     };
 
     fetchAllProducts();
+
+    // Cleanup function to prevent state updates after unmounting
+    return () => {
+      isMounted = false;
+    };
   }, [phoneModelId, showError, hideLoading, showLoading]);
 
   const selectedVariation = useMemo(() => {
@@ -172,7 +184,7 @@ export default function ProductPage() {
   };
 
   const { data: session } = useSession();
-  const { syncCart } = useCart();
+  const { syncCart, syncNotify, clearSyncNotify } = useCart();
 
   const imageToUse = useMemo(() => {
     if (!modelImages || modelImages.length === 0) return "";
@@ -185,8 +197,8 @@ export default function ProductPage() {
 
     // Ensure all required fields are available
     const newItem: CartItem = {
-      id: selectedVariation.id,
-      titleId: phoneModelId,
+      phoneModelDetailsId: selectedVariation.id,
+      phoneModelId: phoneModelId,
       condition: selectedVariation.condition
         ? selectedVariation.condition.charAt(0).toUpperCase() + selectedVariation.condition.slice(1)
         : "",
@@ -203,7 +215,7 @@ export default function ProductPage() {
 
     const existingItemIndex = existingCart.items.findIndex(
       (item) =>
-        item.id === newItem.id &&
+        item.phoneModelDetailsId === newItem.phoneModelDetailsId &&
         item.condition === newItem.condition &&
         item.storage === newItem.storage &&
         item.colorId === newItem.colorId &&
@@ -252,9 +264,10 @@ export default function ProductPage() {
 
         if (syncCartResult.success) {
           showSuccess("Success", syncCartResult.message);
-        } else {
-          showError("Error", syncCartResult.message);
         }
+        // else {
+        //   showError("Error", syncCartResult.message);
+        // }
       } catch (error) {
         console.error("Failed to save cart: ", error);
 
@@ -268,11 +281,21 @@ export default function ProductPage() {
 
       if (syncCartResult.success) {
         showSuccess("Success", syncCartResult.message);
-      } else {
-        showError("Error", syncCartResult.message);
       }
+      // else {
+      //   showError("Error", syncCartResult.message);
+      // }
     }
   };
+
+  useEffect(() => {
+    if (syncNotify && !syncNotify.success) {
+      // Only show error notifications, ignore success ones
+      showError("Cart Sync Error", syncNotify.message);
+      // Clear the notification after displaying
+      clearSyncNotify();
+    }
+  }, [syncNotify, showError, clearSyncNotify]);
 
   // Add this function inside your component but before the return statement
   const getDeliveryDateRange = (): string => {
@@ -298,6 +321,8 @@ export default function ProductPage() {
 
   return (
     <div>
+      {isLoading && <FullScreenLoader />}
+
       <StickyHeader
         title={selectedVariation?.phoneName || ""}
         condition={selectedVariation?.condition || ""}
@@ -316,97 +341,89 @@ export default function ProductPage() {
           <div className="w-full md:w-1/2 bg-white rounded-lg">
             <div className="md:w-full md:h-auto md:sticky md:top-20 max-w-lg mx-auto">
               <div className="h-auto flex flex-col justify-center py-4">
-                {isLoading || !modelImages ? (
-                  <LoadingScreen />
-                ) : (
-                  <>
-                    <div className="relative h-[250px] md:h-[400px] w-full mb-4">
-                      {modelImages && modelImages.length > 0 ? (
-                        <div className="absolute inset-0">
-                          <Image
-                            src="/homepage_images/iphone.jpg"
-                            // src={modelImages[currentImageIndex].image}
-                            alt={`${selectedVariation?.colorName || ""} ${selectedVariation?.phoneModel || ""} - View ${
-                              currentImageIndex + 1
-                            }`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            style={{ objectFit: "contain" }}
-                            className="rounded-lg"
-                            priority={true} // Only the main image should be priority
-                          />
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-black">No Images</div>
-                      )}
+                <div className="relative h-[250px] md:h-[400px] w-full mb-4">
+                  {modelImages && modelImages.length > 0 ? (
+                    <div className="absolute inset-0">
+                      <Image
+                        src="/homepage_images/iphone.jpg"
+                        // src={modelImages[currentImageIndex].image}
+                        alt={`${selectedVariation?.colorName || ""} ${selectedVariation?.phoneModel || ""} - View ${currentImageIndex + 1}`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        style={{ objectFit: "contain" }}
+                        className="rounded-lg"
+                        priority={true} // Only the main image should be priority
+                      />
                     </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-black">No Images</div>
+                  )}
+                </div>
 
-                    <div className="flex items-center justify-center">
-                      <button
-                        onClick={prevImage}
-                        disabled={!modelImages || modelImages.length <= 1}
-                        className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
-                        aria-label="Previous thumbnail"
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M15 18l-6-6 6-6" />
-                        </svg>
-                      </button>
+                <div className="flex items-center justify-center">
+                  <button
+                    onClick={prevImage}
+                    disabled={!modelImages || modelImages.length <= 1}
+                    className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
+                    aria-label="Previous thumbnail"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
 
-                      <div className="flex gap-2 overflow-x-auto max-w-[80%]">
-                        {modelImages &&
-                          modelImages.map((imageObj, index) => (
-                            <button
-                              key={index}
-                              onClick={() => setCurrentImageIndex(index)}
-                              className={`h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden border-2
+                  <div className="flex gap-2 overflow-x-auto max-w-[80%]">
+                    {modelImages &&
+                      modelImages.map((imageObj, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden border-2
                 ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
-                            >
-                              <div className="relative h-full w-full">
-                                <Image
-                                  src={imageObj.image}
-                                  alt={`Thumbnail ${index + 1}`}
-                                  fill
-                                  sizes="64px"
-                                  style={{ objectFit: "cover" }}
-                                  // No priority for thumbnails
-                                />
-                              </div>
-                            </button>
-                          ))}
-                      </div>
-
-                      <button
-                        onClick={nextImage}
-                        disabled={!modelImages || modelImages.length <= 1}
-                        className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
-                        aria-label="Next thumbnail"
-                      >
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
                         >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </button>
-                    </div>
-                  </>
-                )}
+                          <div className="relative h-full w-full">
+                            <Image
+                              src={imageObj.image}
+                              alt={`Thumbnail ${index + 1}`}
+                              fill
+                              sizes="64px"
+                              style={{ objectFit: "cover" }}
+                              // No priority for thumbnails
+                            />
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+
+                  <button
+                    onClick={nextImage}
+                    disabled={!modelImages || modelImages.length <= 1}
+                    className="bg-black p-2.5 rounded-full shadow-lg transition-all duration-200 border border-black text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 mx-2"
+                    aria-label="Next thumbnail"
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

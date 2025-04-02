@@ -362,3 +362,228 @@
 //     </Suspense>
 //   );
 // }
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { useNotification } from "@/context/NotificationContext";
+import { useLoading } from "@/context/LoadingContext";
+
+// Order interfaces
+interface OrderItem {
+  id: string;
+  titleName: string;
+  colorName: string;
+  condition: string;
+  storage: string;
+  price: number;
+  quantity: number;
+  image: string;
+  seller: string;
+}
+
+interface OrderDetails {
+  orderId: string;
+  items: OrderItem[];
+  totalItems: number;
+  totalPrice: number;
+  createdAt: string;
+}
+
+export default function OrderConfirmation() {
+  const router = useRouter();
+  const { orderId } = router.query;
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showError, showSuccess } = useNotification();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchOrderDetails = async () => {
+      if (!orderId) return;
+
+      showLoading();
+
+      try {
+        const response = await fetch(`/api/purchased?orderId=${orderId}`);
+        const result = await response.json();
+
+        if (!result.success) {
+          if (isMounted) {
+            showError("Error", result.message || "Failed to fetch order details");
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setOrderDetails(result.order);
+          showSuccess("Success", "Order details loaded successfully");
+        }
+      } catch (error) {
+        console.error("Order details fetch error:", error);
+
+        if (isMounted) {
+          showError("Error", "Failed to fetch order details. Please check your connection and try again.");
+        }
+      } finally {
+        if (isMounted) {
+          hideLoading();
+        }
+      }
+    };
+
+    fetchOrderDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orderId, showLoading, hideLoading, showError, showSuccess]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+            <h1 className="text-2xl font-bold text-gray-900">Order Confirmation</h1>
+            <p className="mt-1 max-w-2xl text-sm text-gray-500">Thank you for your purchase!</p>
+          </div>
+
+          <div className="px-4 py-5 sm:px-6">
+            <div className="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
+              <div className="flex items-center mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <p className="ml-2 text-lg font-medium">Order Placed Successfully</p>
+              </div>
+              <p className="text-sm text-gray-600">Your order has been confirmed and will be shipped soon.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Order Details</h3>
+                <dl className="mt-2 text-sm text-gray-600">
+                  <div className="mt-1">
+                    <dt className="inline font-medium">Order Number:</dt>
+                    <dd className="inline ml-1">{orderDetails?.orderId}</dd>
+                  </div>
+                  <div className="mt-1">
+                    <dt className="inline font-medium">Date:</dt>
+                    <dd className="inline ml-1">{orderDetails?.createdAt && new Date(orderDetails.createdAt).toLocaleDateString()}</dd>
+                  </div>
+                  <div className="mt-1">
+                    <dt className="inline font-medium">Total Items:</dt>
+                    <dd className="inline ml-1">{orderDetails?.totalItems}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <h3 className="text-lg font-medium text-gray-900">Order Summary</h3>
+              <div className="mt-2 overflow-hidden border-t border-b border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Details
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Quantity
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {orderDetails?.items?.map((item) => (
+                      <tr key={item.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-14 w-14 flex-shrink-0">
+                              <img src={item.image} alt={item.titleName} className="h-14 w-14 object-cover rounded" />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{item.titleName}</div>
+                              <div className="text-sm text-gray-500">{item.colorName}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{item.condition}</div>
+                          <div className="text-sm text-gray-500">{item.storage}</div>
+                          <div className="text-xs text-gray-400">Seller: {item.seller}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{item.quantity}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">${item.price.toFixed(2)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-white">
+                    <tr className="bg-gray-50">
+                      <td colSpan={4} className="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                        Total
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
+                        ${orderDetails?.totalPrice.toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-between">
+              <Link href="/">
+                <button className="w-full sm:w-auto bg-white text-black border border-black py-2 px-4 rounded hover:bg-gray-100 transition-colors">
+                  Continue Shopping
+                </button>
+              </Link>
+              <button
+                onClick={() => window.print()}
+                className="w-full sm:w-auto bg-black text-white py-2 px-4 rounded hover:bg-gray-800 transition-colors"
+              >
+                Print Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600">
+            Questions about your order? Contact our{" "}
+            <a href="/support" className="text-black underline">
+              customer support
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -347,7 +347,7 @@ export default function ProductListingPage() {
                 >
                   <CardsForPhone
                     title={phoneModel.model}
-                    image={"/homepage_images/iphone.jpg"}
+                    image={phoneModel.image}
                     startingText="Starting at"
                     price={phoneModel.startingPrice}
                   />

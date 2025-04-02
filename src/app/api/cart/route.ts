@@ -27,7 +27,7 @@ export async function GET() {
       include: {
         cartItems: {
           include: {
-            phones: true,
+            phoneModels: true,
             color: true,
           },
         },
@@ -46,9 +46,9 @@ export async function GET() {
 
     const cart = {
       items: user.cartItems.map((item) => ({
-        id: item.itemId,
-        titleId: item.phoneModelId,
-        titleName: item.phones.model,
+        phoneModelDetailsId: item.phoneModelDetailsId,
+        phoneModelId: item.phoneModelId,
+        titleName: item.phoneModels.model,
         condition: item.condition,
         storage: item.storage,
         colorId: item.colorId,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     for (const item of cartItems) {
-      if (!item.id || !item.titleId || !item.price) {
+      if (!item.phoneModelDetailsId || !item.phoneModelId || !item.price) {
         return NextResponse.json(
           {
             success: false,
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       const existingItem = await prisma.cartItem.findFirst({
         where: {
           userId: user.id,
-          itemId: item.id,
+          phoneModelDetailsId: item.phoneModelDetailsId,
           condition: item.condition,
           storage: item.storage,
           color: item.color,
@@ -155,8 +155,8 @@ export async function POST(request: NextRequest) {
         await prisma.cartItem.create({
           data: {
             userId: user.id,
-            itemId: item.id,
-            phoneModelId: item.titleId,
+            phoneModelDetailsId: item.phoneModelDetailsId,
+            phoneModelId: item.phoneModelId,
             condition: item.condition,
             storage: item.storage,
             colorId: parseInt(item.colorId),
@@ -224,8 +224,8 @@ export async function PUT(request: NextRequest) {
       await prisma.purchasedItem.create({
         data: {
           userId: user.id,
-          itemId: item.id,
-          phoneModelId: item.titleId,
+          phoneModelDetailsId: item.phoneModelDetailsId,
+          phoneModelId: item.phoneModelId,
           condition: item.condition,
           storage: item.storage,
           colorId: item.colorId,
@@ -238,7 +238,7 @@ export async function PUT(request: NextRequest) {
       });
 
       await prisma.phoneModelDetails.update({
-        where: { id: parseInt(item.id) },
+        where: { id: parseInt(item.phoneModelDetailsId) },
         data: {
           purchased: true,
           available: false,
@@ -249,8 +249,8 @@ export async function PUT(request: NextRequest) {
     await prisma.cartItem.deleteMany({
       where: {
         userId: user.id,
-        itemId: {
-          in: items.map((item: CartItem) => item.id),
+        phoneModelDetailsId: {
+          in: items.map((item: CartItem) => item.phoneModelDetailsId),
         },
       },
     });
@@ -258,6 +258,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Thank you for the order!",
+      orderId: orderNumber, // Adding the orderId to the response
     });
   } catch (error) {
     console.error("Error updating cart item status:", error);
@@ -276,7 +277,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session || !session.user?.email) {
       return NextResponse.json(
         {
           success: false,
@@ -287,9 +288,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const phoneModelId = searchParams.get("id");
+    const phoneModelDetailsId = Number(searchParams.get("phoneModelDetailsId"));
 
-    if (!phoneModelId) {
+    if (!phoneModelDetailsId) {
       return NextResponse.json(
         {
           success: false,
@@ -300,7 +301,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email || undefined },
+      where: { email: session.user.email },
     });
 
     if (!user) {
@@ -316,7 +317,7 @@ export async function DELETE(request: NextRequest) {
     await prisma.cartItem.deleteMany({
       where: {
         userId: user.id,
-        itemId: phoneModelId,
+        phoneModelDetailsId: phoneModelDetailsId,
       },
     });
 

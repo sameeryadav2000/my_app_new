@@ -4,8 +4,10 @@ import { useLoading } from "@/context/LoadingContext";
 import { useNotification } from "@/context/NotificationContext";
 import { useEffect, useState, useCallback } from "react";
 import OrderSummary from "@/app/components/OrderSummary";
+import FullScreenLoader from "@/app/components/FullScreenLoader";
+import { useSession } from "next-auth/react";
 
-export interface ShippingData {
+interface ShippingData {
   firstName: string;
   lastName: string;
   email: string;
@@ -39,8 +41,9 @@ interface TouchedFields {
 }
 
 export default function ShippingPage() {
-  const { showLoading, hideLoading } = useLoading();
+  const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError } = useNotification();
+  const { data: session } = useSession();
 
   const [shippingInfo, setShippingInfo] = useState<ShippingData>({
     firstName: "",
@@ -70,10 +73,19 @@ export default function ShippingPage() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [savedShippingInfo, setSavedShippingInfo] = useState<ShippingData | null>(null);
 
-  // Fetch shipping info on component mount
   useEffect(() => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
+    if (session?.user) {
+      setShippingInfo((prev) => ({
+        ...prev,
+        firstName: session.user?.firstName || "",
+        lastName: session.user?.lastName || "",
+        email: session.user?.email || "",
+      }));
+    }
+  }, [session]);
+
+  useEffect(() => {
+    let isMounted = true;
 
     const fetchShippingInfo = async () => {
       showLoading();
@@ -83,8 +95,10 @@ export default function ShippingPage() {
 
         if (storedShippingInfo) {
           const parsedInfo = JSON.parse(storedShippingInfo);
-          setSavedShippingInfo(parsedInfo);
-          hideLoading();
+          if (isMounted) {
+            setSavedShippingInfo(parsedInfo);
+            hideLoading();
+          }
           return;
         }
 
@@ -93,31 +107,38 @@ export default function ShippingPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          signal,
         });
 
         const result = await response.json();
 
         if (!result.success) {
-          showError("Error", result.message);
+          if (isMounted) {
+            showError("Error", result.message);
+          }
           return;
         }
 
-        setSavedShippingInfo(result.shippingInfo);
-        sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
+        if (isMounted) {
+          setSavedShippingInfo(result.shippingInfo);
+          sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
+        }
       } catch (error) {
         console.error("Shipping info fetch error:", error);
 
-        showError("Error", "Failed to fetch shipping info. Please check your connection and try again.");
+        if (isMounted) {
+          showError("Error", "Failed to fetch shipping info. Please check your connection and try again.");
+        }
       } finally {
-        hideLoading();
+        if (isMounted) {
+          hideLoading();
+        }
       }
     };
 
     fetchShippingInfo();
 
     return () => {
-      abortController.abort();
+      isMounted = false;
     };
   }, [hideLoading, showError, showLoading]);
 
@@ -269,28 +290,30 @@ export default function ShippingPage() {
 
   return (
     <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8">
+      {isLoading && <FullScreenLoader />}
+
       <div className="flex items-center justify-between mb-6 xl:hidden">
         <h1 className="text-2xl font-bold text-black">Shipping Information</h1>
       </div>
 
-      <div className="xl:w-[70%]">
-        <div className="bg-white border border-[#e0e0e0] rounded-xl shadow-md p-6 transition-all">
-          <div className="flex items-center justify-between mb-8 hidden xl:flex">
+      <div className="xl:w-[60%]">
+        <div className="bg-white border border-[#e0e0e0] rounded-xl shadow-md p-4 xl:p-6 transition-all">
+          <div className="flex items-center justify-between mb-6 xl:mb-8 hidden xl:flex">
             <h1 className="text-2xl font-bold text-black">Shipping Information</h1>
           </div>
 
           {savedShippingInfo && !isEditing ? (
-            <div className="mt-4">
+            <div className="mt-2 xl:mt-4">
               <div className="border border-[#e0e0e0] rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-black text-white px-5 py-3">
-                  <h3 className="font-medium">Delivery Address</h3>
+                <div className="bg-black text-white px-4 xl:px-5 py-2 xl:py-3">
+                  <h3 className="font-medium text-sm xl:text-base">Delivery Address</h3>
                 </div>
-                <div className="p-5">
+                <div className="p-4 xl:p-5">
                   <div className="flex justify-between items-start">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="space-y-2 xl:space-y-3">
+                      <div className="flex items-center space-x-2 xl:space-x-3">
+                        <div className="h-8 w-8 xl:h-10 xl:w-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <svg className="h-4 w-4 xl:h-5 xl:w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -300,16 +323,16 @@ export default function ShippingPage() {
                           </svg>
                         </div>
                         <div>
-                          <p className="font-semibold text-black">
+                          <p className="font-semibold text-black text-sm xl:text-base">
                             {savedShippingInfo.firstName} {savedShippingInfo.lastName}
                           </p>
-                          <p className="text-[#666666] text-sm">{savedShippingInfo.phone}</p>
+                          <p className="text-[#666666] text-xs xl:text-sm">{savedShippingInfo.phone}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-start space-x-3">
-                        <div className="h-10 w-10 bg-gray-100 rounded-full flex-shrink-0 flex items-center justify-center mt-1">
-                          <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="flex items-start space-x-2 xl:space-x-3">
+                        <div className="h-8 w-8 xl:h-10 xl:w-10 bg-gray-100 rounded-full flex-shrink-0 flex items-center justify-center mt-1">
+                          <svg className="h-4 w-4 xl:h-5 xl:w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -320,20 +343,20 @@ export default function ShippingPage() {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-[#666666]">
+                          <p className="text-[#666666] text-xs xl:text-sm">
                             {savedShippingInfo.address},<br />
                             {savedShippingInfo.city}, {savedShippingInfo.state} {savedShippingInfo.zipCode}
                           </p>
-                          <p className="text-[#666666] text-sm mt-1">{savedShippingInfo.email}</p>
+                          <p className="text-[#666666] text-xs xl:text-sm mt-1">{savedShippingInfo.email}</p>
                         </div>
                       </div>
                     </div>
 
                     <button
                       onClick={handleEdit}
-                      className="flex items-center text-sm font-medium text-black border border-[#e0e0e0] px-4 py-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all duration-200"
+                      className="flex items-center text-xs xl:text-sm font-medium text-black border border-[#e0e0e0] px-3 xl:px-4 py-1.5 xl:py-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all duration-200"
                     >
-                      <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-3 w-3 xl:h-4 xl:w-4 mr-1 xl:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -348,161 +371,166 @@ export default function ShippingPage() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSave} className="space-y-7">
+            <form onSubmit={handleSave} className="space-y-5 xl:space-y-7">
               {isEditing ? (
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 border-l-4 border-black">
-                  <p className="text-lg font-medium text-black">Editing Shipping Information</p>
-                  <p className="text-sm text-[#666666] mt-1">Make your changes and save when you are ready</p>
+                <div className="bg-gray-50 rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 border-l-4 border-black">
+                  <p className="text-base xl:text-lg font-medium text-black">Editing Shipping Information</p>
+                  <p className="text-xs xl:text-sm text-[#666666] mt-1">Make your changes and save when you are ready</p>
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 border-l-4 border-black">
-                  <p className="text-lg font-medium text-black">Add Shipping Information</p>
-                  <p className="text-sm text-[#666666] mt-1">Please fill in the details below to continue</p>
+                <div className="bg-gray-50 rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 border-l-4 border-black">
+                  <p className="text-base xl:text-lg font-medium text-black">Add Shipping Information</p>
+                  <p className="text-xs xl:text-sm text-[#666666] mt-1">Please fill in the details below to continue</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">First Name</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">First Name</label>
                   <input
                     type="text"
                     name="firstName"
                     value={shippingInfo.firstName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.firstName && errors.firstName ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 bg-gray-100 text-sm xl:text-base`}
                     placeholder="Enter your first name"
                     required
+                    disabled={true}
                   />
-                  {touched.firstName && errors.firstName && <p className="text-sm text-red-500 mt-2">{errors.firstName}</p>}
+                  {touched.firstName && errors.firstName && (
+                    <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.firstName}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">Last Name</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">Last Name</label>
                   <input
                     type="text"
                     name="lastName"
                     value={shippingInfo.lastName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.lastName && errors.lastName ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 bg-gray-100 text-sm xl:text-base`}
                     placeholder="Enter your last name"
                     required
+                    disabled={true}
                   />
-                  {touched.lastName && errors.lastName && <p className="text-sm text-red-500 mt-2">{errors.lastName}</p>}
+                  {touched.lastName && errors.lastName && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.lastName}</p>}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">Email</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">Email</label>
                   <input
                     type="email"
                     name="email"
                     value={shippingInfo.email}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.email && errors.email ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 bg-gray-100 text-sm xl:text-base`}
                     placeholder="example@email.com"
                     required
+                    disabled={true}
                   />
-                  {touched.email && errors.email && <p className="text-sm text-red-500 mt-2">{errors.email}</p>}
+                  {touched.email && errors.email && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.email}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">Phone Number</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">Phone Number</label>
                   <input
                     type="tel"
                     name="phone"
                     value={shippingInfo.phone}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.phone && errors.phone ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 text-sm xl:text-base`}
                     placeholder="Enter numbers only"
                     required
                   />
-                  {touched.phone && errors.phone && <p className="text-sm text-red-500 mt-2">{errors.phone}</p>}
+                  {touched.phone && errors.phone && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.phone}</p>}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#333333] mb-2">Street Address</label>
+                <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">Street Address</label>
                 <input
                   type="text"
                   name="address"
                   value={shippingInfo.address}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border ${
+                  className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                     touched.address && errors.address ? "border-red-500" : "border-[#e0e0e0]"
-                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                  } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 text-sm xl:text-base`}
                   placeholder="Enter your street address"
                   required
                 />
-                {touched.address && errors.address && <p className="text-sm text-red-500 mt-2">{errors.address}</p>}
+                {touched.address && errors.address && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.address}</p>}
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">City</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">City</label>
                   <input
                     type="text"
                     name="city"
                     value={shippingInfo.city}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.city && errors.city ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 text-sm xl:text-base`}
                     placeholder="Enter your city"
                     required
                   />
-                  {touched.city && errors.city && <p className="text-sm text-red-500 mt-2">{errors.city}</p>}
+                  {touched.city && errors.city && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.city}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">State/Province</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">State/Province</label>
                   <input
                     type="text"
                     name="state"
                     value={shippingInfo.state}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.state && errors.state ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 text-sm xl:text-base`}
                     placeholder="Enter your state"
                     required
                   />
-                  {touched.state && errors.state && <p className="text-sm text-red-500 mt-2">{errors.state}</p>}
+                  {touched.state && errors.state && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.state}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#333333] mb-2">ZIP Code</label>
+                  <label className="block text-xs xl:text-sm font-medium text-[#333333] mb-1 xl:mb-2">ZIP Code</label>
                   <input
                     type="text"
                     name="zipCode"
                     value={shippingInfo.zipCode}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border ${
+                    className={`w-full px-3 xl:px-4 py-2 xl:py-3 border ${
                       touched.zipCode && errors.zipCode ? "border-red-500" : "border-[#e0e0e0]"
-                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200`}
+                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all duration-200 text-sm xl:text-base`}
                     placeholder="Enter your ZIP code"
                     required
                   />
-                  {touched.zipCode && errors.zipCode && <p className="text-sm text-red-500 mt-2">{errors.zipCode}</p>}
+                  {touched.zipCode && errors.zipCode && <p className="text-xs xl:text-sm text-red-500 mt-1 xl:mt-2">{errors.zipCode}</p>}
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-6 mt-2">
+              <div className="flex gap-4 pt-4 xl:pt-6 mt-2">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`flex-1 px-5 py-3.5 bg-black text-white rounded-xl hover:bg-[#333333] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#555555] focus:ring-offset-2 shadow-md ${
+                  className={`flex-1 px-4 xl:px-5 py-2.5 xl:py-3.5 bg-black text-white rounded-xl hover:bg-[#333333] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#555555] focus:ring-offset-2 shadow-md text-sm xl:text-base ${
                     isSubmitting ? "opacity-75 cursor-not-allowed" : ""
                   }`}
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center">
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 xl:h-5 xl:w-5 text-white"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -525,7 +553,7 @@ export default function ShippingPage() {
                   <button
                     type="button"
                     onClick={() => setIsEditing(false)}
-                    className="px-5 py-3.5 bg-white text-[#666666] border border-[#e0e0e0] rounded-xl hover:bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#e0e0e0] focus:ring-offset-2 shadow-sm"
+                    className="px-4 xl:px-5 py-2.5 xl:py-3.5 bg-white text-[#666666] border border-[#e0e0e0] rounded-xl hover:bg-gray-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#e0e0e0] focus:ring-offset-2 shadow-sm text-sm xl:text-base"
                   >
                     Cancel
                   </button>

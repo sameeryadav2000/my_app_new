@@ -15,7 +15,13 @@ export default function CardsForPhone({ title, image, startingText, price }: Pho
       {/* For medium screens and up: vertical layout (original) */}
       <div className="hidden md:block h-full">
         <div className="relative h-32">
-          <Image src={image} alt={title} fill sizes="(min-width: 768px) 25vw, 100vw" style={{ objectFit: "contain" }} />
+          {image ? (
+            <Image src={image} alt={title} fill sizes="(min-width: 768px) 25vw, 100vw" style={{ objectFit: "contain" }} />
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gray-100">
+              <div className="text-gray-400 text-xs text-center">No Image</div>
+            </div>
+          )}
         </div>
         <div className="p-3">
           <h2 className="font-medium">{title}</h2>
@@ -27,7 +33,13 @@ export default function CardsForPhone({ title, image, startingText, price }: Pho
       {/* For small screens: horizontal layout (image left, text right) */}
       <div className="flex md:hidden flex-row items-center h-full">
         <div className="w-1/3 p-2 relative aspect-square">
-          <Image src={image} alt={title} fill sizes="(max-width: 767px) 33vw, 100vw" style={{ objectFit: "contain" }} />
+          {image ? (
+            <Image src={image} alt={title} fill sizes="(max-width: 767px) 33vw, 100vw" style={{ objectFit: "contain" }} />
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gray-100">
+              <div className="text-gray-400 text-xs text-center">No Image</div>
+            </div>
+          )}
         </div>
         <div className="w-2/3 p-3">
           <h2 className="font-medium">{title}</h2>

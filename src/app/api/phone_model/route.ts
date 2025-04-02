@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       startingPrice: model.phoneModelDetails.length > 0 ? model.phoneModelDetails[0].price : null,
       image: model.images.length > 0 ? model.images[0].image : null,
       // Remove nested relations from the response
-      details: undefined,
+      phoneModelDetails: undefined,
       images: undefined,
     }));
 

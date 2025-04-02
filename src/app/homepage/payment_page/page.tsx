@@ -1,168 +1,220 @@
-// // src/app/homepage/payment_page/page.tsx
-// "use client";
+"use client";
 
-// import { useNotification } from "@/context/NotificationContext";
-// import { useEffect, useState } from "react";
-// import { useLoading } from "@/context/LoadingContext";
-// import { useRouter } from "next/navigation";
-// import { useCart } from "@/context/CartContext";
-// import { Elements } from "@stripe/react-stripe-js";
-// import { getStripePromise } from "../../../../lib/stripe_client";
-// import CheckoutForm from "@/app/components/CheckoutForm";
-// import OrderSummary from "@/app/components/OrderSummary";
-// import { ShippingData } from "@/app/homepage/shipping_page/page";
+import { useNotification } from "@/context/NotificationContext";
+import { useEffect, useState } from "react";
+import { useLoading } from "@/context/LoadingContext";
+import { useRouter } from "next/navigation";
+import { useCart } from "@/context/CartContext";
+import OrderSummary from "@/app/components/OrderSummary";
+import FullScreenLoader from "@/app/components/FullScreenLoader";
 
-// export default function PaymentPage() {
-//   const { showLoading, hideLoading, isLoading } = useLoading();
-//   const { showError } = useNotification();
+interface ShippingData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
 
-//   const router = useRouter();
-//   const { cart, isLoading: isCartLoading } = useCart();
-//   const [clientSecret, setClientSecret] = useState<string>("");
-//   const [shippingInfo, setShippingInfo] = useState<ShippingData>({
-//     firstName: "",
-//     lastName: "",
-//     email: "",
-//     phone: "",
-//     address: "",
-//     city: "",
-//     state: "",
-//     zipCode: "",
-//   });
-//   const [isInitialCheckDone, setIsInitialCheckDone] = useState<boolean>(false);
-//   const [retryCount, setRetryCount] = useState<number>(0);
+export default function PaymentPage() {
+  const { showLoading, hideLoading, isLoading } = useLoading();
+  const { showError, showSuccess } = useNotification();
+  const { cart } = useCart();
+  const router = useRouter();
+  const [shippingInfo, setShippingInfo] = useState<ShippingData | null>(null);
 
-//   const tax = 10;
-//   const qualityAssuranceFee = 3;
-//   const taxAmount = cart.subTotalPrice * (tax / 100);
-//   const totalAmount = taxAmount + cart.subTotalPrice + qualityAssuranceFee;
+  // Just check for shipping info on load
+  useEffect(() => {
+    showLoading();
 
-//   useEffect(() => {
-//     let isMounted = true;
+    const savedShippingInfo = sessionStorage.getItem("shippingInfo");
+    if (savedShippingInfo) {
+      try {
+        setShippingInfo(JSON.parse(savedShippingInfo));
+        hideLoading();
+      } catch (error) {
+        console.error("Error parsing shipping info:", error);
+        showError("Error", "Problem with shipping information");
+        setTimeout(() => {
+          hideLoading();
+          router.push("/homepage/shipping_page");
+        }, 1500);
+      }
+    } else {
+      showError("Error", "Please provide shipping information first");
+      setTimeout(() => {
+        hideLoading();
+        router.push("/homepage/shipping_page");
+      }, 1500);
+    }
+  }, [router, showError, showLoading, hideLoading]);
 
-//     showLoading();
+  const generateOrderNumber = () => {
+    const timestamp = new Date().getTime().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
+    return `ORD-${timestamp}-${random}`;
+  };
 
-//     const checkCartAndShipping = () => {
-//       const storedShippingInfo = sessionStorage.getItem("shippingInfo");
+  const handlePlaceOrder = async () => {
+    if (!shippingInfo) {
+      showError("Error", "Shipping information is required");
+      return;
+    }
 
-//       if (isCartLoading) {
-//         return;
-//       }
+    showLoading();
+    let isMounted = true;
 
-//       if (!isMounted) return;
+    try {
+      const orderNumber = generateOrderNumber();
 
-//       if (!cart.items || cart.items.length === 0) {
-//         hideLoading();
-//         router.push("/homepage/cart_page");
-//         return;
-//       }
+      const response = await fetch("/api/cart", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: cart.items,
+          orderNumber: orderNumber,
+        }),
+      });
 
-//       if (!storedShippingInfo) {
-//         hideLoading();
-//         router.push("/homepage/shipping_page");
-//         return;
-//       }
+      const result = await response.json();
 
-//       if (isMounted) {
-//         setShippingInfo(JSON.parse(storedShippingInfo));
-//         setIsInitialCheckDone(true);
-//         hideLoading();
-//       }
-//     };
+      if (!result.success) {
+        if (isMounted) {
+          showError("Error", result.message || "Failed to place order");
+        }
+        return;
+      }
 
-//     checkCartAndShipping();
+      // Clear shipping info after successful order
+      if (isMounted) {
+        sessionStorage.removeItem("shippingInfo");
 
-//     return () => {
-//       isMounted = false;
-//       hideLoading();
-//     };
-//   }, [isCartLoading]);
+        // Show success notification
+        showSuccess("Success", "Order placed successfully!");
 
-//   const createPaymentIntent = async () => {
-//     try {
-//       showLoading();
+        // Redirect to confirmation page
+        router.push(`/homepage/order_confirmation/${result.orderId}`);
+      }
+    } catch (error) {
+      console.error("Error in payment processing: ", error);
 
-//       const abortController = new AbortController();
-//       const signal = abortController.signal;
+      if (isMounted) {
+        showError("Error", "Something went wrong. Please try again.");
+      }
+    } finally {
+      if (isMounted) {
+        hideLoading();
+      }
+    }
 
-//       const response = await fetch("/api/create_payment_intent", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           amount: totalAmount,
-//           metadata: {
-//             orderId: `order-${Date.now()}`,
-//             customerEmail: shippingInfo?.email || "",
-//             items: JSON.stringify(
-//               cart.items.map((item) => ({
-//                 id: item.id,
-//                 title: item.titleName,
-//                 quantity: item.quantity,
-//               }))
-//             ),
-//           },
-//         }),
-//         signal,
-//       });
-//       const result = await response.json();
+    return () => {
+      isMounted = false;
+    };
+  };
 
-//       if (!result.success) {
-//         showError("Error", result.message || result.error);
-//         return;
-//       }
+  if (isLoading) {
+    return <FullScreenLoader />;
+  }
 
-//       setClientSecret(result.clientSecret);
-//     } catch (error) {
-//       console.error("Unable to initialize payment: ", error);
-//       showError("Error", "Unable to initialize payment. Please try again.");
-//     } finally {
-//       hideLoading();
-//     }
-//   };
+  return (
+    <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8 pb-10 xl:pb-16">
+      <div className="xl:w-[60%]">
+        <div className="flex items-center gap-3 xl:gap-4 mb-4 xl:mb-6">
+          <h1 className="text-2xl xl:text-3xl font-bold text-gray-800">Payment Method</h1>
+        </div>
 
-//   useEffect(() => {
-//     if (!isInitialCheckDone) return;
+        <div className="bg-white rounded-lg shadow-sm p-4 xl:p-6 mb-4 xl:mb-6 border border-gray-200">
+          <div className="flex items-center mb-3 xl:mb-4">
+            <input
+              id="cod"
+              type="radio"
+              checked={true}
+              readOnly
+              className="h-4 w-4 xl:h-5 xl:w-5 text-black focus:ring-black border-gray-300"
+            />
+            <label htmlFor="cod" className="ml-2 xl:ml-3 text-base xl:text-lg font-medium text-gray-800">
+              Cash on Delivery
+            </label>
+          </div>
 
-//     if (totalAmount > 0) {
-//       createPaymentIntent();
-//     }
+          <p className="text-xs xl:text-sm text-gray-600 ml-6 xl:ml-8 mb-3 xl:mb-4">
+            You will pay when your order is delivered. Please have the exact amount ready.
+          </p>
 
-//     return () => {
-//       hideLoading();
-//     };
-//   }, [isInitialCheckDone, retryCount]);
-//   return (
-//     <div className="flex flex-col md:flex-row justify-between w-4/5 mx-auto gap-8">
-//       <div className="md:w-[70%] p-5">
-//         <div className="flex items-center gap-4 mb-6">
-//           <h1 className="text-3xl font-bold text-gray-800 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-//             Payment
-//           </h1>
-//         </div>
+          <div className="border-t border-gray-200 pt-3 xl:pt-4 mt-1 xl:mt-2">
+            <h3 className="text-base xl:text-lg font-medium text-gray-800 mb-2 xl:mb-3">Delivery Information</h3>
 
-//         {isLoading ? (
-//           <div className="p-8 text-center">
-//             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600 mx-auto"></div>
-//             <p className="mt-4 text-gray-600 font-medium">Preparing secure checkout...</p>
-//           </div>
-//         ) : clientSecret ? (
-//           <Elements stripe={getStripePromise()} options={{ clientSecret }}>
-//             <CheckoutForm totalAmount={totalAmount} shippingInfo={shippingInfo} />
-//           </Elements>
-//         ) : (
-//           <div className="p-8 text-center text-red-500 font-medium">
-//             Unable to initialize payment system. Please try again later.
-//             <button
-//               onClick={() => setRetryCount((count) => count + 1)}
-//               className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-//             >
-//               Try Again
-//             </button>
-//           </div>
-//         )}
-//       </div>
+            {shippingInfo && (
+              <div className="bg-gray-50 p-3 xl:p-4 rounded-md">
+                <p className="text-sm xl:text-base text-gray-700 mb-1 xl:mb-2">
+                  <span className="font-medium">Name:</span> {shippingInfo.firstName} {shippingInfo.lastName}
+                </p>
+                <p className="text-sm xl:text-base text-gray-700 mb-1 xl:mb-2">
+                  <span className="font-medium">Address:</span> {shippingInfo.address}
+                </p>
+                <p className="text-sm xl:text-base text-gray-700 mb-1 xl:mb-2">
+                  <span className="font-medium">City:</span> {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}
+                </p>
+                <p className="text-sm xl:text-base text-gray-700 mb-1 xl:mb-2">
+                  <span className="font-medium">Phone:</span> {shippingInfo.phone}
+                </p>
+                {shippingInfo.email && (
+                  <p className="text-sm xl:text-base text-gray-700">
+                    <span className="font-medium">Email:</span> {shippingInfo.email}
+                  </p>
+                )}
+              </div>
+            )}
 
-//       <OrderSummary currentPage="payment_page" />
-//     </div>
-//   );
-// }
+            <button
+              onClick={() => router.push("/homepage/shipping_page")}
+              className="mt-3 xl:mt-4 text-xs xl:text-sm text-gray-600 underline hover:text-black"
+            >
+              Edit Shipping Information
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={handlePlaceOrder}
+          disabled={isLoading || !shippingInfo}
+          className="w-full py-2 xl:py-3 px-4 xl:px-6 bg-black text-white text-sm xl:text-base rounded-md hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <svg
+                className="animate-spin -ml-1 mr-2 xl:mr-3 h-4 w-4 xl:h-5 xl:w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Processing...
+            </div>
+          ) : (
+            "Place Order"
+          )}
+        </button>
+
+        <div className="mt-3 xl:mt-4 text-xs xl:text-sm text-gray-600">
+          By placing your order, you agree to our Terms of Service and Privacy Policy.
+        </div>
+      </div>
+
+      <OrderSummary currentPage="payment_page" />
+    </div>
+  );
+}

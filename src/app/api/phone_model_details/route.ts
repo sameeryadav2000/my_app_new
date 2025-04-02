@@ -17,18 +17,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const phoneId = parseInt(id);
+    const phoneModelId = parseInt(id);
 
     // Fetch all phone model details for this phone ID
     const allPhoneDetails = await prisma.phoneModelDetails.findMany({
       where: {
-        phoneId,
+        phoneModelId,
         available: true,
         purchased: false,
       },
       select: {
         id: true,
-        phoneId: true,
+        phoneModelId: true,
         storage: true,
         condition: true,
         colorId: true,
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         // Include all relations
         color: true,
         seller: true,
-        phone: {
+        phoneModels: {
           include: {
             phone: true,
           },
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     const allImages = await prisma.modelImage.findMany({
       where: {
-        phoneId: phoneId,
+        phoneModelId: phoneModelId,
         colorId: {
           in: allColorIds as number[],
         },
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: detail.id,
-        phoneId: detail.phoneId,
+        phoneModelId: detail.phoneModelId,
         condition: detail.condition,
         storage: detail.storage,
         colorId: detail.colorId,
@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
         price: detail.price,
         sellerId: detail.sellerId,
         sellerName: detail.seller?.businessName,
-        phoneName: detail.phone?.phone?.phone,
-        phoneModel: detail.phone?.model,
+        phoneName: detail.phoneModels?.phone?.phone,
+        phoneModel: detail.phoneModels?.model,
         images: detailImages.map((img) => ({
           image: img.image,
           mainImage: img.mainImage,

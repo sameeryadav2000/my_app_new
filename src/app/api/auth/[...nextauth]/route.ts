@@ -307,8 +307,8 @@ export const authOptions: AuthOptions = {
 
       // Handle OAuth provider login (e.g., Google)
       if (!account?.providerAccountId) {
-        console.log("No provider account ID found, skipping user creation");
-        return true;
+        console.error("No provider account ID found, skipping user creation");
+        return false;
       }
 
       if (!user.email) {
@@ -344,17 +344,10 @@ export const authOptions: AuthOptions = {
               emailVerified: existingUserByEmail.emailVerified || isEmailVerified,
             },
           });
-          console.log(`Existing user ${updatedUser.id} linked with OAuth provider`);
           return true;
         }
 
-        // No user with this email exists, so create or update by externalId
-        const existingUserByExternalId = await prisma.user.findUnique({
-          where: { externalId },
-        });
-        const isCreated = !existingUserByExternalId;
-
-        const updatedUser = await prisma.user.upsert({
+        await prisma.user.upsert({
           where: {
             externalId,
           },
@@ -375,7 +368,6 @@ export const authOptions: AuthOptions = {
           },
         });
 
-        console.log(`User ${updatedUser.id} successfully ${isCreated ? "created" : "updated"}`);
         return true;
       } catch (error) {
         console.error("Error saving user:", error instanceof Error ? error.message : error);

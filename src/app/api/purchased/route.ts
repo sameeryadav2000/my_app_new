@@ -3,7 +3,20 @@ import { authOptions } from "../auth/[...nextauth]/route";
 import { getServerSession } from "next-auth";
 import prisma from "../../../../lib/prisma";
 
-export async function GET() {
+export async function GET(request: NextResponse) {
+  const url = new URL(request.url);
+  const orderId = url.searchParams.get("orderId");
+
+  if (!orderId) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Order ID is required",
+      },
+      { status: 400 }
+    );
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -23,9 +36,13 @@ export async function GET() {
       },
       include: {
         purchasedItems: {
+          where: {
+            orderId: orderId,
+          },
           include: {
-            phone: true,
+            phoneModels: true,
             color: true,
+            seller: true,
           },
         },
       },
@@ -41,56 +58,50 @@ export async function GET() {
       );
     }
 
-    const purchasesByOrder = user.purchasedItems.reduce((orders, item) => {
-      if (!orders[item.orderId]) {
-        orders[item.orderId] = {
-          orderId: item.orderId,
-          items: [],
-          totalItems: 0,
-          totalPrice: 0,
-          createdAt: item.createdAt,
-        };
-      }
+    if (user.purchasedItems.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Order not found",
+        },
+        { status: 404 }
+      );
+    }
 
-      orders[item.orderId].items.push({
+    // Calculate order totals
+    const totalItems = user.purchasedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = user.purchasedItems.reduce((sum, item) => sum + parseFloat(item.price.toString()) * item.quantity, 0);
+
+    // Format the order details
+    const orderDetails = {
+      orderId: orderId,
+      items: user.purchasedItems.map((item) => ({
         id: item.id,
-        itemId: item.itemId,
-        titleId: item.phone.id,
-        titleName: item.phone.model,
+        titleName: item.phoneModels.model,
+        colorName: item.color.color,
         condition: item.condition,
         storage: item.storage,
-        colorId: item.color.id,
-        colorName: item.color.color,
         price: parseFloat(item.price.toString()),
         quantity: item.quantity,
         image: item.image,
-      });
-
-      orders[item.orderId].totalItems += item.quantity;
-      orders[item.orderId].totalPrice += parseFloat(item.price.toString()) * item.quantity;
-
-      return orders;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }, {} as Record<string, any>);
-
-    // Convert to array and sort by createdAt date (newest first)
-    const purchases = Object.values(purchasesByOrder).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        seller: item.seller.name,
+      })),
+      totalItems,
+      totalPrice,
+      createdAt: user.purchasedItems[0].createdAt,
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        purchases,
-        totalOrders: purchases.length,
-        totalSpent: purchases.reduce((sum, order) => sum + order.totalPrice, 0),
-      },
+      order: orderDetails,
     });
   } catch (error) {
-    console.error("Error fetching purchased items:", error);
+    console.error("Error fetching order details:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : "Failed to fetch purchase history",
+        message: error instanceof Error ? error.message : "Failed to fetch order details",
       },
       { status: 500 }
     );

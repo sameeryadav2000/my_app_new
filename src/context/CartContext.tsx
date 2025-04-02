@@ -4,8 +4,8 @@ import React, { createContext, useState, useEffect, useContext, useCallback } fr
 import { useSession } from "next-auth/react";
 
 export interface CartItem {
-  id: number;
-  titleId: number;
+  phoneModelDetailsId: number;
+  phoneModelId: number;
   titleName?: string;
   condition: string;
   orderId?: string;
@@ -34,6 +34,8 @@ interface CartContextType {
   setCart: (cart: Cart) => void;
   isLoading: boolean;
   syncCart: () => Promise<SyncCartResult>;
+  syncNotify: { success: boolean; message: string } | null;
+  clearSyncNotify: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -41,6 +43,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [syncNotify, setSyncNotify] = useState<{ success: boolean; message: string } | null>(null);
 
   const [cart, setCart] = useState<Cart>({
     items: [],
@@ -77,6 +81,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
                 const result = await response.json();
 
+                localStorage.setItem("firstSyncDone", "completed");
+                localStorage.removeItem("cart");
+
                 if (!result.success) {
                   setIsLoading(false);
                   return {
@@ -84,9 +91,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                     message: result.message,
                   };
                 }
-
-                localStorage.setItem("firstSyncDone", "completed");
-                localStorage.removeItem("cart");
               }
             }
           }
@@ -146,7 +150,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
                 setCart({ items: [], totalItems: 0, subTotalPrice: 0 });
                 setIsLoading(false);
                 return {
-                  success: false,
+                  success: true,
                   message: "Could not update cart",
                 };
               }
@@ -178,14 +182,31 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const abortController = new AbortController();
+    let isMounted = true;
 
-    syncCart(abortController.signal).catch((error: unknown) => {
-      if (error instanceof Error && error.name !== "AbortError") {
-        console.error("Error in initial syncCart:", error);
-      }
-    });
+    syncCart(abortController.signal)
+      .then((result) => {
+        if (!isMounted) return;
+
+        // Only capture error messages, not success messages
+        if (!result.success && result.message) {
+          setSyncNotify({
+            success: false,
+            message: result.message,
+          });
+        }
+      })
+      .catch((error) => {
+        if (isMounted && error instanceof Error && error.name !== "AbortError") {
+          setSyncNotify({
+            success: false,
+            message: error.message || "An unexpected error occurred",
+          });
+        }
+      });
 
     return () => {
+      isMounted = false;
       abortController.abort();
     };
   }, [syncCart]);
@@ -208,7 +229,20 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  return <CartContext.Provider value={{ cart, setCart, isLoading, syncCart }}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider
+      value={{
+        cart,
+        setCart,
+        isLoading,
+        syncCart,
+        syncNotify,
+        clearSyncNotify: () => setSyncNotify(null),
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 };
 
 export const useCart = () => {

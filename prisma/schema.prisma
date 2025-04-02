@@ -60,6 +60,9 @@ model PhoneModelDetails {
       
   adminId         String
   admin           Admin       @relation(fields: [adminId], references: [id])
+  
+  cartItems       CartItem[]
+  purchasedItems  PurchasedItem[]
       
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @default(now()) @updatedAt
@@ -82,17 +85,17 @@ model Color {
 
 
 model ModelImage {
-  id           Int          @id @default(autoincrement())
-  image        String       
-  mainImage    Boolean      @default(false)
+  id            Int          @id @default(autoincrement())
+  image         String       
+  mainImage     Boolean      @default(false)
 
-  colorId      Int?    
-  color        Color?       @relation("ColorToModelImage", fields: [colorId], references: [id])
+  colorId       Int    
+  color         Color        @relation("ColorToModelImage", fields: [colorId], references: [id])
 
-  phoneId      Int?        
-  phone        PhoneModel?  @relation(fields: [phoneId], references: [id])
+  phoneModelId  Int        
+  phoneModels   PhoneModel   @relation(fields: [phoneModelId], references: [id])
 
-  @@index([phoneId])
+  @@index([phoneModelId])
   @@index([colorId])
 }
 
@@ -171,56 +174,71 @@ model Review {
   @@index([purchasedItemId]) 
 }
 
-
 model CartItem {
-  id           String     @id @default(uuid())
-  userId       String
-  itemId       String     
-  phoneModelId Int        
-  colorId      Int        
-  sellerId     String?
-  condition    String     
-  storage      String     
-  price        Decimal    
-  quantity     Int
-  image        String     
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id                          String                @id @default(uuid())
+
+  userId                      String
+  user                        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  phoneModelDetailsId         Int 
+  phoneModelDetail            PhoneModelDetails     @relation(fields: [phoneModelDetailsId], references: [id])
+
+  phoneModelId                Int 
+  phoneModels                 PhoneModel            @relation(fields: [phoneModelId], references: [id])
+
+  colorId                     Int  
+  color                       Color                 @relation(fields: [colorId], references: [id])
+
+  sellerId                    String
+  seller                      Seller                @relation(fields: [sellerId], references: [id])
+
+  condition                   String     
+  storage                     String     
+  price                       Decimal    
+  quantity                    Int
+  image                       String     
+  createdAt                   DateTime   @default(now())
+  updatedAt                   DateTime   @updatedAt
   
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phones       PhoneModel @relation(fields: [phoneModelId], references: [id])
-  color        Color      @relation(fields: [colorId], references: [id])
-  seller       Seller?    @relation(fields: [sellerId], references: [id])
 
   @@index([userId])
   @@index([phoneModelId])
+  @@index([phoneModelDetailsId])
   @@index([colorId])
   @@index([sellerId])
 }
 
 model PurchasedItem {
-  id            String   @id @default(uuid())
-  userId        String
-  itemId        String
-  phoneModelId  Int
-  colorId       Int
-  sellerId      String
-  condition     String
-  storage       String
-  price         Decimal
-  quantity      Int
-  image         String
-  orderId       String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone         PhoneModel @relation(fields: [phoneModelId], references: [id])
-  color         Color    @relation(fields: [colorId], references: [id])
-  seller        Seller   @relation(fields: [sellerId], references: [id])
-  review        Review?
+  id                          String                @id @default(uuid())
+                
+  userId                      String
+  user                        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  phoneModelDetailsId         Int
+  phoneModelDetail            PhoneModelDetails     @relation(fields: [phoneModelDetailsId], references: [id])
+
+  phoneModelId                Int
+  phoneModels                 PhoneModel            @relation(fields: [phoneModelId], references: [id])
+
+  colorId                     Int
+  color                       Color                 @relation(fields: [colorId], references: [id])
+
+  sellerId                    String
+  seller                      Seller                @relation(fields: [sellerId], references: [id])
+
+  condition                   String
+  storage                     String
+  price                       Decimal
+  quantity                    Int
+  image                       String
+  orderId                     String
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  review                      Review?
   
   @@index([userId])
+  @@index([phoneModelDetailsId])
   @@index([phoneModelId])
   @@index([orderId])
   @@index([sellerId])
