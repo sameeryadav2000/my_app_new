@@ -55,7 +55,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
               {/* Menu Items */}
               <div className="py-1">
                 <Link
-                  href="/homepage/account"
+                  href="/home/account"
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200"
                 >
                   <User className="w-4 h-4 md:w-5 md:h-5" />
@@ -63,7 +63,7 @@ export default function LoggedInOptions({ session, onLogout }: AccountDropdownPr
                 </Link>
 
                 <Link
-                  href="/homepage/orders"
+                  href="/home/orders"
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors duration-200"
                 >
                   <Package className="w-4 h-4 md:w-5 md:h-5" />

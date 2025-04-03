@@ -1,5 +1,5 @@
-import { LoadingProvider } from "@/context/LoadingContext";
-import { NotificationProvider } from "@/context/NotificationContext";
+import { LoadingProvider } from "@/src/context/LoadingContext";
+import { NotificationProvider } from "@/src/context/NotificationContext";
 import type { Metadata } from "next";
 import "./globals.css";
 

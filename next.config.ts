@@ -12,7 +12,7 @@ export default function defineConfig(): NextConfig {
       return [
         {
           source: "/",
-          destination: "/homepage",
+          destination: "/home",
           permanent: true,
         },
       ];

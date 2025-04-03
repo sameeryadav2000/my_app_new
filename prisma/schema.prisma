@@ -149,27 +149,28 @@ model User {
 }
 
 model Review {
-  id             String     @id @default(uuid())
-  rating         Int               
-  title          String     
-  comment        String     
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  
-  userId         String
-  user           User       @relation(fields: [userId], references: [id])
-  
-  modelId        Int
-  model          PhoneModel @relation(fields: [modelId], references: [id])
-  
-  colorId        Int?
-  color          Color?     @relation(fields: [colorId], references: [id])
+  id                                String        @id @default(uuid())
+  rating                            Int                  
+  title                             String        
+  comment                           String    
 
-  purchasedItemId String?   @unique
-  purchasedItem   PurchasedItem? @relation(fields: [purchasedItemId], references: [id])
+  createdAt                         DateTime      @default(now())
+  updatedAt                         DateTime      @updatedAt
+
+  userId                            String
+  user                              User          @relation(fields: [userId], references: [id])
+
+  phoneModelId                      Int
+  phoneModels                       PhoneModel    @relation(fields: [phoneModelId], references: [id])
+
+  colorId                           Int
+  color                             Color         @relation(fields: [colorId], references: [id])
+
+  purchasedItemId                   String        @unique
+  purchasedItem                     PurchasedItem @relation(fields: [purchasedItemId], references: [id])
 
   @@index([userId])
-  @@index([modelId])
+  @@index([phoneModelId])
   @@index([colorId])
   @@index([purchasedItemId]) 
 }
@@ -246,24 +247,24 @@ model PurchasedItem {
 
 
 model Seller {
-  id            String      @id @default(uuid())
-  businessName  String
-  name          String
-  email         String      @unique
-  phone         String
-  address       String
-  taxId         String
-  isActive      Boolean     @default(true)
-  
-  adminId       String
-  admin         Admin       @relation(fields: [adminId], references: [id])
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  phoneDetails  PhoneModelDetails[]
-  purchasedItems PurchasedItem[]
-  cartItems     CartItem[]
+  id                    String                    @id @default(uuid())
+  businessName          String              
+  name                  String              
+  email                 String                    @unique
+  phone                 String              
+  address               String              
+  taxId                 String              
+  isActive              Boolean                   @default(true)
+              
+  adminId               String              
+  admin                 Admin                     @relation(fields: [adminId], references: [id])
+              
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  phoneDetails          PhoneModelDetails[]
+  purchasedItems        PurchasedItem[]
+  cartItems             CartItem[]
   
   @@index([email])
   @@index([adminId])

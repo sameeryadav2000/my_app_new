@@ -7,7 +7,7 @@ interface SpinnerProps {
   color?: string;
 }
 
-export default function LoadingScreen({ size = 24, color = "#333333" }: SpinnerProps) {
+export default function LoadingScreen({ size = 20, color = "#333333" }: SpinnerProps) {
   return (
     <div className="inline-block">
       <style jsx>{`

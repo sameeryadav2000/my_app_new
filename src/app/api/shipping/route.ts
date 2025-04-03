@@ -1,8 +1,8 @@
 // src/app/api/shipping/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import prisma from "../../../../lib/prisma";
-import { authOptions } from "../auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+import { authOptions } from "@/lib/auth_options";
 
 export async function GET() {
   try {

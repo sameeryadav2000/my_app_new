@@ -2,8 +2,8 @@
 
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useNotification } from "@/context/NotificationContext";
-import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
 
 interface ResetPasswordData {
   password: string;

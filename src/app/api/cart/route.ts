@@ -2,9 +2,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import prisma from "../../../../lib/prisma";
-import { CartItem } from "@/context/CartContext";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import prisma from "@/lib/prisma";
+import { CartItem } from "@/src/context/CartContext";
+import { authOptions } from "@/lib/auth_options";
 
 export async function GET() {
   try {

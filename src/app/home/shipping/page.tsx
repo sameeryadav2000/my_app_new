@@ -1,11 +1,12 @@
 "use client";
 
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
 import { useEffect, useState, useCallback } from "react";
-import OrderSummary from "@/app/components/OrderSummary";
-import FullScreenLoader from "@/app/components/FullScreenLoader";
+import OrderSummary from "@/src/app/components/OrderSummary";
 import { useSession } from "next-auth/react";
+import { useCart } from "@/src/context/CartContext";
+import { useRouter } from "next/navigation";
 
 interface ShippingData {
   firstName: string;
@@ -41,9 +42,12 @@ interface TouchedFields {
 }
 
 export default function ShippingPage() {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError } = useNotification();
+  const { showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
   const { data: session } = useSession();
+  const router = useRouter();
+
+  const { cart, isLoading: isCartLoading } = useCart();
 
   const [shippingInfo, setShippingInfo] = useState<ShippingData>({
     firstName: "",
@@ -288,10 +292,21 @@ export default function ShippingPage() {
     setIsEditing(true);
   };
 
+  useEffect(() => {
+    // Only check after cart loading is complete
+    if (!isCartLoading && cart.items.length === 0) {
+      showInfo("Empty Cart", "Your cart is empty. Redirecting to home");
+      // Short timeout for smoother transition
+      const timer = setTimeout(() => {
+        router.push("/");
+      }, 1000); // 1000ms delay for smooth transition
+
+      return () => clearTimeout(timer);
+    }
+  }, [cart.items.length, isCartLoading, router, showInfo]);
+
   return (
     <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8">
-      {isLoading && <FullScreenLoader />}
-
       <div className="flex items-center justify-between mb-6 xl:hidden">
         <h1 className="text-2xl font-bold text-black">Shipping Information</h1>
       </div>
@@ -564,7 +579,7 @@ export default function ShippingPage() {
         </div>
       </div>
 
-      <OrderSummary currentPage="shipping_page" shippingInfoComplete={!!savedShippingInfo} />
+      <OrderSummary currentPage="shipping" shippingInfoComplete={!!savedShippingInfo} />
     </div>
   );
 }

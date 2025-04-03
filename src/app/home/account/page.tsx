@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import PersonalInfoDialog from "@/app/components/PersonalInfoDialog";
-import ShippingInfoDialog from "@/app/components/ShippingInfoDialog";
-import { useLoading } from "@/context/LoadingContext";
+import PersonalInfoDialog from "@/src/app/components/PersonalInfoDialog";
+import ShippingInfoDialog from "@/src/app/components/ShippingInfoDialog";
+import { useLoading } from "@/src/context/LoadingContext";
 
 export interface ShippingData {
   firstName: string;
@@ -21,22 +21,24 @@ export default function Account() {
   const { data: session } = useSession();
   const { showLoading, hideLoading } = useLoading();
 
-  const [isPersonalInfoDialogOpen, setIsPersonalInfoDialogOpen] = useState(false);
-  const [isShippingDialogOpen, setIsShippingDialogOpen] = useState(false);
+  const [isPersonalInfoDialogOpen, setIsPersonalInfoDialogOpen] = useState<boolean>(false);
+  const [isShippingDialogOpen, setIsShippingDialogOpen] = useState<boolean>(false);
   const [savedShippingInfo, setSavedShippingInfo] = useState<ShippingData | null>(null);
 
   // Fetch shipping info on component mount
   useEffect(() => {
+    let isMounted = true;
+
     const fetchShippingInfo = async () => {
-      showLoading();
+      if (isMounted) showLoading();
 
       try {
         const storedShippingInfo = sessionStorage.getItem("shippingInfo");
 
-        if (storedShippingInfo) {
+        if (storedShippingInfo && isMounted) {
           const parsedInfo = JSON.parse(storedShippingInfo);
           setSavedShippingInfo(parsedInfo);
-          hideLoading();
+          if (isMounted) hideLoading();
           return;
         }
 
@@ -49,21 +51,34 @@ export default function Account() {
 
         const result = await response.json();
 
+        if (!isMounted) return;
+
         if (!result.success) {
           console.error("Failed to fetch shipping info:", result.message);
           return;
         }
 
-        setSavedShippingInfo(result.shippingInfo);
-        sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
+        if (isMounted) {
+          setSavedShippingInfo(result.shippingInfo);
+          sessionStorage.setItem("shippingInfo", JSON.stringify(result.shippingInfo));
+        }
       } catch (error) {
-        console.error("Error fetching shipping info:", error);
+        if (isMounted) {
+          console.error("Error fetching shipping info:", error);
+        }
       } finally {
-        hideLoading();
+        if (isMounted) {
+          hideLoading();
+        }
       }
     };
 
     fetchShippingInfo();
+
+    // Cleanup function to run when component unmounts
+    return () => {
+      isMounted = false;
+    };
   }, [hideLoading, showLoading]);
 
   const openPersonalInfoDialog = () => setIsPersonalInfoDialogOpen(true);

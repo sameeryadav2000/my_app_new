@@ -1,8 +1,8 @@
 // app/api/user/update-phone/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
-import prisma from "../../../../../lib/prisma";
+import { authOptions } from "@/lib/auth_options";
+import prisma from "@/lib/prisma";
 
 export async function PUT(request: NextRequest) {
   try {

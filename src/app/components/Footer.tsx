@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
 
 // Type definitions
 interface DialogProps {

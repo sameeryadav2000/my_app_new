@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useLoading } from "@/context/LoadingContext";
+import { useLoading } from "@/src/context/LoadingContext";
 
 // Component that uses useSearchParams
 function VerificationErrorContent() {
@@ -47,7 +47,7 @@ function VerificationErrorContent() {
         <div className="text-center mt-6">
           <p className="mt-4">
             <Link href="/" className="text-black font-medium hover:text-gray-700">
-              Return to Homepage
+              Return to Home
             </Link>
           </p>
         </div>

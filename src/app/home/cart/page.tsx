@@ -1,32 +1,35 @@
 "use client";
 
 import { useEffect } from "react";
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
-import { useCart } from "@/context/CartContext";
-import OrderSummary from "@/app/components/OrderSummary";
-import { formatNPR } from "@/utils/formatters";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
+import { useCart } from "@/src/context/CartContext";
+import OrderSummary from "@/src/app/components/OrderSummary";
+import { formatNPR } from "@/src/utils/formatters";
 import Image from "next/image";
-import FullScreenLoader from "@/app/components/FullScreenLoader";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
-  const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showSuccess, showError } = useNotification();
-  const { cart, syncCart, syncNotify, clearSyncNotify } = useCart();
+  const router = useRouter();
+
+  const { showLoading, hideLoading } = useLoading();
+  const { showSuccess, showError, showInfo } = useNotification();
+  const { cart, syncCart, syncNotify, clearSyncNotify, isLoading: isCartLoading } = useCart();
 
   const handleRemove = async (phoneModelDetailsId: number) => {
-    const abortController = new AbortController();
-    const signal = abortController.signal;
+    let isMounted = true;
 
     try {
       showLoading();
 
       const response = await fetch(`/api/cart?phoneModelDetailsId=${phoneModelDetailsId}`, {
         method: "DELETE",
-        signal,
       });
 
       const result = await response.json();
+
+      // Check if component is still mounted before updating state or showing notifications
+      if (!isMounted) return;
 
       if (!result.success) {
         showError("Error", result.message);
@@ -35,13 +38,28 @@ export default function CartPage() {
 
       showSuccess("Success", result.message);
 
-      await syncCart();
+      // Only sync cart if still mounted
+      if (isMounted) {
+        await syncCart();
+      }
     } catch (error) {
+      // Check if component is still mounted before showing error
+      if (!isMounted) return;
+
       console.error("Failed to delete cart item: ", error);
       showError("Error", "Failed to delete cart item. Please check your connection and try again.");
     } finally {
-      hideLoading();
+      // Only hide loading if still mounted
+      if (isMounted) {
+        hideLoading();
+      }
     }
+
+    // We need a way to properly clean up - this is normally done in a useEffect
+    // But since this is a function, you'll want to handle cleanup where it's called
+    return () => {
+      isMounted = false;
+    };
   };
 
   useEffect(() => {
@@ -53,10 +71,21 @@ export default function CartPage() {
     }
   }, [syncNotify, showError, clearSyncNotify]);
 
+  useEffect(() => {
+    // Only check after cart loading is complete
+    if (!isCartLoading && cart.items.length === 0) {
+      showInfo("Empty Cart", "Your cart is empty. Redirecting to home");
+      // Short timeout for smoother transition
+      const timer = setTimeout(() => {
+        router.push("/");
+      }, 1000); // 500ms delay for smooth transition
+
+      return () => clearTimeout(timer);
+    }
+  }, [cart.items.length, isCartLoading, router, showInfo]);
+
   return (
     <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8 pb-16">
-      {isLoading && <FullScreenLoader />}
-
       <div className="xl:w-[60%] rounded-lg">
         {cart.items && cart.items.length > 0 ? (
           cart.items.map((item) => (
@@ -117,7 +146,7 @@ export default function CartPage() {
           </div>
         )}
       </div>
-      <OrderSummary currentPage="cart_page" />
+      <OrderSummary currentPage="cart" />
     </div>
   );
 }

@@ -1,21 +1,21 @@
 // src/app/api/reviews/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "../../../../lib/prisma";
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth_options";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  const productId = searchParams.get("productId");
-  const modelId = searchParams.get("modelId");
+  const purchasedItemId = searchParams.get("purchasedItemId");
+  const phoneModelId = searchParams.get("phoneModelId");
   const colorId = searchParams.get("colorId");
 
-  if (modelId && colorId && colorId !== "undefined") {
+  if (phoneModelId && colorId && colorId !== "undefined") {
     try {
       const reviews = await prisma.review.findMany({
         where: {
-          modelId: parseInt(modelId),
+          phoneModelId: parseInt(phoneModelId),
           colorId: parseInt(colorId),
         },
         orderBy: {
@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-  } else if (modelId) {
+  } else if (phoneModelId) {
     try {
       const reviews = await prisma.review.findMany({
         where: {
-          modelId: parseInt(modelId),
+          phoneModelId: parseInt(phoneModelId),
         },
         orderBy: {
           createdAt: "desc",
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
               lastName: true,
             },
           },
-          model: true,
+          phoneModels: true,
           color: true,
         },
       });
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         title: review.title,
         comment: review.comment,
         colorName: review.color?.color,
-        modelName: review.model.model,
+        phoneModelName: review.phoneModels.model,
         createdAt: review.createdAt,
         userName: review.user
           ? `${review.user.firstName ? review.user.firstName.charAt(0).toUpperCase() + review.user.firstName.slice(1) : ""} ${
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       );
     }
-  } else if (productId) {
+  } else if (purchasedItemId) {
     try {
       const session = await getServerSession(authOptions);
 
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
         include: {
           reviews: {
             where: {
-              purchasedItemId: productId,
+              purchasedItemId: purchasedItemId,
             },
           },
         },
@@ -201,9 +201,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { productId, productColorId, productItemId, rating, title, review: reviewText } = body;
+    const { purchasedItemId, productColorId, phoneModelId, rating, title, review: reviewText } = body;
 
-    if (!productId || !productItemId || !rating || !title || !reviewText) {
+    if (!purchasedItemId || !phoneModelId || !rating || !title || !reviewText || !productColorId) {
       return NextResponse.json(
         {
           success: false,
@@ -212,8 +212,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    const parsedModelId = typeof productItemId === "string" ? parseInt(productItemId, 10) : productItemId;
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -236,8 +234,8 @@ export async function POST(request: NextRequest) {
         comment: reviewText,
         colorId: productColorId,
         userId: user.id,
-        modelId: parsedModelId,
-        purchasedItemId: productId,
+        phoneModelId: phoneModelId,
+        purchasedItemId: purchasedItemId,
       },
     });
 

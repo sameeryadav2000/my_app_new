@@ -151,7 +151,7 @@
 //         >
 //           {products.map((product, index) => (
 //             <div key={index} className="" style={{ width: `${100 / products.length}%` }}>
-//               <Link href={`/product/${product.slug}`}>
+//               <Link href={`/phone_model/${product.slug}`}>
 //                 <div
 //                   className="h-full transition-all duration-300 bg-white rounded-xl 
 //                      transform origin-center hover:scale-[1.03] 

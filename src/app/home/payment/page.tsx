@@ -1,12 +1,11 @@
 "use client";
 
-import { useNotification } from "@/context/NotificationContext";
+import { useNotification } from "@/src/context/NotificationContext";
 import { useEffect, useState } from "react";
-import { useLoading } from "@/context/LoadingContext";
+import { useLoading } from "@/src/context/LoadingContext";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/context/CartContext";
-import OrderSummary from "@/app/components/OrderSummary";
-import FullScreenLoader from "@/app/components/FullScreenLoader";
+import { useCart } from "@/src/context/CartContext";
+import OrderSummary from "@/src/app/components/OrderSummary";
 
 interface ShippingData {
   firstName: string;
@@ -21,35 +20,59 @@ interface ShippingData {
 
 export default function PaymentPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
-  const { showError, showSuccess } = useNotification();
-  const { cart } = useCart();
+  const { showError, showSuccess, showInfo } = useNotification();
+  const { cart, isLoading: isCartLoading } = useCart();
   const router = useRouter();
   const [shippingInfo, setShippingInfo] = useState<ShippingData | null>(null);
 
   // Just check for shipping info on load
   useEffect(() => {
+    let isMounted = true;
     showLoading();
 
     const savedShippingInfo = sessionStorage.getItem("shippingInfo");
     if (savedShippingInfo) {
       try {
-        setShippingInfo(JSON.parse(savedShippingInfo));
-        hideLoading();
+        if (isMounted) {
+          setShippingInfo(JSON.parse(savedShippingInfo));
+          hideLoading();
+        }
       } catch (error) {
         console.error("Error parsing shipping info:", error);
-        showError("Error", "Problem with shipping information");
-        setTimeout(() => {
-          hideLoading();
-          router.push("/homepage/shipping_page");
-        }, 1500);
+        if (isMounted) {
+          showError("Error", "Problem with shipping information");
+
+          const timer = setTimeout(() => {
+            if (isMounted) {
+              hideLoading();
+              router.push("/home/shipping");
+            }
+          }, 1500);
+
+          // Clean up the timer if component unmounts
+          return () => clearTimeout(timer);
+        }
       }
     } else {
-      showError("Error", "Please provide shipping information first");
-      setTimeout(() => {
-        hideLoading();
-        router.push("/homepage/shipping_page");
-      }, 1500);
+      if (isMounted) {
+        showError("Error", "Please provide shipping information first");
+
+        const timer = setTimeout(() => {
+          if (isMounted) {
+            hideLoading();
+            router.push("/home/shipping");
+          }
+        }, 1500);
+
+        // Clean up the timer if component unmounts
+        return () => clearTimeout(timer);
+      }
     }
+
+    // Cleanup function to run when component unmounts
+    return () => {
+      isMounted = false;
+    };
   }, [router, showError, showLoading, hideLoading]);
 
   const generateOrderNumber = () => {
@@ -100,7 +123,7 @@ export default function PaymentPage() {
         showSuccess("Success", "Order placed successfully!");
 
         // Redirect to confirmation page
-        router.push(`/homepage/order_confirmation/${result.orderId}`);
+        router.push(`/home/order_confirmation/${result.orderId}`);
       }
     } catch (error) {
       console.error("Error in payment processing: ", error);
@@ -119,9 +142,18 @@ export default function PaymentPage() {
     };
   };
 
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
+  useEffect(() => {
+    // Only check after cart loading is complete
+    if (!isCartLoading && cart.items.length === 0) {
+      showInfo("Empty Cart", "Your cart is empty. Redirecting to home");
+      // Short timeout for smoother transition
+      const timer = setTimeout(() => {
+        router.push("/");
+      }, 1000); // 500ms delay for smooth transition
+
+      return () => clearTimeout(timer);
+    }
+  }, [cart.items.length, isCartLoading, router, showInfo]);
 
   return (
     <div className="flex flex-col xl:flex-row justify-between w-[95%] md:w-[70%] mx-auto gap-8 pb-10 xl:pb-16">
@@ -174,7 +206,7 @@ export default function PaymentPage() {
             )}
 
             <button
-              onClick={() => router.push("/homepage/shipping_page")}
+              onClick={() => router.push("/home/shipping")}
               className="mt-3 xl:mt-4 text-xs xl:text-sm text-gray-600 underline hover:text-black"
             >
               Edit Shipping Information
@@ -214,7 +246,7 @@ export default function PaymentPage() {
         </div>
       </div>
 
-      <OrderSummary currentPage="payment_page" />
+      <OrderSummary currentPage="payment" />
     </div>
   );
 }

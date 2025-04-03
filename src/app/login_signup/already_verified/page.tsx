@@ -12,7 +12,7 @@ export default function AlreadyVerified() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          window.location.href = "/login_signup"; // Redirect to homepage or login page
+          window.location.href = "/login_signup"; // Redirect to home or login page
           return 0;
         }
         return prev - 1;

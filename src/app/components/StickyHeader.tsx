@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatNPR } from "@/utils/formatters";
+import { formatNPR } from "@/src/utils/formatters";
 import Image from "next/image";
-import { useLoading } from "@/context/LoadingContext";
-import LoadingScreen from "@/app/components/LoadingScreen";
+import { useLoading } from "@/src/context/LoadingContext";
+import LoadingScreen from "@/src/app/components/LoadingScreen";
 
 interface StickyHeaderProps {
   title: string;
@@ -35,11 +35,11 @@ export default function StickyHeader({ title, condition, storage, color, price, 
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 bg-white shadow-md z-50 transform transition-all duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 right-0 bg-white shadow-md z-10 transform transition-all duration-300 ease-in-out ${
         isVisible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <div className="container mx-auto px-4 md:px-8 py-3">
+      <div className="container mx-auto px-4 lg:px-8 py-3">
         <div className="flex items-center justify-between">
           {isLoading ? (
             <LoadingScreen />
@@ -53,8 +53,8 @@ export default function StickyHeader({ title, condition, storage, color, price, 
                 )}
               </div>
               <div className="flex flex-col">
-                <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">{title}</span>
-                <span className="text-sm md:text-lg lg:text-lg capitalize">
+                <span className="text-xs lg:text-sm text-gray-500 hidden md:block">{title}</span>
+                <span className="text-sm lg:text-base capitalize">
                   {condition} · {storage} · {color}
                 </span>
               </div>
@@ -63,12 +63,12 @@ export default function StickyHeader({ title, condition, storage, color, price, 
 
           <div className="flex items-center gap-6">
             <div className="flex flex-col items-end">
-              <span className="text-sm md:text-sm lg:text-sm text-gray-500 hidden md:block">Price</span>
-              <span className="text-lg md:text-lg lg:text-xl">{formatNPR(price)}</span>
+              <span className="text-xs lg:text-sm text-gray-500 hidden md:block">Price</span>
+              <span className="text-base lg:text-lg">{formatNPR(price)}</span>
             </div>
 
             <button
-              className="bg-black text-white px-5 py-2 md:px-6 lg:px-6 md:py-2.5 lg:py-2.5 rounded-lg hover:bg-gray-900 transition-all duration-200 text-sm md:text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hidden md:block"
+              className="bg-black text-white px-5 py-2 lg:px-6 lg:py-2.5 rounded-lg hover:bg-gray-900 transition-all duration-200 text-xs lg:text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hidden md:block"
               onClick={onAddToCart}
             >
               Add to Cart

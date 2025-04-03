@@ -5,5 +5,12 @@ import { withAuth } from "next-auth/middleware";
 export default withAuth({});
 
 export const config = {
-  matcher: ["/homepage/cart_page", "/homepage/shipping_page", "/homepage/payment_page"],
+  matcher: [
+    "/home/cart",
+    "/home/shipping",
+    "/home/payment",
+    "/home/orders",
+    "/home/order_confirmation/:path",
+    "/home/account",
+  ],
 };

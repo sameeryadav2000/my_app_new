@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useNotification } from "@/context/NotificationContext"; // Adjust import path as needed
-import { useLoading } from "@/context/LoadingContext"; // Adjust import path as needed
+import { useNotification } from "@/src/context/NotificationContext"; // Adjust import path as needed
+import { useLoading } from "@/src/context/LoadingContext"; // Adjust import path as needed
 
 interface RegistrationData {
   email: string;

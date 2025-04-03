@@ -1,14 +1,14 @@
-// E:\my_app_new\src\app\homepage\layout.tsx
+// E:\my_app_new\src\app\home\layout.tsx
 
 import "./globals.css";
 import type { Metadata } from "next";
-import Navbar from "@/app/components/Navbar";
-import AuthProvider from "../components/AuthProvider";
-import SessionGuard from "@/app/components/SessionGuard";
-import { CartProvider } from "@/context/CartContext";
-import Footer from "@/app/components/Footer";
-import { LoadingProvider } from "@/context/LoadingContext";
-import { NotificationProvider } from "@/context/NotificationContext";
+import Navbar from "@/src/app/components/Navbar";
+import AuthProvider from "@/src/app/components/AuthProvider";
+import SessionGuard from "@/src/app/components/SessionGuard";
+import { CartProvider } from "@/src/context/CartContext";
+import Footer from "@/src/app/components/Footer";
+import { LoadingProvider } from "@/src/context/LoadingContext";
+import { NotificationProvider } from "@/src/context/NotificationContext";
 
 export const metadata: Metadata = {
   title: "Create Next App",

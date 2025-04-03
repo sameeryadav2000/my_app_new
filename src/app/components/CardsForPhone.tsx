@@ -1,5 +1,5 @@
 import React from "react";
-import { formatNPR } from "@/utils/formatters";
+import { formatNPR } from "@/src/utils/formatters";
 import Image from "next/image";
 
 interface PhoneCardProps {

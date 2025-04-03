@@ -7,7 +7,7 @@ import { User } from "lucide-react";
 import LoggedInOptions from "./LoggedInOptions";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import LoadingScreen from "@/app/components/LoadingScreen";
+import LoadingScreen from "@/src/app/components/LoadingScreen";
 
 export default function LoginLogout() {
   const { data: session, status } = useSession();

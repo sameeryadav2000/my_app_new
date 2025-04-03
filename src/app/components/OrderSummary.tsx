@@ -1,21 +1,21 @@
 "use client";
 
-import { useLoading } from "@/context/LoadingContext";
-import { useCart } from "@/context/CartContext";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useCart } from "@/src/context/CartContext";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useEffect } from "react";
-import { formatNPR } from "@/utils/formatters";
+import { formatNPR } from "@/src/utils/formatters";
 import Image from "next/image";
 
 interface OrderSummaryProps {
-  currentPage: "cart_page" | "shipping_page" | "payment_page";
+  currentPage: "cart" | "shipping" | "payment";
   shippingInfoComplete?: boolean;
 }
 
 export default function OrderSummary({ currentPage, shippingInfoComplete = false }: OrderSummaryProps) {
   const { showLoading, hideLoading, isLoading } = useLoading();
-  const { cart } = useCart();
+  const { cart, isLoading: isCartLoading } = useCart();
+
   const router = useRouter();
 
   const tax = 10;
@@ -24,19 +24,29 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
   const shippingFee = cart.subTotalPrice > 20000 ? 0 : 500; // NPR 500 unless subtotal > 20000
   const totalAmount = cart.subTotalPrice + taxAmount + qualityAssuranceFee + shippingFee;
 
-  const isCartEmpty = !cart.items || cart.items.length === 0;
-
   useEffect(() => {
     return () => {
       hideLoading();
     };
   }, [hideLoading]);
 
-  const handleCheckout = () => {
+  const toShippingPage = () => {
     showLoading();
 
     setTimeout(() => {
-      router.push("/homepage/shipping_page");
+      router.push("/home/shipping");
+
+      setTimeout(() => {
+        hideLoading();
+      }, 1000);
+    }, 500);
+  };
+
+  const toPaymentPage = () => {
+    showLoading();
+
+    setTimeout(() => {
+      router.push("/home/payment");
 
       setTimeout(() => {
         hideLoading();
@@ -123,11 +133,11 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
           <span className="font-semibold text-base xl:text-lg">{formatNPR(Math.round(totalAmount))}</span>
         </div>
 
-        {currentPage === "cart_page" && (
+        {currentPage === "cart" && (
           <div className="mt-4 xl:mt-6">
             <button
-              onClick={handleCheckout}
-              disabled={isLoading || cart.items.length === 0}
+              onClick={toShippingPage}
+              disabled={isCartLoading}
               className="w-full bg-black text-white py-2 xl:py-3 px-3 xl:px-4 rounded-md font-medium text-sm xl:text-base hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {isLoading ? (
@@ -148,28 +158,49 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
                   Processing...
                 </>
               ) : (
-                "Proceed to Checkout"
+                "Proceed to Shipping Info"
               )}
             </button>
           </div>
         )}
 
-        {currentPage === "shipping_page" && (
+        {currentPage === "shipping" && (
           <div className="mt-4 xl:mt-6">
-            {isCartEmpty || !shippingInfoComplete ? (
+            {!shippingInfoComplete ? (
               <button
                 disabled
                 className="w-full bg-gray-300 text-white py-2 xl:py-3 rounded-md font-medium text-sm xl:text-base cursor-not-allowed"
-                title={isCartEmpty ? "Your cart is empty" : "Please complete shipping information"}
+                title="Please complete shipping information"
               >
                 Continue to Payment
               </button>
             ) : (
-              <Link href="/homepage/payment_page">
-                <button className="w-full bg-black text-white py-2 xl:py-3 rounded-md font-medium text-sm xl:text-base hover:bg-gray-800 transition-colors">
-                  Continue to Payment
-                </button>
-              </Link>
+              <button
+                onClick={toPaymentPage}
+                disabled={isCartLoading}
+                className="w-full bg-black text-white py-2 xl:py-3 px-3 xl:px-4 rounded-md font-medium text-sm xl:text-base hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 xl:h-5 xl:w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  "Continue to Payment"
+                )}
+              </button>
             )}
           </div>
         )}

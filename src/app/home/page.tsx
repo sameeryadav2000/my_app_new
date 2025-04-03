@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import Slideshow from "@/app/components/Slideshow";
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
-import Card from "@/app/components/Card";
+import Slideshow from "@/src/app/components/Slideshow";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
+import Card from "@/src/app/components/Card";
 import { useEffect, useState } from "react";
-import FAQ from "@/app/components/FAQ";
-import LoadingScreen from "@/app/components/LoadingScreen";
+import FAQ from "@/src/app/components/FAQ";
+import LoadingScreen from "@/src/app/components/LoadingScreen";
 
 interface Phone {
   id: number;
@@ -16,10 +16,10 @@ interface Phone {
 }
 
 // Cache configuration
-const CACHE_KEY = "homepage_phones_cache";
+const CACHE_KEY = "home_phones_cache";
 const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
 
-export default function HomePage() {
+export default function Home() {
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showError } = useNotification();
   const [phones, setPhones] = useState<Phone[]>([]);
@@ -172,8 +172,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="h-6"></div>
-      <div className="h-6"></div>
+      <div className="h-12"></div>
 
       {/* About Our Process Banner */}
       <div className="w-full bg-gray-900 text-white py-6 md:py-8 lg:py-10">
@@ -225,8 +224,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="h-6"></div>
-      <div className="h-6"></div>
+      <div className="h-12"></div>
 
       {/* Shop Most Wanted Section */}
       <div className="w-[95%] md:w-[70%] mx-auto">
@@ -239,7 +237,7 @@ export default function HomePage() {
             phones.length > 0 &&
             phones.map((phone) => (
               <div key={phone.id} className="group transition-transform duration-300 hover:translate-y-[-4px]">
-                <Link href={`/homepage/product_page/${encodeURIComponent(phone.id)}/${encodeURIComponent(phone.phone)}`}>
+                <Link href={`/home/phone_model/${encodeURIComponent(phone.id)}/${encodeURIComponent(phone.phone)}`}>
                   <div className="h-full bg-white rounded-lg overflow-hidden transform transition-all duration-300 border border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md">
                     <Card title={phone.phone} image={phone.image} alt={`${phone.phone} image`} />
                   </div>
@@ -250,8 +248,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="h-6"></div>
-      <div className="h-6"></div>
+      <div className="h-12"></div>
 
       {/* Main Banner */}
       <div className="w-full bg-gray-50 py-8 md:py-12 lg:py-16 text-center">

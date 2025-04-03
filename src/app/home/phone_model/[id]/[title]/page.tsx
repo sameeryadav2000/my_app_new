@@ -1,16 +1,16 @@
-// src\app\homepage\product_page\[title]\page.tsx
+// src\app\home\product\[title]\page.tsx
 
 "use client";
 
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import slugify from "slugify";
 import Link from "next/link";
-import CardsForPhone from "@/app/components/CardsForPhone";
+import CardsForPhone from "@/src/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import ReviewList from "@/app/components/ReviewList";
-import LoadingScreen from "@/app/components/LoadingScreen";
+import ReviewList from "@/src/app/components/ReviewList";
+import LoadingScreen from "@/src/app/components/LoadingScreen";
 
 interface PhoneModel {
   id: number;
@@ -20,9 +20,7 @@ interface PhoneModel {
   image: string;
 }
 
-const PHONE_MODELS_CACHE_KEY_PREFIX = "phone_models_cache_";
-const CACHE_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
-const ITEMS_PER_PAGE = 10; // Assuming this is defined elsewhere
+const ITEMS_PER_PAGE = 10;
 
 export default function ProductListingPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
@@ -39,46 +37,13 @@ export default function ProductListingPage() {
   const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
 
-  // Generate a cache key specific to this query
-  const getCacheKey = useCallback(() => {
-    return `${PHONE_MODELS_CACHE_KEY_PREFIX}${id}_page${currentPage}_limit${ITEMS_PER_PAGE}`;
-  }, [id, currentPage]);
-
   const fetchCards = useCallback(() => {
     let isMounted = true;
     showLoading();
 
     const fetchPhoneModels = async () => {
       try {
-        // Check for cached data first
-        const cacheKey = getCacheKey();
-        try {
-          const cachedData = localStorage.getItem(cacheKey);
-
-          if (cachedData) {
-            const { data, total, totalPages, timestamp } = JSON.parse(cachedData);
-            const now = new Date().getTime();
-
-            // Use cache if it's still valid
-            if (now - timestamp < CACHE_EXPIRY) {
-              console.log(`Using cached phone models data for ${cacheKey}`);
-              if (isMounted) {
-                setPhoneModels(data);
-                setTotalItems(total);
-                setTotalPages(totalPages);
-                hideLoading();
-                return;
-              }
-            } else {
-              console.log(`Cache expired for ${cacheKey}, fetching fresh data`);
-            }
-          }
-        } catch (error) {
-          console.warn("Failed to access localStorage:", error);
-          // Continue with fetch if localStorage fails
-        }
-
-        // Fetch fresh data if no cache or cache expired
+        // Fetch data directly without cache checking
         const response = await fetch(`/api/phone_model?page=${currentPage}&limit=${ITEMS_PER_PAGE}&id=${id}`, {
           method: "GET",
           headers: {
@@ -103,19 +68,6 @@ export default function ProductListingPage() {
           setPhoneModels(data);
           setTotalItems(totalItems);
           setTotalPages(totalPages);
-
-          // Save to cache with timestamp
-          try {
-            const cacheData = {
-              data,
-              total: totalItems,
-              totalPages,
-              timestamp: new Date().getTime(),
-            };
-            localStorage.setItem(getCacheKey(), JSON.stringify(cacheData));
-          } catch (error) {
-            console.warn("Failed to store in localStorage:", error);
-          }
         }
       } catch (error) {
         if (!isMounted) return;
@@ -134,7 +86,7 @@ export default function ProductListingPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentPage, id, showError, hideLoading, showLoading, getCacheKey]);
+  }, [currentPage, id, showError, hideLoading, showLoading]);
 
   useEffect(() => {
     const cleanup = fetchCards();
@@ -147,7 +99,7 @@ export default function ProductListingPage() {
 
   const handlePageChange = useCallback(
     (pageNumber: number) => {
-      router.replace(`/homepage/product_page/${id}/${title}?page=${pageNumber}`, {
+      router.replace(`/home/phone_model/${id}/${title}?page=${pageNumber}`, {
         scroll: false,
       });
     },
@@ -328,7 +280,9 @@ export default function ProductListingPage() {
 
         {/* When loading is true, show the loading screen */}
         {isLoading ? (
-          <LoadingScreen />
+          <div className="col-span-2 sm:col-span-2 md:col-span-3 lg:col-span-4 flex justify-center items-center py-20">
+            <LoadingScreen />
+          </div>
         ) : (
           <>
             {/* Only show these sections when not loading */}
@@ -342,7 +296,7 @@ export default function ProductListingPage() {
               {phoneModels.map((phoneModel) => (
                 <Link
                   key={phoneModel.id}
-                  href={`/homepage/product_detail_page/${phoneModel.id}/${slugify(phoneModel.model)}`}
+                  href={`/home/phone_model_detail/${phoneModel.id}/${slugify(phoneModel.model)}`}
                   className="group block h-full transition-all duration-300"
                 >
                   <CardsForPhone
@@ -448,7 +402,7 @@ export default function ProductListingPage() {
             )}
           </div>
 
-          <div>{id && <ReviewList modelId={id} />}</div>
+          <div>{id && <ReviewList phoneModelId={id} />}</div>
         </div>
       </div>
     </>

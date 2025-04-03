@@ -4,11 +4,11 @@ import { Suspense } from "react";
 import { useState, useEffect, useCallback } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useNotification } from "@/context/NotificationContext";
-import { useLoading } from "@/context/LoadingContext";
-import RegistrationDialog from "@/app/components/RegistrationDialog";
-import ForgotPasswordDialog from "@/app/components/ForgotPasswordDialog";
-import FullScreenLoader from "@/app/components/FullScreenLoader";
+import { useNotification } from "@/src/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
+import RegistrationDialog from "@/src/app/components/RegistrationDialog";
+import ForgotPasswordDialog from "@/src/app/components/ForgotPasswordDialog";
+import FullScreenLoader from "@/src/app/components/FullScreenLoader";
 
 // Types
 interface LoginData {
@@ -28,9 +28,6 @@ interface TouchedFields {
 
 // Fallback component that shows while params are loading
 function LoginLoadingFallback() {
-  // Log to help debugging
-  console.log("LoginLoadingFallback rendered");
-
   // Still call showLoading for state management
   const { showLoading } = useLoading();
   showLoading();
@@ -43,7 +40,7 @@ function LoginLoadingFallback() {
 function LoginPageContent() {
   // Get callback URL from search parameters
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/homepage";
+  const callbackUrl = searchParams.get("callbackUrl") || "/home";
 
   const [formData, setFormData] = useState<LoginData>({
     email: "",

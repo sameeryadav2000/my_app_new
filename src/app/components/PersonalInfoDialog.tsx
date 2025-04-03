@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useNotification } from "@/context/NotificationContext";
-import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
 
 interface PersonalInfoData {
   firstName: string;

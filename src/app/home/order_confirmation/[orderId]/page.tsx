@@ -1,4 +1,4 @@
-// // src/app/homepage/order_confirmation/page.tsx
+// // src/app/home/order_confirmation/page.tsx
 // "use client";
 
 // import { useLoading } from "@/context/LoadingContext";
@@ -8,7 +8,7 @@
 // import Link from "next/link";
 // import { FaCheckCircle, FaEnvelope, FaFileAlt, FaHome, FaTimesCircle } from "react-icons/fa";
 // import { getStripePromise } from "../../../../lib/stripe_client";
-// import { ShippingData } from "@/app/homepage/shipping_page/page";
+// import { ShippingData } from "@/app/home/shipping/page";
 
 // interface OrderDetails {
 //   orderNumber: string;
@@ -148,7 +148,7 @@
 //               setHasError(true);
 //               setIsVerified(true);
 //               setTimeout(() => {
-//                 router.replace("/homepage");
+//                 router.replace("/home");
 //               }, 3000);
 //             }
 //           } else {
@@ -156,7 +156,7 @@
 //             setHasError(true);
 //             setIsVerified(true);
 //             setTimeout(() => {
-//               router.replace("/homepage/cart_page");
+//               router.replace("/home/cart");
 //             }, 5000);
 //           }
 //         } catch (error) {
@@ -172,7 +172,7 @@
 //     } else {
 //       setHasError(true);
 //       setIsVerified(true);
-//       router.replace("/homepage");
+//       router.replace("/home");
 //     }
 //   }, [paymentIntentId, paymentIntentClientSecret, isCartLoading]);
 
@@ -210,7 +210,7 @@
 //             <p className="text-gray-600 mt-2">Please try again or contact our customer support for assistance.</p>
 //             <div className="mt-8 flex justify-center">
 //               <Link
-//                 href="/homepage/cart_page"
+//                 href="/home/cart"
 //                 className="flex items-center justify-center gap-2 py-2 px-6 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
 //               >
 //                 <FaHome className="w-4 h-4" />
@@ -300,7 +300,7 @@
 //             {/* Action Buttons */}
 //             <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
 //               <Link
-//                 href="/homepage"
+//                 href="/home"
 //                 className="flex items-center justify-center gap-2 py-2 px-6 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
 //               >
 //                 <FaHome className="w-4 h-4" />
@@ -366,10 +366,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useNotification } from "@/context/NotificationContext";
-import { useLoading } from "@/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
+import { useLoading } from "@/src/context/LoadingContext";
+import { formatNPR } from "@/src/utils/formatters";
+import Image from "next/image";
+import FullScreenLoader from "@/src/app/components/FullScreenLoader";
 
 // Order interfaces
 interface OrderItem {
@@ -393,8 +396,8 @@ interface OrderDetails {
 }
 
 export default function OrderConfirmation() {
-  const router = useRouter();
-  const { orderId } = router.query;
+  const params = useParams();
+  const orderId = params.orderId;
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showError, showSuccess } = useNotification();
@@ -420,7 +423,6 @@ export default function OrderConfirmation() {
 
         if (isMounted) {
           setOrderDetails(result.order);
-          showSuccess("Success", "Order details loaded successfully");
         }
       } catch (error) {
         console.error("Order details fetch error:", error);
@@ -442,42 +444,41 @@ export default function OrderConfirmation() {
     };
   }, [orderId, showLoading, hideLoading, showError, showSuccess]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      {isLoading && <FullScreenLoader />}
+
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
-            <h1 className="text-2xl font-bold text-gray-900">Order Confirmation</h1>
-            <p className="mt-1 max-w-2xl text-sm text-gray-500">Thank you for your purchase!</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Order Confirmation</h1>
+            <p className="mt-1 max-w-2xl text-xs md:text-sm text-gray-500">Thank you for your purchase!</p>
           </div>
 
           <div className="px-4 py-5 sm:px-6">
             <div className="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
               <div className="flex items-center mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 md:h-5 w-4 md:w-5 text-green-500"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                     clipRule="evenodd"
                   />
                 </svg>
-                <p className="ml-2 text-lg font-medium">Order Placed Successfully</p>
+                <p className="ml-2 text-base md:text-lg font-medium">Order Placed Successfully</p>
               </div>
-              <p className="text-sm text-gray-600">Your order has been confirmed and will be shipped soon.</p>
+              <p className="text-xs md:text-sm text-gray-600">Your order has been confirmed and will be shipped soon.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Order Details</h3>
-                <dl className="mt-2 text-sm text-gray-600">
+                <h3 className="text-base md:text-lg font-medium text-gray-900">Order Details</h3>
+                <dl className="mt-2 text-xs md:text-sm text-gray-600">
                   <div className="mt-1">
                     <dt className="inline font-medium">Order Number:</dt>
                     <dd className="inline ml-1">{orderDetails?.orderId}</dd>
@@ -495,24 +496,39 @@ export default function OrderConfirmation() {
             </div>
 
             <div className="mt-8">
-              <h3 className="text-lg font-medium text-gray-900">Order Summary</h3>
+              <h3 className="text-base md:text-lg font-medium text-gray-900">Order Summary</h3>
               <div className="mt-2 overflow-hidden border-t border-b border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Product
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Details
                       </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-4 md:px-6 py-2 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Quantity
                       </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-4 md:px-6 py-2 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Price
                       </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-4 md:px-6 py-2 md:py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Total
                       </th>
                     </tr>
@@ -520,37 +536,54 @@ export default function OrderConfirmation() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {orderDetails?.items?.map((item) => (
                       <tr key={item.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="h-14 w-14 flex-shrink-0">
-                              <img src={item.image} alt={item.titleName} className="h-14 w-14 object-cover rounded" />
+                            <div className="h-12 md:h-14 w-12 md:w-14 flex-shrink-0 relative">
+                              {item.image ? (
+                                <Image
+                                  src={item.image}
+                                  alt={item.titleName}
+                                  fill
+                                  sizes="(max-width: 768px) 48px, 56px"
+                                  className="object-cover rounded"
+                                  style={{ objectFit: "cover" }}
+                                />
+                              ) : (
+                                <div className="h-12 md:h-14 w-12 md:w-14 flex items-center justify-center bg-gray-100 rounded">
+                                  <div className="text-gray-400 text-xs text-center">No Image</div>
+                                </div>
+                              )}
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{item.titleName}</div>
-                              <div className="text-sm text-gray-500">{item.colorName}</div>
+                            <div className="ml-3 md:ml-4">
+                              <div className="text-xs md:text-sm font-medium text-gray-900">{item.titleName}</div>
+                              <div className="text-xs text-gray-500">{item.colorName}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{item.condition}</div>
-                          <div className="text-sm text-gray-500">{item.storage}</div>
+                        <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
+                          <div className="text-xs md:text-sm text-gray-900">{item.condition}</div>
+                          <div className="text-xs md:text-sm text-gray-500">{item.storage}</div>
                           <div className="text-xs text-gray-400">Seller: {item.seller}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">{item.quantity}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">${item.price.toFixed(2)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                          ${(item.price * item.quantity).toFixed(2)}
+                        <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
+                          {item.quantity}
+                        </td>
+                        <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
+                          {formatNPR(item.price)}
+                        </td>
+                        <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm text-gray-500 text-right">
+                          {formatNPR(item.price * item.quantity)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot className="bg-white">
                     <tr className="bg-gray-50">
-                      <td colSpan={4} className="px-6 py-4 text-sm font-bold text-gray-900 text-right">
+                      <td colSpan={4} className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-bold text-gray-900 text-right">
                         Total
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">
-                        ${orderDetails?.totalPrice.toFixed(2)}
+                      <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-xs md:text-sm font-bold text-gray-900 text-right">
+                        {formatNPR(orderDetails?.totalPrice)}
                       </td>
                     </tr>
                   </tfoot>
@@ -560,28 +593,18 @@ export default function OrderConfirmation() {
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-between">
               <Link href="/">
-                <button className="w-full sm:w-auto bg-white text-black border border-black py-2 px-4 rounded hover:bg-gray-100 transition-colors">
+                <button className="w-full sm:w-auto bg-white text-black border border-black py-1.5 md:py-2 px-3 md:px-4 rounded text-xs md:text-sm hover:bg-gray-100 transition-colors">
                   Continue Shopping
                 </button>
               </Link>
               <button
                 onClick={() => window.print()}
-                className="w-full sm:w-auto bg-black text-white py-2 px-4 rounded hover:bg-gray-800 transition-colors"
+                className="w-full sm:w-auto bg-black text-white py-1.5 md:py-2 px-3 md:px-4 rounded text-xs md:text-sm hover:bg-gray-800 transition-colors"
               >
                 Print Receipt
               </button>
             </div>
           </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600">
-            Questions about your order? Contact our{" "}
-            <a href="/support" className="text-black underline">
-              customer support
-            </a>
-            .
-          </p>
         </div>
       </div>
     </div>

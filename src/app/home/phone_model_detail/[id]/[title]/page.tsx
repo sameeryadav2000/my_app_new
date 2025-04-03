@@ -1,18 +1,18 @@
-// src\app\homepage\product_detail_page\[id]\[title]\page.tsx
+// src\app\home\phone_model_detail\[id]\[title]\page.tsx
 
 "use client";
 
-import FullScreenLoader from "@/app/components/FullScreenLoader";
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
+import FullScreenLoader from "@/src/app/components/FullScreenLoader";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
-import { CartItem, Cart } from "@/context/CartContext";
-import { useCart } from "@/context/CartContext";
-import StickyHeader from "@/app/components/StickyHeader";
-import ReviewList from "@/app/components/ReviewList";
-import { formatNPR } from "@/utils/formatters";
+import { CartItem, Cart } from "@/src/context/CartContext";
+import { useCart } from "@/src/context/CartContext";
+import StickyHeader from "@/src/app/components/StickyHeader";
+import ReviewList from "@/src/app/components/ReviewList";
+import { formatNPR } from "@/src/utils/formatters";
 import Image from "next/image";
 
 interface Products {
@@ -42,7 +42,8 @@ export default function ProductPage() {
   const params = useParams();
   const phoneModelId = Number(params.id);
 
-  const [products, setProducts] = useState<Products[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Products[]>([]);
+
   const [selectedVariationId, setSelectedVariationId] = useState<number | null>(null);
 
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
@@ -51,7 +52,7 @@ export default function ProductPage() {
 
   const colors: Record<string, string> = {
     Black: "bg-black",
-    White: "bg-white",
+    White: "bg-gray-100",
     Gray: "bg-gray-400",
     Silver: "bg-gray-300",
     Gold: "bg-yellow-600",
@@ -88,11 +89,22 @@ export default function ProductPage() {
           return;
         }
 
-        setProducts(result.data);
+        const lowestPriceMap = new Map<string, Products>();
+
+        result.data.forEach((product: Products) => {
+          const key = `${product.condition}-${product.storage}`;
+
+          if (!lowestPriceMap.has(key) || product.price < lowestPriceMap.get(key)!.price) {
+            lowestPriceMap.set(key, product);
+          }
+        });
+
+        const lowestPriceProducts = Array.from(lowestPriceMap.values());
+        setFilteredProducts(lowestPriceProducts);
 
         // Auto-select first variation
-        if (result.data.length > 0) {
-          setSelectedVariationId(result.data[0].id);
+        if (lowestPriceProducts.length > 0) {
+          setSelectedVariationId(lowestPriceProducts[0].id);
         }
       } catch (error) {
         if (!isMounted) return;
@@ -115,29 +127,29 @@ export default function ProductPage() {
 
   const selectedVariation = useMemo(() => {
     if (!selectedVariationId) return null;
-    return products.find((p) => p.id === selectedVariationId) || null;
-  }, [products, selectedVariationId]);
+    return filteredProducts.find((p) => p.id === selectedVariationId) || null;
+  }, [filteredProducts, selectedVariationId]);
 
   const modelImages = useMemo(() => {
     return selectedVariation?.images || [];
   }, [selectedVariation]);
 
   const availableConditions = useMemo(() => {
-    const conditions = [...new Set(products.map((p) => p.condition))];
+    const conditions = [...new Set(filteredProducts.map((p) => p.condition))];
     return conditions;
-  }, [products]);
+  }, [filteredProducts]);
 
   const availableStorageOptions = useMemo(() => {
     if (!selectedVariation) return [];
     const condition = selectedVariation.condition;
-    return [...new Set(products.filter((p) => p.condition === condition).map((p) => p.storage))];
-  }, [products, selectedVariation]);
+    return [...new Set(filteredProducts.filter((p) => p.condition === condition).map((p) => p.storage))];
+  }, [filteredProducts, selectedVariation]);
 
   const availableColorOptions = useMemo(() => {
     if (!selectedVariation) return [];
     const condition = selectedVariation.condition;
     const storage = selectedVariation.storage;
-    return products
+    return filteredProducts
       .filter((p) => p.condition === condition && p.storage === storage)
       .map((p) => ({
         id: p.id,
@@ -145,7 +157,7 @@ export default function ProductPage() {
         colorName: p.colorName,
         price: p.price,
       }));
-  }, [products, selectedVariation]);
+  }, [filteredProducts, selectedVariation]);
 
   const nextImage = () => {
     if (modelImages.length === 0) return;
@@ -158,25 +170,21 @@ export default function ProductPage() {
   };
 
   const handleConditionChange = (condition: string) => {
-    // Find first variation with this condition
-    const firstMatchingVariation = products.find((p) => p.condition === condition);
+    const firstMatchingVariation = filteredProducts.find((p) => p.condition === condition);
     if (firstMatchingVariation) {
       setSelectedVariationId(firstMatchingVariation.id);
-      setCurrentImageIndex(0); // Reset image index
+      setCurrentImageIndex(0);
     }
   };
 
-  // Handle storage change
   const handleStorageChange = (storage: string) => {
     if (!selectedVariation) return;
-    // Find first variation with current condition and new storage
-    const firstMatchingVariation = products.find((p) => p.condition === selectedVariation.condition && p.storage === storage);
+    const firstMatchingVariation = filteredProducts.find((p) => p.condition === selectedVariation.condition && p.storage === storage);
     if (firstMatchingVariation) {
       setSelectedVariationId(firstMatchingVariation.id);
-      setCurrentImageIndex(0); // Reset image index
+      setCurrentImageIndex(0);
     }
   };
-
   // Handle color change
   const handleColorChange = (variationId: number) => {
     setSelectedVariationId(variationId);
@@ -202,12 +210,12 @@ export default function ProductPage() {
       condition: selectedVariation.condition
         ? selectedVariation.condition.charAt(0).toUpperCase() + selectedVariation.condition.slice(1)
         : "",
-      storage: selectedVariation.storage || "",
+      storage: selectedVariation.storage,
       colorId: selectedVariation.colorId || 0,
       price: selectedVariation.price || 0,
       sellerId: selectedVariation.sellerId || "",
       quantity: 1,
-      image: imageToUse || "",
+      image: imageToUse,
     };
 
     const existingCartJson = localStorage.getItem("cart");
@@ -336,23 +344,22 @@ export default function ProductPage() {
       {/* Main div */}
       <div className="w-[95%] md:w-[70%] mx-auto">
         {/* Div into two columns */}
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Left side container box */}
-          <div className="w-full md:w-1/2 bg-white rounded-lg">
-            <div className="md:w-full md:h-auto md:sticky md:top-20 max-w-lg mx-auto">
+          <div className="w-full lg:w-1/2 bg-white rounded-lg">
+            <div className="lg:w-full lg:h-auto lg:sticky lg:top-20 max-w-lg mx-auto">
               <div className="h-auto flex flex-col justify-center py-4">
                 <div className="relative h-[250px] md:h-[400px] w-full mb-4">
                   {modelImages && modelImages.length > 0 ? (
                     <div className="absolute inset-0">
                       <Image
-                        src="/homepage_images/iphone.jpg"
-                        // src={modelImages[currentImageIndex].image}
+                        src={modelImages[currentImageIndex].image}
                         alt={`${selectedVariation?.colorName || ""} ${selectedVariation?.phoneModel || ""} - View ${currentImageIndex + 1}`}
                         fill
-                        sizes="(max-width: 768px) 100vw, 50vw"
+                        sizes="(max-width: 1024px) 100vw, 50vw"
                         style={{ objectFit: "contain" }}
                         className="rounded-lg"
-                        priority={true} // Only the main image should be priority
+                        priority={true}
                       />
                     </div>
                   ) : (
@@ -388,17 +395,10 @@ export default function ProductPage() {
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
                           className={`h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden border-2
-                ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
+                    ${currentImageIndex === index ? "border-black" : "border-transparent"}`}
                         >
                           <div className="relative h-full w-full">
-                            <Image
-                              src={imageObj.image}
-                              alt={`Thumbnail ${index + 1}`}
-                              fill
-                              sizes="64px"
-                              style={{ objectFit: "cover" }}
-                              // No priority for thumbnails
-                            />
+                            <Image src={imageObj.image} alt={`Thumbnail ${index + 1}`} fill sizes="64px" style={{ objectFit: "cover" }} />
                           </div>
                         </button>
                       ))}
@@ -429,14 +429,14 @@ export default function ProductPage() {
           </div>
 
           {/* Right side container box */}
-          <div className="w-full md:w-1/2">
+          <div className="w-full lg:w-1/2">
             {/* Info First Section */}
-            <div className="md:w-full md:h-[60vh] flex pb-5 flex-col justify-center">
-              <h1 className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold mb-4 text-black tracking-tight">
+            <div className="lg:w-full lg:h-[60vh] flex pb-5 flex-col justify-center">
+              <h1 className="text-base lg:text-xl font-bold mb-4 text-black tracking-tight">
                 {selectedVariation?.phoneModel} {selectedVariation?.storage} - {selectedVariation?.colorName}
               </h1>
 
-              {/* Rating Display - Kept as is */}
+              {/* Rating Display */}
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex">
                   {Array.from({ length: 5 }, (_, i) => (
@@ -459,18 +459,18 @@ export default function ProductPage() {
                   ))}
                 </div>
                 {reviewData.reviewCount > 0 ? (
-                  <span className="text-sm text-gray-600">
+                  <span className="text-xs lg:text-sm text-gray-600">
                     {reviewData.averageRating.toFixed(1)}/5 ({reviewData.reviewCount} {reviewData.reviewCount === 1 ? "review" : "reviews"})
                   </span>
                 ) : (
-                  <span className="text-sm text-gray-600">No reviews yet</span>
+                  <span className="text-xs lg:text-sm text-gray-600">No reviews yet</span>
                 )}
               </div>
 
               <div className="mb-5">
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-baseline">
-                    <span className="text-xl sm:text-lg md:text-xl lg:text-2xl font-bold tracking-tight">
+                    <span className="text-base lg:text-xl font-bold tracking-tight">
                       {selectedVariation && formatNPR(selectedVariation.price)}
                     </span>
                   </div>
@@ -478,7 +478,7 @@ export default function ProductPage() {
                   <button
                     onClick={handleAddToCart}
                     disabled={isLoading}
-                    className="bg-black hover:bg-black text-white px-4 py-2 md:px-5 lg:px-6 md:py-2.5 lg:py-3 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 shadow-sm text-sm md:text-sm lg:text-base"
+                    className="bg-black hover:bg-black text-white px-4 py-2 lg:px-5 lg:py-2.5 rounded-lg transition-all duration-200 font-medium flex items-center gap-2 shadow-sm text-xs lg:text-sm"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:h-5 lg:w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z" />
@@ -488,9 +488,9 @@ export default function ProductPage() {
                   </button>
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-2 md:gap-3 lg:gap-4">
-                  <div className="bg-gradient-to-br from-indigo-50 to-white p-1.5 md:p-1.5 lg:p-2 rounded-lg border border-black flex items-center text-center transform transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-                    <div className="bg-indigo-100 p-1 md:p-1 lg:p-1.5 rounded-full mr-1 md:mr-1.5 lg:mr-2">
+                <div className="mt-4 grid grid-cols-3 gap-2 lg:gap-3">
+                  <div className="bg-gradient-to-br from-indigo-50 to-white p-1.5 lg:p-2 rounded-lg border border-black flex items-center text-center transform transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                    <div className="bg-indigo-100 p-1 lg:p-1.5 rounded-full mr-1 lg:mr-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-3 w-3 lg:h-4 lg:w-4 text-indigo-800"
@@ -509,8 +509,8 @@ export default function ProductPage() {
                     <span className="text-xs font-medium">6-Month Warranty</span>
                   </div>
 
-                  <div className="bg-gradient-to-br from-rose-50 to-white p-1.5 md:p-1.5 lg:p-2 rounded-lg border border-black flex items-center text-center transform transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-                    <div className="bg-rose-100 p-1 md:p-1 lg:p-1.5 rounded-full mr-1 md:mr-1.5 lg:mr-2">
+                  <div className="bg-gradient-to-br from-rose-50 to-white p-1.5 lg:p-2 rounded-lg border border-black flex items-center text-center transform transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                    <div className="bg-rose-100 p-1 lg:p-1.5 rounded-full mr-1 lg:mr-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-3 w-3 lg:h-4 lg:w-4 text-rose-800"
@@ -529,8 +529,8 @@ export default function ProductPage() {
                     <span className="text-xs font-medium">30-Day Returns</span>
                   </div>
 
-                  <div className="bg-gradient-to-br from-amber-50 to-white p-1.5 md:p-1.5 lg:p-2 rounded-lg border border-black flex items-center text-center transform transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-                    <div className="bg-amber-100 p-1 md:p-1 lg:p-1.5 rounded-full mr-1 md:mr-1.5 lg:mr-2">
+                  <div className="bg-gradient-to-br from-amber-50 to-white p-1.5 lg:p-2 rounded-lg border border-black flex items-center text-center transform transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                    <div className="bg-amber-100 p-1 lg:p-1.5 rounded-full mr-1 lg:mr-2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-3 w-3 lg:h-4 lg:w-4 text-amber-800"
@@ -553,15 +553,15 @@ export default function ProductPage() {
 
               {/* Refurbished Banner */}
               <div className="mb-4">
-                <div className="bg-gradient-to-r from-white to-white rounded-lg p-2.5 md:p-3 lg:p-4 border border-black relative overflow-hidden">
+                <div className="bg-gradient-to-r from-white to-white rounded-lg p-2.5 lg:p-3 border border-black relative overflow-hidden">
                   {/* Abstract background pattern */}
                   <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 right-0 w-48 h-48 md:w-52 md:h-52 lg:w-64 lg:h-64 bg-blue-500 rounded-full transform translate-x-1/3 -translate-y-1/3 blur-xl"></div>
-                    <div className="absolute bottom-0 left-0 w-36 h-36 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-purple-500 rounded-full transform -translate-x-1/3 translate-y-1/3 blur-xl"></div>
+                    <div className="absolute top-0 right-0 w-48 h-48 lg:w-64 lg:h-64 bg-blue-500 rounded-full transform translate-x-1/3 -translate-y-1/3 blur-xl"></div>
+                    <div className="absolute bottom-0 left-0 w-36 h-36 lg:w-48 lg:h-48 bg-purple-500 rounded-full transform -translate-x-1/3 translate-y-1/3 blur-xl"></div>
                   </div>
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-2 md:gap-2 lg:gap-3">
-                      <div className="bg-black p-1.5 md:p-1.5 lg:p-2 rounded">
+                  <div className="flex items-center justify-between relative">
+                    <div className="flex items-center gap-2 lg:gap-3">
+                      <div className="bg-black p-1.5 lg:p-2 rounded">
                         <svg
                           width="16"
                           height="16"
@@ -571,13 +571,13 @@ export default function ProductPage() {
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5"
+                          className="w-3.5 h-3.5 lg:w-4 lg:h-4"
                         >
                           <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
                         </svg>
                       </div>
                       <div className="tracking-tight">
-                        <p className="font-medium text-xs md:text-xs lg:text-sm">Factory Renewed - Premium Performance</p>
+                        <p className="font-medium text-xs lg:text-sm">Factory Renewed - Premium Performance</p>
                         <p className="text-black text-xs">Fully tested & certified with 6-month warranty.</p>
                       </div>
                     </div>
@@ -585,7 +585,7 @@ export default function ProductPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <div className="p-1 md:p-1 lg:p-1.5 bg-green-100 rounded text-xs">
+                  <div className="p-1 lg:p-1.5 bg-green-100 rounded text-xs">
                     <span className="text-green-800 font-medium tracking-tight text-xs">Save up to 40%</span>
                   </div>
                 </div>
@@ -593,10 +593,10 @@ export default function ProductPage() {
             </div>
 
             {/* Condition Selection */}
-            <div className="md:w-full md:h-[60vh] flex pb-8 flex-col justify-center tracking-tight">
-              <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5">Select the condition</h2>
+            <div className="lg:w-full lg:h-[60vh] flex pb-8 flex-col justify-center tracking-tight">
+              <h2 className="text-base lg:text-xl font-bold mb-4 text-black tracking-tight">Select the condition</h2>
 
-              <div className="grid grid-cols-2 gap-3 md:gap-3 lg:gap-4">
+              <div className="grid grid-cols-2 gap-3 lg:gap-4">
                 {["New", "Excellent", "Good", "Fair"].map((condition, index) => {
                   const isAvailable = availableConditions.includes(condition);
                   const isNew = condition === "New";
@@ -606,9 +606,9 @@ export default function ProductPage() {
                     <label
                       key={index}
                       className={`flex flex-col border rounded-lg overflow-hidden
-                      transition-all duration-200 ease-in-out relative
-                      ${!isAvailable ? "opacity-40 bg-gray-100 border-gray-300 cursor-not-allowed" : "cursor-pointer"}
-                      ${isSelected && isAvailable ? "border-black bg-white" : "border-black hover:border-black"}`}
+                transition-all duration-200 ease-in-out
+                ${!isAvailable ? "opacity-70 bg-gray-100 border-gray-300 cursor-not-allowed" : "cursor-pointer"}
+                ${isSelected && isAvailable ? "border-black bg-white" : "border-black hover:border-black"}`}
                     >
                       {isNew && isAvailable && (
                         <div className="w-full bg-black text-white text-xs text-center py-0.5 font-medium">
@@ -618,11 +618,11 @@ export default function ProductPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4 p-1.5 md:p-1.5 lg:p-2">
+                      <div className="flex items-center gap-2 lg:gap-3 p-1.5 lg:p-2">
                         <input
                           type="radio"
                           name="condition"
-                          className="h-3 w-3 md:h-3.5 lg:h-4 md:w-3.5 lg:w-4 accent-black"
+                          className="h-3 w-3 lg:h-4 lg:w-4 accent-black"
                           value={condition}
                           checked={isSelected}
                           onChange={() => handleConditionChange(condition)}
@@ -630,39 +630,29 @@ export default function ProductPage() {
                         />
 
                         <div className="flex flex-col">
-                          <span className={`text-sm md:text-lg lg:text-base capitalize ${!isAvailable ? "line-through" : ""}`}>
-                            {condition}
-                          </span>
+                          <span className={`text-sm lg:text-base capitalize ${!isAvailable ? "line-through" : ""}`}>{condition}</span>
                           {isSelected && isAvailable ? (
-                            <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1">
-                              {formatNPR(selectedVariation.price)}
-                            </span>
+                            <span className="text-black text-sm lg:text-base mt-0.5 lg:mt-1">{formatNPR(selectedVariation.price)}</span>
+                          ) : isAvailable ? (
+                            <span className="inline-block w-12 lg:w-14 h-3 lg:h-4 mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
                           ) : (
-                            <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
+                            <span className="text-gray-500 text-xs mt-0.5 lg:mt-1">Not Available</span>
                           )}
                         </div>
                       </div>
-
-                      {!isAvailable && (
-                        <span className="absolute inset-0 bg-gray-200 bg-opacity-30 flex items-center justify-center">
-                          <span className="text-xs text-gray-500 font-medium px-1 py-0.5 rounded bg-white bg-opacity-80">
-                            Not Available
-                          </span>
-                        </span>
-                      )}
                     </label>
                   );
                 })}
               </div>
-              <div className="h-4 md:h-5 lg:h-6"></div>
+              <div className="h-4 lg:h-6"></div>
 
-              <div className="bg-blue-50 rounded-xl p-3 md:p-3.5 lg:p-4 mb-3 md:mb-3.5 lg:mb-4 tracking-tight">
+              <div className="bg-blue-50 rounded-xl p-3 lg:p-4 mb-3 lg:mb-4 tracking-tight">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 md:gap-2.5 lg:gap-3">
+                  <div className="flex items-center gap-2 lg:gap-3">
                     <div className="flex-shrink-0">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 md:h-5.5 lg:h-6 md:w-5.5 lg:w-6 text-blue-700"
+                        className="h-5 w-5 lg:h-6 lg:w-6 text-blue-700"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
@@ -674,7 +664,7 @@ export default function ProductPage() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-xs md:text-sm lg:text-sm text-black">
+                      <p className="text-xs lg:text-sm text-black">
                         All devices undergo a rigorous 30-point testing process to ensure premium quality. Compare conditions
                       </p>
                     </div>
@@ -682,49 +672,50 @@ export default function ProductPage() {
                 </div>
               </div>
             </div>
-            {/* Storage Section */}
-            <div className="md:w-full md:h-[60vh] flex pb-8 flex-col justify-center">
-              <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5 tracking-tight">Select storage</h2>
 
-              <div className="flex flex-col gap-3 md:gap-3 lg:gap-4">
+            {/* Storage Section */}
+            <div className="lg:w-full lg:h-[60vh] flex pb-8 flex-col justify-center">
+              <h2 className="text-base lg:text-xl font-bold mb-4 text-black tracking-tight">Select storage</h2>
+
+              <div className="flex flex-col gap-3 lg:gap-4">
                 {availableStorageOptions.length > 0 ? (
                   availableStorageOptions.map((storage, index) => (
                     <label
                       key={index}
-                      className={`flex items-center justify-between p-2.5 md:p-3 lg:p-4 border rounded-lg cursor-pointer transition-all duration-200 tracking-tight
-            ${selectedVariation?.storage === storage ? "border-black bg-white" : "border-black hover:border-black"}`}
+                      className={`flex items-center justify-between p-2.5 lg:p-3 border rounded-lg cursor-pointer transition-all duration-200 tracking-tight
+                ${selectedVariation?.storage === storage ? "border-black bg-white" : "border-black hover:border-black"}`}
                     >
-                      <div className="flex items-center gap-2 md:gap-3 lg:gap-4">
+                      <div className="flex items-center gap-2 lg:gap-3">
                         <input
                           type="radio"
                           name="storage"
-                          className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 accent-black"
+                          className="h-3 w-3 lg:h-4 lg:w-4 accent-black"
                           value={storage}
                           checked={selectedVariation?.storage === storage}
                           onChange={() => handleStorageChange(storage)}
                         />
-                        <span className="text-sm md:text-lg lg:text-base tracking-tight">{storage}</span>
+                        <span className="text-sm lg:text-base tracking-tight">{storage}</span>
                       </div>
                       {selectedVariation?.storage === storage ? (
-                        <span className="text-black text-sm md:text-lg lg:text-lg mt-0.5 md:mt-0.5 lg:mt-1 tracking-tight">
+                        <span className="text-black text-sm lg:text-base mt-0.5 lg:mt-1 tracking-tight">
                           {formatNPR(selectedVariation.price)}
                         </span>
                       ) : (
-                        <span className="inline-block w-12 md:w-12 lg:w-14 h-3 md:h-3.5 lg:h-4 mt-0.5 md:mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
+                        <span className="inline-block w-12 lg:w-14 h-3 lg:h-4 mt-0.5 lg:mt-1 bg-gradient-to-r from-blue-100 via-white to-blue-100 animate-pulse rounded"></span>
                       )}
                     </label>
                   ))
                 ) : (
-                  <p className="col-span-full text-black text-sm md:text-sm lg:text-base tracking-tight">No storage options available</p>
+                  <p className="col-span-full text-black text-sm lg:text-base tracking-tight">No storage options available</p>
                 )}
               </div>
             </div>
 
             {/* Color Section */}
-            <div className="md:w-full md:h-[60vh] flex pb-8 flex-col justify-center">
-              <h2 className="text-lg sm:text-lg md:text-xl lg:text-xl font-bold mb-4 lg:mb-5 tracking-tight">Select the color</h2>
+            <div className="lg:w-full lg:h-[60vh] flex pb-8 flex-col justify-center">
+              <h2 className="text-base lg:text-xl font-bold mb-4 text-black tracking-tight">Select the color</h2>
 
-              <div className="grid grid-cols-2 gap-1.5 md:gap-2 lg:gap-2 w-full">
+              <div className="grid grid-cols-2 gap-1.5 lg:gap-2 w-full">
                 {availableColorOptions.length > 0 ? (
                   availableColorOptions.map((colorOption, index) => {
                     const colorClass = colors[colorOption.colorName] || "bg-gray-200";
@@ -733,91 +724,87 @@ export default function ProductPage() {
                     return (
                       <label
                         key={index}
-                        className={`flex items-center gap-2 md:gap-3 lg:gap-4 p-1.5 md:p-2 lg:p-2 border rounded-lg cursor-pointer
-              transition-all duration-200 ease-in-out
-              ${isSelected ? "border-black bg-white" : "border-black hover:border-black"}`}
+                        className={`flex items-center gap-2 lg:gap-3 p-1.5 lg:p-2 border rounded-lg cursor-pointer
+                  transition-all duration-200 ease-in-out
+                  ${isSelected ? "border-black bg-white" : "border-black hover:border-black"}`}
                       >
                         <input
                           type="radio"
                           name="color"
-                          className="h-3 w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 accent-black"
+                          className="h-3 w-3 lg:h-4 lg:w-4 accent-black"
                           value={colorOption.id}
                           checked={isSelected}
                           onChange={() => handleColorChange(colorOption.id)}
                         />
-                        <div className={`w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 rounded-full ${colorClass}`}></div>
+                        <div className={`w-3 h-3 lg:w-4 lg:h-4 rounded-full ${colorClass}`}></div>
 
                         <div className="flex flex-col">
-                          <span className="text-sm md:text-lg lg:text-base text-black capitalize">{colorOption.colorName}</span>
-                          <span className="text-sm md:text-lg lg:text-lg text-black">{formatNPR(colorOption.price)}</span>
+                          <span className="text-sm lg:text-base text-black capitalize">{colorOption.colorName}</span>
+                          <span className="text-sm lg:text-base text-black">{formatNPR(colorOption.price)}</span>
                         </div>
                       </label>
                     );
                   })
                 ) : (
-                  <p className="col-span-full text-black text-sm md:text-sm lg:text-base">No color options available</p>
+                  <p className="col-span-full text-black text-sm lg:text-base">No color options available</p>
                 )}
               </div>
             </div>
+
             {/* Last Section */}
-            <div className="md:w-full md:h-[60vh] flex flex-col justify-center tracking-tight">
+            <div className="lg:w-full lg:h-[60vh] flex flex-col justify-center tracking-tight">
               <div className="max-w-2xl">
-                <div className="flex justify-between items-start mb-4 lg:mb-5">
-                  <h1 className="text-lg sm:text-xl md:text-xl lg:text-2xl font-bold">Your Dream Device</h1>
+                <div className="flex justify-between items-start mb-4 text-black">
+                  <h1 className="text-base lg:text-xl font-bold">Your Dream Device</h1>
                 </div>
-                <div className="border rounded-lg p-4 md:p-5 lg:p-6 mb-3 md:mb-4 bg-white shadow-sm">
-                  <div className="flex items-center gap-1.5 md:gap-2 mb-3 md:mb-4">
-                    <h2 className="text-lg md:text-base lg:text-xl">{selectedVariation?.phoneModel}</h2>
+                <div className="border rounded-lg p-4 lg:p-5 mb-3 lg:mb-4 bg-white shadow-sm">
+                  <div className="flex items-center gap-1.5 lg:gap-2 mb-3 lg:mb-4">
+                    <h2 className="text-base lg:text-lg">{selectedVariation?.phoneModel}</h2>
                   </div>
 
-                  <div className="flex gap-1.5 md:gap-2 mb-3 md:mb-4">
-                    <span className="px-2 md:px-2.5 lg:px-3 py-0.5 md:py-0.5 lg:py-1 text-sm md:text-lg lg:text-lg border capitalize bg-white rounded-md">
+                  <div className="flex gap-1.5 lg:gap-2 mb-3 lg:mb-4">
+                    <span className="px-2 lg:px-3 py-0.5 lg:py-1 text-sm lg:text-base border capitalize bg-white rounded-md">
                       {selectedVariation?.condition}
                     </span>
-                    <span className="px-2 md:px-2.5 lg:px-3 py-0.5 md:py-0.5 lg:py-1 text-sm md:text-lg lg:text-lg border bg-white rounded-md">
+                    <span className="px-2 lg:px-3 py-0.5 lg:py-1 text-sm lg:text-base border bg-white rounded-md">
                       {selectedVariation?.storage}
                     </span>
-                    <span className="px-2 md:px-2.5 lg:px-3 py-0.5 md:py-0.5 lg:py-1 text-sm md:text-lg lg:text-lg border bg-white rounded-md">
+                    <span className="px-2 lg:px-3 py-0.5 lg:py-1 text-sm lg:text-base border bg-white rounded-md">
                       {selectedVariation?.colorName}
                     </span>
                   </div>
 
-                  <div className="flex items-baseline gap-1.5 md:gap-2">
-                    <h2 className="text-base md:text-lg lg:text-xl font-bold">{formatNPR(selectedVariation?.price)}</h2>
+                  <div className="flex items-baseline gap-1.5 lg:gap-2">
+                    <h2 className="text-base lg:text-lg font-bold">{formatNPR(selectedVariation?.price)}</h2>
                   </div>
                 </div>
                 <button
                   onClick={handleAddToCart}
-                  className="w-full bg-black hover:bg-black text-white px-4 md:px-5 lg:px-6 py-2 md:py-2.5 lg:py-3 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm text-sm md:text-sm lg:text-base"
+                  className="w-full bg-black hover:bg-black text-white px-4 lg:px-5 py-2 lg:py-2.5 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm text-xs lg:text-sm"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 md:h-4.5 lg:h-5 md:w-4.5 lg:w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 lg:h-5 lg:w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z" />
                     <path d="M16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
                   </svg>
                   Add to cart
                 </button>
-                <div className="mb-3 md:mb-4 mt-3 md:mt-4">
-                  <div className="flex items-center p-2 md:p-2.5 lg:p-3 bg-blue-50 rounded-lg mb-1.5 md:mb-2 text-sm md:text-sm lg:text-sm">
-                    <span className="mr-2 md:mr-3">🚚</span>
+                <div className="mb-3 lg:mb-4 mt-3 lg:mt-4">
+                  <div className="flex items-center p-2 lg:p-3 bg-blue-50 rounded-lg mb-1.5 lg:mb-2 text-xs lg:text-sm">
+                    <span className="mr-2 lg:mr-3">🚚</span>
                     <span>Free delivery by {getDeliveryDateRange()}</span>
                   </div>
 
-                  <div className="flex items-center p-2 md:p-2.5 lg:p-3 bg-blue-50 rounded-lg text-sm md:text-sm lg:text-sm">
-                    <span className="mr-2 md:mr-3">🛡️</span>
+                  <div className="flex items-center p-2 lg:p-3 bg-blue-50 rounded-lg text-xs lg:text-sm">
+                    <span className="mr-2 lg:mr-3">🛡️</span>
                     <span>Free 30-day returns</span>
                   </div>
 
-                  <div className="flex items-center p-2 md:p-2.5 lg:p-3 bg-blue-50 rounded-lg mt-1.5 md:mt-2 text-sm md:text-sm lg:text-sm">
-                    <span className="mr-2 md:mr-3">⏱️</span>
+                  <div className="flex items-center p-2 lg:p-3 bg-blue-50 rounded-lg mt-1.5 lg:mt-2 text-xs lg:text-sm">
+                    <span className="mr-2 lg:mr-3">⏱️</span>
                     <span>6-month warranty</span>
                   </div>
                 </div>
-                <div className="mt-2 md:mt-3 text-sm md:text-sm text-black">
+                <div className="mt-2 lg:mt-3 text-xs lg:text-sm text-black">
                   Proudly refurbished by <span className="font-medium">{selectedVariation?.sellerName}</span> 🇳🇵
                 </div>
               </div>
@@ -839,7 +826,7 @@ export default function ProductPage() {
           </div>
 
           {selectedVariation?.colorId && (
-            <ReviewList modelId={phoneModelId} colorId={selectedVariation?.colorId} onReviewDataLoaded={setReviewData} />
+            <ReviewList phoneModelId={phoneModelId} colorId={selectedVariation?.colorId} onReviewDataLoaded={setReviewData} />
           )}
         </div>
       </div>

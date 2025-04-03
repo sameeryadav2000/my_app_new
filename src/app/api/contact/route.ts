@@ -1,7 +1,7 @@
 // app/api/contact/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "../../../../lib/prisma";
-import { sendEmail } from "../../../../lib/send_grid";
+import prisma from "@/lib/prisma";
+import { sendEmail } from "@/lib/send_grid";
 
 export async function POST(request: NextRequest) {
   try {

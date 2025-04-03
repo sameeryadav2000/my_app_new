@@ -1,28 +1,30 @@
 "use client";
 
-import { useLoading } from "@/context/LoadingContext";
-import { useNotification } from "@/context/NotificationContext";
-import { useEffect, useState } from "react";
-import ReviewComponent from "@/app/components/ReviewForm";
-import { ReviewData } from "@/app/components/ReviewForm";
-import { formatNPR } from "@/utils/formatters";
+import { useLoading } from "@/src/context/LoadingContext";
+import { useNotification } from "@/src/context/NotificationContext";
+import { useEffect, useState, useCallback } from "react";
+import ReviewComponent from "@/src/app/components/ReviewForm";
+import { ReviewData } from "@/src/app/components/ReviewForm";
+import { formatNPR } from "@/src/utils/formatters";
+import Image from "next/image";
 
 interface ReviewApiData extends ReviewData {
   productColorId: number;
-  productItemId: number;
+  phoneModelId: number;
 }
 
 interface PurchasedItem {
   id: string;
-  itemId: string;
-  titleId: number;
-  titleName: string;
+  phoneModelDetailsId: number;
+  phoneModelId: number;
+  phoneModelName: string;
   condition: string;
   storage: string;
   colorId: number;
   colorName: string;
   price: number;
   quantity: number;
+  sellerName: string;
   image: string;
 }
 
@@ -33,12 +35,6 @@ interface Order {
   totalPrice: number;
   createdAt: string;
 }
-
-// interface PurchaseHistory {
-//   purchases: Order[];
-//   totalOrders: number;
-//   totalSpent: number;
-// }
 
 interface ReviewInfo {
   hasReviewed: boolean;
@@ -63,13 +59,54 @@ export default function OrdersPage() {
   const [currentProduct, setCurrentProduct] = useState<PurchasedItem>();
   const [showReview, setShowReview] = useState<boolean>(false);
 
-  const [currentReview, setCurrentReview] = useState<any>(null);
-  const [viewingReview, setViewingReview] = useState(false);
+  const [currentReview, setCurrentReview] = useState<ReviewInfo["review"] | null>(null);
+  const [viewingReview, setViewingReview] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchPurchasedItems = async () => {
+  const fetchReviewsForProducts = useCallback(
+    async (items: PurchasedItem[]) => {
+      const reviewsMap: ReviewsMap = {};
+
       try {
         showLoading();
+
+        for (const i of items) {
+          const response = await fetch(`/api/reviews?purchasedItemId=${i.id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          const result = await response.json();
+
+          if (!result.success) {
+            showError("Error", result.message);
+            continue;
+          }
+
+          reviewsMap[i.id] = {
+            hasReviewed: result.isReviewed,
+            review: result.isReviewed ? result.review : null,
+          };
+        }
+      } catch (error) {
+        console.error("Error fetching reviews: ", error);
+        showError("Error", "Error fetching reviews. Please check your connection and try again.");
+      } finally {
+        hideLoading();
+      }
+
+      return reviewsMap;
+    },
+    [showLoading, hideLoading, showError]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchPurchasedItems = async () => {
+      try {
+        if (isMounted) showLoading();
 
         const response = await fetch("/api/purchased", {
           method: "GET",
@@ -79,65 +116,42 @@ export default function OrdersPage() {
         });
 
         const result = await response.json();
+
+        // Check if component is still mounted before continuing
+        if (!isMounted) return;
+
         if (!result.success) {
           showError("Error", result.message);
           return;
         }
-        debugger;
 
         if (result.data && result.data.purchases) {
-          setOrders(result.data.purchases);
+          if (isMounted) setOrders(result.data.purchases);
 
           const reviewsData = await fetchReviewsForProducts(result.data.purchases.flatMap((order: Order) => order.items));
-          setProductReviews(reviewsData);
+
+          // Check again after the second async operation
+          if (isMounted) setProductReviews(reviewsData);
         }
       } catch (error) {
-        console.error("Error fetching orders: ", error);
-        showError("Error", "Error fetching orders. Please check your connection and try again.");
+        if (isMounted) {
+          console.error("Error fetching orders: ", error);
+          showError("Error", "Error fetching orders. Please check your connection and try again.");
+        }
       } finally {
-        hideLoading();
+        if (isMounted) {
+          hideLoading();
+        }
       }
     };
 
     fetchPurchasedItems();
-  }, [hideLoading, showError, showLoading]);
 
-  const fetchReviewsForProducts = async (items: PurchasedItem[]) => {
-    const reviewsMap: ReviewsMap = {};
-
-    try {
-      showLoading();
-
-      for (const i of items) {
-        const response = await fetch(`/api/reviews?productId=${i.id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-          showError("Error", result.message);
-          continue;
-        }
-
-        reviewsMap[i.id] = {
-          hasReviewed: result.isReviewed,
-          review: result.isReviewed ? result.review : null,
-        };
-      }
-    } catch (error) {
-      console.error("Error fetching reviews: ", error);
-
-      showError("Error", "Error fetching reviews:. Please check your connection and try again.");
-    } finally {
-      hideLoading();
-    }
-
-    return reviewsMap;
-  };
+    // Cleanup function to run when component unmounts
+    return () => {
+      isMounted = false;
+    };
+  }, [hideLoading, showError, showLoading, fetchReviewsForProducts]);
 
   const handleReviewOrder = (item: PurchasedItem) => {
     setCurrentProduct(item);
@@ -154,14 +168,20 @@ export default function OrdersPage() {
   };
 
   const handleSubmitReview = async (reviewData: ReviewData) => {
-    debugger;
     try {
+      // Check if required properties exist on currentProduct
+      if (!currentProduct || !currentProduct.phoneModelId || !currentProduct.colorId) {
+        hideLoading();
+        showError("Error", "Unable to submit review: Missing product information");
+        return;
+      }
+
       showLoading();
 
       const apiData: ReviewApiData = {
         ...reviewData,
-        productItemId: currentProduct!.titleId,
-        productColorId: currentProduct!.colorId,
+        phoneModelId: currentProduct.phoneModelId,
+        productColorId: currentProduct.colorId,
       };
 
       const response = await fetch("/api/reviews", {
@@ -258,11 +278,15 @@ export default function OrdersPage() {
                     className="flex flex-col md:flex-row mb-4 md:mb-6 pb-4 md:pb-6 border-b border-gray-200 last:mb-0 last:pb-0 last:border-0"
                   >
                     <div className="w-24 flex-shrink-0 bg-gray-100 rounded-lg p-2 mb-4 md:mb-0">
-                      <img src={item.image} alt={item.titleName} className="w-full h-auto object-contain" />
+                      {item.image ? (
+                        <Image src={item.image} alt={item.phoneModelName} width={96} height={96} className="w-full h-auto object-contain" />
+                      ) : (
+                        <div className="text-gray-400 text-xs text-center h-full flex items-center justify-center">No Image</div>
+                      )}
                     </div>
 
                     <div className="md:ml-6 flex-grow">
-                      <h2 className="text-base md:text-lg font-medium text-gray-900 mb-2">{item.titleName}</h2>
+                      <h2 className="text-base md:text-lg font-medium text-gray-900 mb-2">{item.phoneModelName}</h2>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div>
@@ -341,9 +365,9 @@ export default function OrdersPage() {
             }}
           >
             <ReviewComponent
-              productId={currentProduct.id}
-              productTitleName={currentProduct.titleName}
-              productImage={currentProduct.image}
+              purchasedItemId={currentProduct.id}
+              phoneModelName={currentProduct.phoneModelName}
+              purchasedItemImage={currentProduct.image}
               onSubmit={handleSubmitReview}
               onCancel={() => setShowReview(false)}
             />
@@ -371,12 +395,22 @@ export default function OrdersPage() {
 
             <div className="flex items-center mb-4">
               <div className="flex-shrink-0 w-12 md:w-14 h-12 md:h-14 bg-gray-100 rounded p-1 mr-4">
-                <img src={currentProduct.image} alt={currentProduct.titleName} className="w-full h-full object-contain" />
+                {currentProduct.image ? (
+                  <Image
+                    src={currentProduct.image}
+                    alt={currentProduct.phoneModelName}
+                    width={56}
+                    height={56}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-gray-400 text-xs text-center h-full flex items-center justify-center">No Image</div>
+                )}
               </div>
               <div>
-                <p className="font-medium text-sm md:text-base">{currentProduct.titleName}</p>
+                <p className="font-medium text-sm md:text-base">{currentProduct.phoneModelName}</p>
                 <p className="text-xs md:text-sm text-gray-500">
-                  {currentProduct.colorName} · {currentProduct.storage}GB · {currentProduct.condition}
+                  {currentProduct.colorName} · {currentProduct.storage} · {currentProduct.condition}
                 </p>
               </div>
             </div>

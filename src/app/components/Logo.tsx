@@ -32,14 +32,14 @@ export default function Logo() {
       <span className="text-xl md:text-2xl font-bold tracking-wider text-black relative">
         {"MobileLoom".split("").map((letter, index) => (
           <span
-            key={`ringvio-${index}`}
-            className="inline-block transition-all"
+            key={`mobile-${index}`}
+            className="inline-block"
             style={{
               opacity: hasAnimated ? 1 : 0,
               transform: isAnimating ? `translateY(-8px)` : "translateY(0)",
-              transition: isAnimating
-                ? `transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)`
-                : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease",
+              transitionProperty: "transform, opacity",
+              transitionDuration: "0.3s, 0.5s",
+              transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1), ease",
               transitionDelay: hasAnimated
                 ? isAnimating
                   ? `${index * 50}ms`

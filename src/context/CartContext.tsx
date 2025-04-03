@@ -42,7 +42,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session, status } = useSession();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [syncNotify, setSyncNotify] = useState<{ success: boolean; message: string } | null>(null);
 

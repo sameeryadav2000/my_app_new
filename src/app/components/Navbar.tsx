@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import LoginLogout from "../components/LoginLogout";
-import { useCart } from "@/context/CartContext";
-import Logo from "@/app/components/Logo";
+import { useCart } from "@/src/context/CartContext";
+import Logo from "@/src/app/components/Logo";
 
 export default function Navbar() {
   const { cart } = useCart();
@@ -23,7 +23,7 @@ export default function Navbar() {
               <LoginLogout />
 
               {/* Cart */}
-              <Link href="/homepage/cart_page" className="relative p-1.5 text-gray-700 hover:text-black">
+              <Link href="/home/cart" className="relative p-1.5 text-gray-700 hover:text-black">
                 <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
                 {cart.totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-black text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
