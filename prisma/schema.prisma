@@ -123,10 +123,10 @@ model User {
   externalId                    String         @unique 
   email                         String         @unique
   emailVerified                 Boolean        @default(false)
-  passwordHash                  String       
+  passwordHash                  String?       
 
   firstName                     String        
-  lastName                      String       
+  lastName                      String?       
   phoneNumber                   String?       
   avatar                        String?        
 
@@ -286,7 +286,7 @@ model Admin {
   emailVerified         Boolean            @default(false)
   
   firstName             String
-  lastName              String
+  lastName              String?
   phoneNumber           String?
   avatar                String?
   
@@ -294,9 +294,9 @@ model Admin {
   
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
-  lastLoginAt           DateTime
+  lastLoginAt           DateTime?
 
-  managedSellers        Seller[]
+  sellers               Seller[]
   phoneModelDetails     PhoneModelDetails[]
   
   @@index([email])
