@@ -127,8 +127,8 @@ model User {
 
   firstName                     String        
   lastName                      String       
-  phoneNumber                   String       
-  avatar                        String        
+  phoneNumber                   String?       
+  avatar                        String?        
 
   isActive                      Boolean        @default(true)
 
@@ -287,8 +287,8 @@ model Admin {
   
   firstName             String
   lastName              String
-  phoneNumber           String
-  avatar                String
+  phoneNumber           String?
+  avatar                String?
   
   isActive              Boolean            @default(true)
   
