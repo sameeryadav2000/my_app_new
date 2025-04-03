@@ -330,6 +330,11 @@ export const authOptions: AuthOptions = {
         });
 
         if (existingUserByEmail) {
+          const updatedFirstName = existingUserByEmail.firstName || firstName;
+          if (!updatedFirstName) {
+            throw new Error("First name is required");
+          }
+
           // User exists with this email, update with OAuth provider info
           // Be careful not to overwrite existing user data unnecessarily
           await prisma.user.update({
@@ -338,13 +343,18 @@ export const authOptions: AuthOptions = {
               externalId: externalId, // Link their account to this OAuth provider
               lastLoginAt: new Date(),
               // Only update these if they aren't already set
-              firstName: existingUserByEmail.firstName || firstName,
+              firstName: updatedFirstName,
               lastName: existingUserByEmail.lastName || lastName,
               // Keep the user verified if they were already verified
               emailVerified: existingUserByEmail.emailVerified || isEmailVerified,
             },
           });
           return true;
+        }
+
+        // Validate firstName before creating
+        if (!firstName) {
+          throw new Error("First name is required for new users");
         }
 
         await prisma.user.upsert({

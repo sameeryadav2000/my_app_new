@@ -287,6 +287,7 @@ export async function POST(request: NextRequest) {
           emailVerified: false,
           isActive: true, // Explicitly setting isActive
           externalId: crypto.randomUUID(), // Proper UUID for your own users
+          lastLoginAt: new Date(),
         },
       });
 
