@@ -2,7 +2,7 @@
 CREATE TABLE "Phone" (
     "id" SERIAL NOT NULL,
     "phone" TEXT NOT NULL,
-    "image" TEXT,
+    "image" TEXT NOT NULL,
 
     CONSTRAINT "Phone_pkey" PRIMARY KEY ("id")
 );
@@ -19,17 +19,17 @@ CREATE TABLE "PhoneModel" (
 -- CreateTable
 CREATE TABLE "PhoneModelDetails" (
     "id" SERIAL NOT NULL,
-    "phoneId" INTEGER NOT NULL,
+    "phoneModelId" INTEGER NOT NULL,
     "storage" TEXT NOT NULL,
     "condition" TEXT NOT NULL,
-    "colorId" INTEGER,
+    "colorId" INTEGER NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
     "available" BOOLEAN NOT NULL DEFAULT true,
     "purchased" BOOLEAN NOT NULL DEFAULT false,
-    "sellerId" TEXT,
-    "createdBy" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3),
+    "sellerId" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "PhoneModelDetails_pkey" PRIMARY KEY ("id")
 );
@@ -47,8 +47,8 @@ CREATE TABLE "ModelImage" (
     "id" SERIAL NOT NULL,
     "image" TEXT NOT NULL,
     "mainImage" BOOLEAN NOT NULL DEFAULT false,
-    "colorId" INTEGER,
-    "phoneId" INTEGER,
+    "colorId" INTEGER NOT NULL,
+    "phoneModelId" INTEGER NOT NULL,
 
     CONSTRAINT "ModelImage_pkey" PRIMARY KEY ("id")
 );
@@ -74,17 +74,18 @@ CREATE TABLE "ShippingInfo" (
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
-    "externalId" TEXT,
+    "externalId" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
-    "firstName" TEXT,
-    "lastName" TEXT,
-    "phoneNumber" TEXT,
-    "avatar" TEXT,
+    "passwordHash" TEXT NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "avatar" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "lastLoginAt" TIMESTAMP(3),
+    "lastLoginAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -98,9 +99,9 @@ CREATE TABLE "Review" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" TEXT NOT NULL,
-    "modelId" INTEGER NOT NULL,
-    "colorId" INTEGER,
-    "purchasedItemId" TEXT,
+    "phoneModelId" INTEGER NOT NULL,
+    "colorId" INTEGER NOT NULL,
+    "purchasedItemId" TEXT NOT NULL,
 
     CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
 );
@@ -109,10 +110,10 @@ CREATE TABLE "Review" (
 CREATE TABLE "CartItem" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "itemId" TEXT NOT NULL,
+    "phoneModelDetailsId" INTEGER NOT NULL,
     "phoneModelId" INTEGER NOT NULL,
     "colorId" INTEGER NOT NULL,
-    "sellerId" TEXT,
+    "sellerId" TEXT NOT NULL,
     "condition" TEXT NOT NULL,
     "storage" TEXT NOT NULL,
     "price" DECIMAL(65,30) NOT NULL,
@@ -128,7 +129,7 @@ CREATE TABLE "CartItem" (
 CREATE TABLE "PurchasedItem" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "itemId" TEXT NOT NULL,
+    "phoneModelDetailsId" INTEGER NOT NULL,
     "phoneModelId" INTEGER NOT NULL,
     "colorId" INTEGER NOT NULL,
     "sellerId" TEXT NOT NULL,
@@ -175,35 +176,60 @@ CREATE TABLE "ContactMessage" (
 -- CreateTable
 CREATE TABLE "Admin" (
     "id" TEXT NOT NULL,
-    "externalId" TEXT,
+    "externalId" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "emailVerified" BOOLEAN NOT NULL DEFAULT false,
-    "firstName" TEXT,
-    "lastName" TEXT,
-    "phoneNumber" TEXT,
-    "avatar" TEXT,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "avatar" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "lastLoginAt" TIMESTAMP(3),
+    "lastLoginAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Admin_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateTable
+CREATE TABLE "VerificationToken" (
+    "id" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "VerificationToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PasswordReset" (
+    "id" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" TEXT NOT NULL,
+
+    CONSTRAINT "PasswordReset_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PhoneModel_model_key" ON "PhoneModel"("model");
 
 -- CreateIndex
 CREATE INDEX "PhoneModel_phoneId_idx" ON "PhoneModel"("phoneId");
 
 -- CreateIndex
-CREATE INDEX "PhoneModelDetails_phoneId_idx" ON "PhoneModelDetails"("phoneId");
+CREATE INDEX "PhoneModelDetails_phoneModelId_idx" ON "PhoneModelDetails"("phoneModelId");
 
 -- CreateIndex
 CREATE INDEX "PhoneModelDetails_colorId_idx" ON "PhoneModelDetails"("colorId");
 
 -- CreateIndex
-CREATE INDEX "PhoneModelDetails_createdBy_idx" ON "PhoneModelDetails"("createdBy");
+CREATE INDEX "PhoneModelDetails_adminId_idx" ON "PhoneModelDetails"("adminId");
 
 -- CreateIndex
-CREATE INDEX "ModelImage_phoneId_idx" ON "ModelImage"("phoneId");
+CREATE INDEX "ModelImage_phoneModelId_idx" ON "ModelImage"("phoneModelId");
 
 -- CreateIndex
 CREATE INDEX "ModelImage_colorId_idx" ON "ModelImage"("colorId");
@@ -233,7 +259,7 @@ CREATE UNIQUE INDEX "Review_purchasedItemId_key" ON "Review"("purchasedItemId");
 CREATE INDEX "Review_userId_idx" ON "Review"("userId");
 
 -- CreateIndex
-CREATE INDEX "Review_modelId_idx" ON "Review"("modelId");
+CREATE INDEX "Review_phoneModelId_idx" ON "Review"("phoneModelId");
 
 -- CreateIndex
 CREATE INDEX "Review_colorId_idx" ON "Review"("colorId");
@@ -248,6 +274,9 @@ CREATE INDEX "CartItem_userId_idx" ON "CartItem"("userId");
 CREATE INDEX "CartItem_phoneModelId_idx" ON "CartItem"("phoneModelId");
 
 -- CreateIndex
+CREATE INDEX "CartItem_phoneModelDetailsId_idx" ON "CartItem"("phoneModelDetailsId");
+
+-- CreateIndex
 CREATE INDEX "CartItem_colorId_idx" ON "CartItem"("colorId");
 
 -- CreateIndex
@@ -255,6 +284,9 @@ CREATE INDEX "CartItem_sellerId_idx" ON "CartItem"("sellerId");
 
 -- CreateIndex
 CREATE INDEX "PurchasedItem_userId_idx" ON "PurchasedItem"("userId");
+
+-- CreateIndex
+CREATE INDEX "PurchasedItem_phoneModelDetailsId_idx" ON "PurchasedItem"("phoneModelDetailsId");
 
 -- CreateIndex
 CREATE INDEX "PurchasedItem_phoneModelId_idx" ON "PurchasedItem"("phoneModelId");
@@ -289,26 +321,41 @@ CREATE INDEX "Admin_email_idx" ON "Admin"("email");
 -- CreateIndex
 CREATE INDEX "Admin_externalId_idx" ON "Admin"("externalId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token");
+
+-- CreateIndex
+CREATE INDEX "VerificationToken_token_idx" ON "VerificationToken"("token");
+
+-- CreateIndex
+CREATE INDEX "VerificationToken_userId_idx" ON "VerificationToken"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PasswordReset_token_key" ON "PasswordReset"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PasswordReset_userId_key" ON "PasswordReset"("userId");
+
 -- AddForeignKey
 ALTER TABLE "PhoneModel" ADD CONSTRAINT "PhoneModel_phoneId_fkey" FOREIGN KEY ("phoneId") REFERENCES "Phone"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_phoneId_fkey" FOREIGN KEY ("phoneId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_phoneModelId_fkey" FOREIGN KEY ("phoneModelId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_createdBy_fkey" FOREIGN KEY ("createdBy") REFERENCES "Admin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PhoneModelDetails" ADD CONSTRAINT "PhoneModelDetails_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ModelImage" ADD CONSTRAINT "ModelImage_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "ModelImage" ADD CONSTRAINT "ModelImage_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ModelImage" ADD CONSTRAINT "ModelImage_phoneId_fkey" FOREIGN KEY ("phoneId") REFERENCES "PhoneModel"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "ModelImage" ADD CONSTRAINT "ModelImage_phoneModelId_fkey" FOREIGN KEY ("phoneModelId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ShippingInfo" ADD CONSTRAINT "ShippingInfo_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -317,16 +364,19 @@ ALTER TABLE "ShippingInfo" ADD CONSTRAINT "ShippingInfo_userId_fkey" FOREIGN KEY
 ALTER TABLE "Review" ADD CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Review" ADD CONSTRAINT "Review_modelId_fkey" FOREIGN KEY ("modelId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Review" ADD CONSTRAINT "Review_phoneModelId_fkey" FOREIGN KEY ("phoneModelId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Review" ADD CONSTRAINT "Review_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Review" ADD CONSTRAINT "Review_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Review" ADD CONSTRAINT "Review_purchasedItemId_fkey" FOREIGN KEY ("purchasedItemId") REFERENCES "PurchasedItem"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Review" ADD CONSTRAINT "Review_purchasedItemId_fkey" FOREIGN KEY ("purchasedItemId") REFERENCES "PurchasedItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_phoneModelDetailsId_fkey" FOREIGN KEY ("phoneModelDetailsId") REFERENCES "PhoneModelDetails"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_phoneModelId_fkey" FOREIGN KEY ("phoneModelId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -335,10 +385,13 @@ ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_phoneModelId_fkey" FOREIGN KEY (
 ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_colorId_fkey" FOREIGN KEY ("colorId") REFERENCES "Color"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Seller"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PurchasedItem" ADD CONSTRAINT "PurchasedItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchasedItem" ADD CONSTRAINT "PurchasedItem_phoneModelDetailsId_fkey" FOREIGN KEY ("phoneModelDetailsId") REFERENCES "PhoneModelDetails"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "PurchasedItem" ADD CONSTRAINT "PurchasedItem_phoneModelId_fkey" FOREIGN KEY ("phoneModelId") REFERENCES "PhoneModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -351,3 +404,10 @@ ALTER TABLE "PurchasedItem" ADD CONSTRAINT "PurchasedItem_sellerId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "Seller" ADD CONSTRAINT "Seller_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "Admin"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VerificationToken" ADD CONSTRAINT "VerificationToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PasswordReset" ADD CONSTRAINT "PasswordReset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
