@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
     // Send email with correctly formatted data
     await sendEmail({
       to: user.email,
-      from: process.env.EMAIL_FROM || "noreply@yourdomain.com",
+      from: process.env.EMAIL_FROM || "support@mobileloom.com",
       subject: emailSubject,
       text: "We received a request to reset your password. Please visit the following link to reset your password: " + resetUrl,
       html: emailHtml,

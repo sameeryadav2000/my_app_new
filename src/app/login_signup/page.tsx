@@ -177,6 +177,10 @@ function LoginPageContent() {
     showLoading();
     try {
       await signIn("google", { callbackUrl });
+
+      setTimeout(() => {
+        hideLoading();
+      }, 2000);
     } catch (error) {
       hideLoading();
       if (error instanceof Error) {

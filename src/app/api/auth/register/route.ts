@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
     // 14. Send verification email
     const emailResult = await sendEmail({
       to: email.toLowerCase(),
-      from: process.env.EMAIL_FROM || "no-reply@yourdomain.com",
+      from: process.env.EMAIL_FROM || "support@mobileloom.com",
       subject: "Verify Your Email Address",
       text: `Welcome to our platform! Please verify your email by visiting: ${verificationUrl}`,
       html: `

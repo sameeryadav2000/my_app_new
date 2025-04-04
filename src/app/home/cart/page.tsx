@@ -98,7 +98,7 @@ export default function CartPage() {
                   {item.image ? (
                     <Image
                       src={item.image}
-                      alt={item.titleName || "Product Image"}
+                      alt={`${item.titleName} image`}
                       fill
                       className="object-contain rounded-md transition-opacity duration-300 hover:opacity-90"
                     />

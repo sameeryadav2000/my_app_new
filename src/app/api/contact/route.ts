@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
 
     // Send notification email to admin
     const adminEmailResult = await sendEmail({
-      to: process.env.ADMIN_EMAIL || "your-email@example.com",
-      from: process.env.EMAIL_FROM || "noreply@mobozen.com",
-      subject: "New Contact Form Submission - MoboZen",
+      to: process.env.ADMIN_EMAIL || "sameeryadav6000@gmail.com",
+      from: process.env.EMAIL_FROM || "support@mobileloom.com",
+      subject: "New Contact Form Submission - MobileLoom",
       text: `
             New message from: ${email}
             Phone: ${phone}
@@ -107,26 +107,26 @@ export async function POST(request: NextRequest) {
     // Send confirmation email to user
     const userEmailResult = await sendEmail({
       to: email,
-      from: process.env.EMAIL_FROM || "noreply@mobozen.com", // Use your verified sender
-      subject: "Thank you for contacting MoboZen",
+      from: process.env.EMAIL_FROM || "support@mobileloom.com", // Use your verified sender
+      subject: "Thank you for contacting MobileLoom",
       text: `
         Dear Customer,
         
-        Thank you for contacting MoboZen. We have received your message and will get back to you as soon as possible.
+        Thank you for contacting MobileLoom. We have received your message and will get back to you as soon as possible.
         
         Your message:
         ${message}
         
         Best Regards,
-        The MoboZen Team
+        The MobileLoom Team
         `,
       html: `
-        <h2>Thank you for contacting MoboZen</h2>
+        <h2>Thank you for contacting MobileLoom</h2>
         <p>Dear Customer,</p>
-        <p>Thank you for contacting MoboZen. We have received your message and will get back to you as soon as possible.</p>
+        <p>Thank you for contacting MobileLoom. We have received your message and will get back to you as soon as possible.</p>
         <h3>Your message:</h3>
         <p style="background-color: #f5f5f5; padding: 10px; border-radius: 5px;">${message.replace(/\n/g, "<br>")}</p>
-        <p>Best Regards,<br>The MoboZen Team</p>
+        <p>Best Regards,<br>The MobileLoom Team</p>
         `,
     });
 

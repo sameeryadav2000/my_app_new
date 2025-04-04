@@ -4,7 +4,7 @@ import React from "react";
 
 export default function FullScreenLoader() {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center z-50" style={{ backgroundColor: "rgba(255, 255, 255, 0.9)" }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center z-50 pointer-events-auto">
       <div className="inline-block">
         <style jsx>{`
           @keyframes spin {
@@ -26,9 +26,7 @@ export default function FullScreenLoader() {
         `}</style>
         <div className="spinner"></div>
       </div>
-      <p className="mt-4 text-lg font-medium" style={{ color: "#333333" }}>
-        Loading...
-      </p>
+      <p className="mt-4 text-lg font-medium text-black">Loading...</p>
     </div>
   );
 }

@@ -542,7 +542,7 @@ export default function OrderConfirmation() {
                               {item.image ? (
                                 <Image
                                   src={item.image}
-                                  alt={item.titleName}
+                                  alt={`${item.titleName} image`}
                                   fill
                                   sizes="(max-width: 768px) 48px, 56px"
                                   className="object-cover rounded"

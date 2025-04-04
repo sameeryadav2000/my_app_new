@@ -68,7 +68,7 @@ export default function OrderSummary({ currentPage, shippingInfoComplete = false
                     {item.image ? (
                       <Image
                         src={item.image}
-                        alt={item.titleName || "Product image"}
+                        alt={`${item.titleName} image`}
                         fill
                         sizes="(max-width: 1280px) 48px, 56px"
                         className="object-contain"

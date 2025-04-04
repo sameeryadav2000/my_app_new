@@ -47,7 +47,7 @@ export default function StickyHeader({ title, condition, storage, color, price, 
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-gray-50 rounded-lg p-1 flex items-center justify-center hidden md:flex">
                 {image ? (
-                  <Image src={image} alt={title} width={44} height={44} className="object-contain" />
+                  <Image src={image} alt={`${title} image`} width={44} height={44} className="object-contain" />
                 ) : (
                   <div className="text-gray-400 text-xs text-center">No Image</div>
                 )}

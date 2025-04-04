@@ -34,7 +34,7 @@ export default function CardsForPhone({ title, image, startingText, price }: Pho
       <div className="flex md:hidden flex-row items-center h-full">
         <div className="w-1/3 p-2 relative aspect-square">
           {image ? (
-            <Image src={image} alt={title} fill sizes="(max-width: 767px) 33vw, 100vw" style={{ objectFit: "contain" }} />
+            <Image src={image} alt={`${title} image`} fill sizes="(max-width: 767px) 33vw, 100vw" style={{ objectFit: "contain" }} />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-100">
               <div className="text-gray-400 text-xs text-center">No Image</div>

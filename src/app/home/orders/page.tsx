@@ -279,7 +279,13 @@ export default function OrdersPage() {
                   >
                     <div className="w-24 flex-shrink-0 bg-gray-100 rounded-lg p-2 mb-4 md:mb-0">
                       {item.image ? (
-                        <Image src={item.image} alt={item.phoneModelName} width={96} height={96} className="w-full h-auto object-contain" />
+                        <Image
+                          src={item.image}
+                          alt={`${item.phoneModelName} image`}
+                          width={96}
+                          height={96}
+                          className="w-full h-auto object-contain"
+                        />
                       ) : (
                         <div className="text-gray-400 text-xs text-center h-full flex items-center justify-center">No Image</div>
                       )}

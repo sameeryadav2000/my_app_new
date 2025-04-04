@@ -118,6 +118,7 @@ export default function PaymentPage() {
       // Clear shipping info after successful order
       if (isMounted) {
         sessionStorage.removeItem("shippingInfo");
+        localStorage.removeItem("phone_models_cache");
 
         // Show success notification
         showSuccess("Success", "Order placed successfully!");
