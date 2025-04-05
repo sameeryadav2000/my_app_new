@@ -2,10 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2025-02-24.acacia",
-});
-
 export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
@@ -14,6 +10,11 @@ export async function POST(req: NextRequest) {
     },
     { status: 501 }
   );
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+    apiVersion: "2025-02-24.acacia",
+  });
+
   try {
     const body = await req.json();
     const { amount, metadata } = body;
