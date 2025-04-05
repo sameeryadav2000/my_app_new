@@ -1,11 +1,69 @@
 // components/SEO.tsx
 import Head from "next/head";
 
+interface ListItem {
+  "@type"?: string;
+  position?: number;
+  name?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
+interface ItemList {
+  "@type"?: string;
+  itemListElement?: Array<ListItem>;
+  [key: string]: unknown;
+}
+
+interface PropertyValue {
+  "@type"?: string;
+  name?: string;
+  value?: string | number;
+}
+
+interface Brand {
+  "@type"?: string;
+  name?: string;
+}
+
+interface Offer {
+  "@type"?: string;
+  priceCurrency?: string;
+  price?: number;
+  itemCondition?: string;
+  availability?: string;
+  seller?: {
+    "@type"?: string;
+    name?: string;
+  };
+}
+
+interface AggregateRating {
+  "@type"?: string;
+  ratingValue?: string | number;
+  reviewCount?: number;
+}
+
+interface StructuredData {
+  "@context"?: string;
+  "@type"?: string;
+  name?: string;
+  description?: string;
+  url?: string;
+  image?: string | string[];
+  brand?: Brand;
+  offers?: Offer;
+  mainEntity?: ItemList | Record<string, unknown>;
+  additionalProperty?: Array<PropertyValue>;
+  aggregateRating?: AggregateRating;
+  [key: string]: unknown;
+}
+
 interface SEOProps {
   title: string; // Most critical - include phones, Nepal, prices
   description: string; // Important for CTR - be specific about phone models
   canonical?: string; // Important for preventing duplicate content
-  structuredData?: any; // Critical for product rich results
+  structuredData?: StructuredData | null; // Critical for product rich results
   keywords?: string; // Still somewhat useful for context
   isProduct?: boolean; // Flag for phone product pages
   noIndex?: boolean; // Control indexing

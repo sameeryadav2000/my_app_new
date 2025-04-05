@@ -400,7 +400,7 @@ export default function ProductPage() {
         .toLowerCase()
         .replace(/\s+/g, "-")}-${selectedVariation.colorName.toLowerCase()}`,
     };
-  }, [selectedVariation, modelImages, reviewData]);
+  }, [selectedVariation, modelImages, reviewData, phoneModelId, urlTitle]);
 
   const seoTitle = selectedVariation
     ? `${selectedVariation.phoneModel} ${selectedVariation.storage} ${selectedVariation.colorName} Price in Nepal | MobileLoom`
