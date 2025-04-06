@@ -11,27 +11,6 @@ import CardsForPhone from "@/src/app/components/CardsForPhone";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ReviewList from "@/src/app/components/ReviewList";
 import LoadingScreen from "@/src/app/components/LoadingScreen";
-import SEO from "@/src/app/components/SEO";
-
-// Define structured data for brand pages outside the component
-const getBrandStructuredData = (brandName: string, brandId: number, models: PhoneModel[]) => {
-  return {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: `${brandName} Models in Nepal with Prices`,
-    description: `Latest ${brandName} models available in Nepal with updated prices and specifications. Find the best ${brandName} phones at MobileLoom.`,
-    url: `https://mobileloom.com/home/phone_model/${encodeURIComponent(brandId)}/${encodeURIComponent(brandName)}`,
-    mainEntity: {
-      "@type": "ItemList",
-      itemListElement: models.map((model, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: model.model,
-        url: `https://mobileloom.com/home/phone_model_detail/${encodeURIComponent(model.id)}/${slugify(model.model)}`,
-      })),
-    },
-  };
-};
 
 interface PhoneModel {
   id: number;
@@ -44,7 +23,7 @@ interface PhoneModel {
 // Cache configuration
 const PHONE_MODELS_CACHE_KEY = "phone_models_cache";
 const CACHE_EXPIRY = 60 * 60 * 1000;
-const ITEMS_PER_PAGE = 1;
+const ITEMS_PER_PAGE = 10;
 
 export default function ProductListingPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
@@ -250,32 +229,8 @@ export default function ProductListingPage() {
     return buttons;
   }, [currentPage, totalPages, handlePageChange]);
 
-  // Generate SEO metadata and structured data
-  const brandStructuredData = useMemo(() => {
-    return getBrandStructuredData(title, id, phoneModels);
-  }, [title, id, phoneModels]);
-
-  const seoDescription = `Find the latest ${title} phones in Nepal with updated prices. Compare specifications and features of popular ${title} smartphones available in Nepal at MobileLoom.`;
-
-  const seoKeywords = `${title} price in Nepal, ${title} phones Nepal, buy ${title} Nepal, ${title} specifications, ${title} features, smartphone prices Nepal`;
-
-  // Create properly encoded canonical URL
-  const canonicalUrl = `/home/phone_model/${encodeURIComponent(id)}/${encodeURIComponent(title)}`;
-
-  // If using pagination, include the page number in the canonical URL
-  const fullCanonicalUrl = currentPage > 1 ? `${canonicalUrl}?page=${currentPage}` : canonicalUrl;
-
   return (
     <>
-      {/* Add SEO component at the top */}
-      <SEO
-        title={`${title} Price in Nepal 2025 - Latest Models & Specifications | MobileLoom`}
-        description={seoDescription}
-        canonical={fullCanonicalUrl}
-        structuredData={brandStructuredData}
-        keywords={seoKeywords}
-      />
-
       <div className="w-[95%] md:w-[70%] mx-auto py-6 md:py-7 lg:py-8">
         {/* Trust banners section */}
         <div className="bg-gray-100 rounded-xl mb-6 md:mb-7 lg:mb-8 overflow-hidden">
@@ -373,7 +328,7 @@ export default function ProductListingPage() {
               {phoneModels.map((phoneModel) => (
                 <Link
                   key={phoneModel.id}
-                  href={`/home/phone_model_detail/${phoneModel.id}/${slugify(phoneModel.model)}`}
+                  href={`/home/phone_model_detail/${phoneModel.id}/${slugify(phoneModel.model, { lower: true, strict: true })}`}
                   className="group block h-full transition-all duration-300"
                 >
                   <CardsForPhone

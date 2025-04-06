@@ -14,7 +14,6 @@ import StickyHeader from "@/src/app/components/StickyHeader";
 import ReviewList from "@/src/app/components/ReviewList";
 import { formatNPR } from "@/src/utils/formatters";
 import Image from "next/image";
-import SEO from "@/src/app/components/SEO";
 
 interface Products {
   id: number;
@@ -36,13 +35,17 @@ interface ProductImage {
   mainImage: boolean;
 }
 
+interface ReviewData {
+  reviewCount: number;
+  averageRating: number;
+}
+
 export default function ProductPage() {
   const { showLoading, hideLoading, isLoading } = useLoading();
   const { showSuccess, showError } = useNotification();
 
   const params = useParams();
   const phoneModelId = Number(params.id);
-  const urlTitle = params.title as string;
 
   const [filteredProducts, setFilteredProducts] = useState<Products[]>([]);
 
@@ -50,7 +53,7 @@ export default function ProductPage() {
 
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
-  const [reviewData, setReviewData] = useState({ averageRating: 0, reviewCount: 0 });
+  const [reviewData, setReviewData] = useState<ReviewData>({ reviewCount: 0, averageRating: 0 });
 
   const colors: Record<string, string> = {
     Black: "bg-black",
@@ -329,111 +332,8 @@ export default function ProductPage() {
     setReviewData({ averageRating: 0, reviewCount: 0 });
   }, [selectedVariation?.colorId, phoneModelId]);
 
-  // SEO-related code
-  const generateProductStructuredData = useMemo(() => {
-    if (!selectedVariation) return null;
-
-    // Use the same slugify function you use in your links
-    const productUrl = `https://mobileloom.com/home/phone_model_detail/${phoneModelId}/${urlTitle}`;
-
-    return {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name: `${selectedVariation.phoneModel} ${selectedVariation.storage} ${selectedVariation.colorName}`,
-      image: modelImages && modelImages.length > 0 ? modelImages[0].image : "",
-      url: productUrl,
-      description: `Buy refurbished ${selectedVariation.phoneModel} ${selectedVariation.storage} in ${selectedVariation.colorName} color. ${selectedVariation.condition} condition with 6-month warranty. Available in Nepal.`,
-      brand: {
-        "@type": "Brand",
-        name: selectedVariation.phoneName.split(" ")[0], // Extract brand name from phone name
-      },
-      offers: {
-        "@type": "Offer",
-        priceCurrency: "NPR",
-        price: selectedVariation.price,
-        model: selectedVariation.phoneModel,
-        color: selectedVariation.colorName,
-        priceValidUntil: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0],
-        availability: "https://schema.org/InStock",
-        seller: {
-          "@type": "Organization",
-          name: selectedVariation.sellerName || "MobileLoom",
-        },
-        itemCondition: `https://schema.org/${selectedVariation.condition === "New" ? "NewCondition" : "UsedCondition"}`,
-      },
-      aggregateRating:
-        reviewData.reviewCount > 0
-          ? {
-              "@type": "AggregateRating",
-              ratingValue: reviewData.averageRating.toFixed(1),
-              reviewCount: reviewData.reviewCount,
-            }
-          : undefined,
-      // Add these additional properties for better search targeting
-      additionalProperty: [
-        {
-          "@type": "PropertyValue",
-          name: "Internal Storage",
-          value: selectedVariation.storage,
-        },
-        {
-          "@type": "PropertyValue",
-          name: "Color",
-          value: selectedVariation.colorName,
-        },
-        {
-          "@type": "PropertyValue",
-          name: "Condition",
-          value: selectedVariation.condition,
-        },
-        {
-          "@type": "PropertyValue",
-          name: "Warranty",
-          value: "6 months",
-        },
-      ],
-
-      // Add these if you have the data
-      sku: `${selectedVariation.phoneName.split(" ")[0].toLowerCase()}-${selectedVariation.phoneModel
-        .toLowerCase()
-        .replace(/\s+/g, "-")}-${selectedVariation.storage
-        .toLowerCase()
-        .replace(/\s+/g, "-")}-${selectedVariation.colorName.toLowerCase()}`,
-    };
-  }, [selectedVariation, modelImages, reviewData, phoneModelId, urlTitle]);
-
-  const seoTitle = selectedVariation
-    ? `${selectedVariation.phoneModel} ${selectedVariation.storage} ${selectedVariation.colorName} Price in Nepal | MobileLoom`
-    : "Smartphone Details | MobileLoom";
-
-  const seoDescription = selectedVariation
-    ? `Buy refurbished ${selectedVariation.phoneModel} ${selectedVariation.storage} in ${selectedVariation.colorName} (${
-        selectedVariation.condition
-      } condition) at Rs. ${formatNPR(selectedVariation.price).replace(
-        "Rs. ",
-        ""
-      )} in Nepal. 6-month warranty, free shipping, 30-day returns.`
-    : "Find affordable refurbished smartphones in Nepal with warranty and free shipping.";
-
-  const seoKeywords = selectedVariation
-    ? `${selectedVariation.phoneModel} Nepal, ${selectedVariation.phoneModel} price Nepal, refurbished ${selectedVariation.phoneModel}, ${selectedVariation.storage} ${selectedVariation.colorName} Nepal, buy ${selectedVariation.phoneModel} Nepal`
-    : "refurbished smartphones Nepal, phone price Nepal";
-
-  const canonicalUrl = `/home/phone_model_detail/${phoneModelId}/${urlTitle}`;
-
   return (
     <>
-      {selectedVariation && (
-        <SEO
-          title={seoTitle}
-          description={seoDescription}
-          canonical={canonicalUrl}
-          structuredData={generateProductStructuredData}
-          keywords={seoKeywords}
-          isProduct={true}
-        />
-      )}
-
       <div>
         {isLoading && <FullScreenLoader />}
 
