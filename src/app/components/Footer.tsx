@@ -484,7 +484,7 @@ export default function Footer() {
               {/* Brand section */}
               <div className="space-y-4">
                 <div className="flex items-center">
-                  <span className="text-2xl font-bold tracking-wider text-black">MobileLoom</span>
+                  <span className="text-3xl font-kalam font-bold tracking-wider text-[#FF5500]">MobileLoom</span>
                 </div>
                 <p className="text-gray-600 text-sm max-w-xs">
                   Buying and selling refurbished devices made simple. Quality guaranteed with every purchase.

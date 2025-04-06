@@ -29,7 +29,7 @@ export default function Logo() {
 
   return (
     <Link href="/" className="flex items-center" onMouseEnter={handleMouseEnter}>
-      <span className="text-xl md:text-2xl font-bold tracking-wider text-black relative">
+      <span className="font-kalam text-xl md:text-3xl font-bold tracking-wider text-[#FF5500] relative">
         {"MobileLoom".split("").map((letter, index) => (
           <span
             key={`mobile-${index}`}

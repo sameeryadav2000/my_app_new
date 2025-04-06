@@ -1,6 +1,7 @@
 // E:\my_app_new\src\app\home\layout.tsx
 
 import "./globals.css";
+import { Kalam } from "next/font/google";
 import type { Metadata } from "next";
 import Navbar from "@/src/app/components/Navbar";
 import AuthProvider from "@/src/app/components/AuthProvider";
@@ -9,6 +10,13 @@ import { CartProvider } from "@/src/context/CartContext";
 import Footer from "@/src/app/components/Footer";
 import { LoadingProvider } from "@/src/context/LoadingContext";
 import { NotificationProvider } from "@/src/context/NotificationContext";
+
+const kalam = Kalam({
+  weight: ["400", "700"], // Regular and Bold weights
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-kalam",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -46,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={kalam.variable}>
       <body>
         <AuthProvider>
           <SessionGuard>
