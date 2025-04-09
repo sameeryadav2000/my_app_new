@@ -307,7 +307,10 @@ export default function ProductListingPage() {
         </div>
 
         <div className="flex justify-between items-center mb-6 md:mb-7 lg:mb-8">
-          <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-black">Verified Refurbished {title}</h1>
+          <h1 className="text-xl md:text-2xl lg:text-4xl font-bold text-black">
+            Verified Refurbished{" "}
+            <span>{title.toLowerCase() === "iphone" ? "iPhone" : title.charAt(0).toUpperCase() + title.slice(1).toLowerCase()}</span>
+          </h1>
         </div>
 
         {/* When loading is true, show the loading screen */}
@@ -429,7 +432,13 @@ export default function ProductListingPage() {
             <h1 className="text-xl md:text-xl lg:text-2xl font-bold mb-0.5 md:mb-0.5 lg:mb-1">Customer Reviews</h1>
             {title && (
               <p className="text-sm md:text-lg lg:text-lg text-gray-600">
-                <span className="font-medium">{title}</span>
+                <span className="font-medium">
+                  {title.toLowerCase() === "iphone" ? (
+                    <span>iPhone</span>
+                  ) : (
+                    <span>{title.charAt(0).toUpperCase() + title.slice(1).toLowerCase()}</span>
+                  )}
+                </span>
               </p>
             )}
           </div>

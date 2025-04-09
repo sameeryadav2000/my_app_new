@@ -194,7 +194,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, title } = await params;
 
   // Decode the title if it's URL encoded
-  const modelName = decodeURIComponent(title);
+  let modelName = decodeURIComponent(title);
+
+  // Format model name - capitalize 'P' in iPhone or first letter for other brands
+  if (modelName.toLowerCase().startsWith("iphone")) {
+    modelName = "i" + modelName.charAt(1).toUpperCase() + modelName.slice(2);
+  } else {
+    modelName = modelName.charAt(0).toUpperCase() + modelName.slice(1);
+  }
 
   // Fetch data to build better metadata
   const { variations } = await getPhoneModelData(id);

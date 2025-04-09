@@ -8,7 +8,7 @@ export default function HomePage() {
     name: "MobileLoom - Latest Smartphones in Nepal with Prices",
     description:
       "Explore the latest iPhones, Samsung, Xiaomi, Vivo and other smartphones available in Nepal with updated prices and specifications.",
-    url: "https://mobileloom.com",
+    url: "https://mobileloom.com/home",
     mainEntity: {
       "@type": "ItemList",
       itemListElement: [

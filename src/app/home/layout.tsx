@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://mobileloom.com",
+    canonical: "https://mobileloom.com/home",
   },
   icons: {
     icon: "/favicon/favicon.ico",

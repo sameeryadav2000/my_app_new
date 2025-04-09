@@ -59,7 +59,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, title } = await params;
 
   // Decode the title if it's URL encoded
-  const brandName = decodeURIComponent(title);
+  let brandName = decodeURIComponent(title);
+
+  // Special case for iPhone
+  if (brandName.toLowerCase() === "iphone") {
+    brandName = "iPhone";
+  } else {
+    // Capitalize only the first letter for other brands
+    brandName = brandName.charAt(0).toUpperCase() + brandName.slice(1).toLowerCase();
+  }
 
   return {
     title: `${brandName} Price in Nepal 2025 - Latest Models & Specifications | MobileLoom`,
