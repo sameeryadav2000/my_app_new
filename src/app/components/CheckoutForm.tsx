@@ -31,17 +31,17 @@ export default function CheckoutForm({ totalAmount, shippingInfo }: CheckoutForm
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/home/order_confirmation`,
-          receipt_email: shippingInfo.email,
+          receipt_email: shippingInfo?.email,
           payment_method_data: {
             billing_details: {
-              name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
-              email: shippingInfo.email,
-              phone: shippingInfo.phone,
+              name: `${shippingInfo?.firstName} ${shippingInfo?.lastName}`,
+              email: shippingInfo?.email,
+              phone: shippingInfo?.phone,
               address: {
-                line1: shippingInfo.address,
-                city: shippingInfo.city,
-                state: shippingInfo.state,
-                postal_code: shippingInfo.zipCode,
+                line1: shippingInfo?.address,
+                city: shippingInfo?.city,
+                state: shippingInfo?.state,
+                postal_code: shippingInfo?.zipCode,
                 country: "US",
               },
             },
