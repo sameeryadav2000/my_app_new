@@ -3,13 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
-  return NextResponse.json(
-    {
-      success: false,
-      message: "Payment processing is temporarily disabled",
-    },
-    { status: 501 }
-  );
+  // return NextResponse.json(
+  //   {
+  //     success: false,
+  //     message: "Payment processing is temporarily disabled",
+  //   },
+  //   { status: 501 }
+  // );
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
     apiVersion: "2025-02-24.acacia",
@@ -55,9 +55,10 @@ export async function POST(req: NextRequest) {
       amount: Math.round(amount * 100),
       currency: "usd",
       metadata,
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      // automatic_payment_methods: {
+      //   enabled: true,
+      // },
+      payment_method_types: ["card"],
       statement_descriptor_suffix: "YourStore Order",
     });
 
